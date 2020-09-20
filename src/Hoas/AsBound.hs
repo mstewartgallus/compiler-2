@@ -9,18 +9,18 @@ import qualified Hoas
 import Hoas.Type
 import Prelude hiding ((.), id, curry, uncurry, (<*>))
 
-newtype Expr t (a :: T) = Expr (Stream -> t a)
+newtype Expr t (a :: T) (b :: T) = E (Stream -> t a b)
 
-bindPoints :: Stream -> Expr t a -> t a
-bindPoints str (Expr x) = x str
+bindPoints :: Stream -> Expr t a b -> t a b
+bindPoints str (E x) = x str
 
 instance Bound t => Hoas.Hoas (Expr t) where
-  be (Expr x) t f = Expr $ \(Stream n xs ys) -> be n (x xs) t $ \x' -> case f (Expr $ \_ -> x') of
-    Expr y -> y ys
+  be (E x) t f = E $ \(Stream n xs ys) -> be n (x xs) t $ \x' -> case f (E $ \_ -> x') of
+    E y -> y ys
 
-  lam t f = Expr $ \(Stream n _ ys) -> lam n t $ \x -> case f (Expr $ \_ -> x) of
-    Expr y -> y ys
-  Expr f <*> Expr x = Expr $ \(Stream _ fs xs) -> f fs <*> x xs
+  lam t f = E $ \(Stream n _ ys) -> lam n t $ \x -> case f (E $ \_ -> x) of
+    E y -> y ys
+  E f <*> E x = E $ \(Stream _ fs xs) -> f fs <*> x xs
 
-  u64 x = Expr $ const (u64 x)
-  add = Expr $ const add
+  u64 x = E $ const (u64 x)
+  add = E $ const add

@@ -21,6 +21,7 @@ import Prelude hiding (curry, id, uncurry, (.), (<*>))
 type family AsObject a = r | r -> a where
   AsObject (a Type.~> b) = AsObject a ~> AsObject b
   AsObject Type.U64 = U64
+  AsObject Type.Unit = Unit
 
 type family AsList a = r | r -> a where
   AsList '[] = Unit
@@ -33,6 +34,8 @@ data Expr k (a :: [Type.T]) (b :: Type.T) where
   E :: k (AsList a) (AsObject b) -> Expr k a b
 
 instance Lambda k => Term (Expr k) where
+  unit = E unit
+
   tip = E first
   const (E x) = E (x . second)
 

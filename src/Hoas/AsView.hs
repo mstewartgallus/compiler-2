@@ -6,9 +6,9 @@ module Hoas.AsView (View, view) where
 import Hoas.Bound
 import Hoas.Type
 
-newtype View (a :: T) = View String
+newtype View (a :: T) (b :: T) = View String
 
-view :: View a -> String
+view :: View a b -> String
 view (View v) = v
 
 instance Bound View where

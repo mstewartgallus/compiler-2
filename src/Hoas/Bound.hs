@@ -9,10 +9,10 @@ import Id (Id)
 import Data.Word (Word64)
 
 class Bound t where
-  be :: Id -> t a -> ST a -> (t a -> t b) -> t b
+  be :: Id -> t x a -> ST a -> (t Unit a -> t x b) -> t x b
 
-  lam :: Id -> ST a -> (t a -> t b) -> t (a ~> b)
-  (<*>) :: t (a ~> b) -> t a -> t b
+  lam :: Id -> ST a -> (t Unit a -> t x b) -> t x (a ~> b)
+  (<*>) :: t x (a ~> b) -> t x a -> t x b
 
-  u64 :: Word64 -> t U64
-  add :: t (U64 ~> U64 ~> U64)
+  u64 :: Word64 -> t x U64
+  add :: t x (U64 ~> U64 ~> U64)

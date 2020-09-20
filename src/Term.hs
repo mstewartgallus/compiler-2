@@ -8,6 +8,8 @@ import Hoas.Type
 import Prelude hiding (const, curry, (<*>))
 
 class Term t where
+  unit :: t x Unit
+
   be :: t env a -> t (a ': env) b -> t env b
 
   tip :: t (a ': env) a

@@ -17,10 +17,10 @@ import Term (Term)
 import qualified Term
 import Prelude hiding (curry, id, uncurry, (.), (<*>))
 
-pointFree :: PointFree k a -> k '[] a
-pointFree (PointFree x) = out x
+pointFree :: Term k => PointFree k Unit b -> k '[] b
+pointFree (PointFree x) = Term.be Term.unit (out x)
 
-newtype PointFree k a = PointFree (Pf k '[] a)
+newtype PointFree k a b = PointFree (Pf k '[a] b)
 
 instance Term k => Bound.Bound (PointFree k) where
   PointFree f <*> PointFree x = PointFree (f Term.<*> x)
@@ -119,7 +119,7 @@ to x = me
           removeVar = const Nothing
         }
 
-mkVar :: Term k => Var a -> Pf k '[] a
+mkVar :: Term k => Var a -> Pf k x a
 mkVar v@(Var _ n) = me
   where
     me =

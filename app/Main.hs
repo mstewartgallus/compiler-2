@@ -4,7 +4,6 @@ module Main where
 
 import AsCallByName
 import qualified AsLambda
-import qualified AsPointy
 import qualified AsTerm
 import Cbpv (Cbpv)
 import qualified Cbpv.AsEval as AsEval
@@ -21,8 +20,6 @@ import Lambda (Lambda)
 import Lambda.AsOptimized
 import Lambda.AsView
 import qualified Lambda.Type
-import Pointy (Pointy)
-import qualified Pointy.AsView as AsPointyView
 import Term (Term)
 import qualified Term.AsView as AsTermView
 import Prelude hiding ((<*>))
@@ -33,10 +30,6 @@ main = do
 
   putStrLn "The Program"
   putStrLn (AsHoasView.view (bound x))
-
-  putStrLn ""
-  putStrLn "Pointful Style"
-  putStrLn (AsPointyView.view pointy)
 
   putStrLn ""
   putStrLn "De-Bruijn Program"
@@ -58,16 +51,13 @@ main = do
   putStrLn "Result"
   putStrLn (show (result v))
 
-program :: Hoas t => t U64
+program :: Hoas t => t Unit U64
 program =
   u64 3 `letBe` \z ->
     add <*> z <*> z
 
-bound :: Bound t => Id.Stream -> t U64
+bound :: Bound t => Id.Stream -> t Unit U64
 bound str = bindPoints str program
-
-pointy :: Pointy t => t Lambda.Type.Unit -> t Lambda.Type.U64
-pointy = AsPointy.asPointy program
 
 debruijn :: Term k => Id.Stream -> k '[] U64
 debruijn str = AsTerm.pointFree (bound str)
