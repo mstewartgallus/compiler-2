@@ -3,11 +3,12 @@
 
 module Hoas (Hoas (..), letBe) where
 
+import Control.Category
 import Data.Word (Word64)
 import Hoas.Type
 import Prelude hiding (id, uncurry, (.), (<*>))
 
-class Hoas t where
+class Category t => Hoas t where
   lam :: ST a -> (t Unit a -> t x b) -> t x (a ~> b)
   (<*>) :: t x (a ~> b) -> t x a -> t x b
 

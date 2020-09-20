@@ -8,6 +8,7 @@
 
 module AsTerm (PointFree, pointFree) where
 
+import Control.Category
 import Data.Maybe
 import Data.Typeable ((:~:) (..))
 import qualified Hoas.Bound as Bound
@@ -21,6 +22,10 @@ pointFree :: Term k => PointFree k Unit b -> k '[] b
 pointFree (PointFree x) = Term.be Term.unit (out x)
 
 newtype PointFree k a b = PointFree (Pf k '[a] b)
+
+instance Term k => Category (PointFree k) where
+  id = PointFree Term.tip
+  PointFree f . PointFree g = PointFree (g `Term.be` Term.swap (Term.const f))
 
 instance Term k => Bound.Bound (PointFree k) where
   PointFree f <*> PointFree x = PointFree (f Term.<*> x)
