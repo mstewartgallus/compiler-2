@@ -38,6 +38,7 @@ data Value k env a where
 
 toExpr :: Category k => Value k env result -> k env result
 toExpr expr = case expr of
+  StuckValue hom EnvValue -> hom
   StuckValue hom x -> hom . toExpr x
   EnvValue -> id
 
