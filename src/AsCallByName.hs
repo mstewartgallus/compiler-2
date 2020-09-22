@@ -19,7 +19,7 @@ import qualified Lambda.HasSum as Sum
 import qualified Lambda.Type as Type
 import Prelude hiding (curry, id, return, uncurry, (.), (<*>))
 
-newtype Expr c a b = Expr (c (U (AsAlgebra a)) (U (AsAlgebra b)))
+newtype Expr c a b = E (c (U (AsAlgebra a)) (U (AsAlgebra b)))
 
 type family AsAlgebra a = r where
   AsAlgebra Type.Unit = F Unit
@@ -30,30 +30,30 @@ type family AsAlgebra a = r where
   AsAlgebra Type.U64 = F U64
 
 toCbpv :: Cbpv c d => Expr d Type.Unit a -> d (U (F Unit)) (U (AsAlgebra a))
-toCbpv (Expr x) = x
+toCbpv (E x) = x
 
 instance Cbpv c d => Category (Expr d) where
-  id = Expr id
-  Expr f . Expr g = Expr (f . g)
+  id = E id
+  E f . E g = E (f . g)
 
 instance Cbpv c d => Product.HasProduct (Expr d) where
-  unit = Expr (thunk (return unit))
+  unit = E (thunk (return unit))
 
-  first = Expr (thunk (force first . force id))
-  second = Expr (thunk (force second . force id))
-  Expr f &&& Expr g = Expr (thunk (return f `to` ((return g . return first) `to` return ((second . first) &&& second))))
+  first = E (thunk (force first . force id))
+  second = E (thunk (force second . force id))
+  E f &&& E g = E (thunk (return f `to` ((return g . return first) `to` return ((second . first) &&& second))))
 
 instance Cbpv c d => Sum.HasSum (Expr d) where
-  absurd = Expr (thunk (force absurd . force id))
+  absurd = E (thunk (force absurd . force id))
 
-  left = Expr (thunk (return left))
-  right = Expr (thunk (return right))
-  Expr f ||| Expr g = Expr (thunk (force id . force (thunk (return f) ||| thunk (return g)) . force id))
+  left = E (thunk (return left))
+  right = E (thunk (return right))
+  E f ||| E g = E (thunk (force id . force (thunk (return f) ||| thunk (return g)) . force id))
 
 instance Cbpv c d => Exp.HasExp (Expr d) where
-  curry (Expr f) = Expr (thunk (curry (force f . return (thunk id) . assocOut)))
-  uncurry (Expr f) = Expr (thunk (uncurry (force f) . assocIn . force id))
+  curry (E f) = E (thunk (curry (force f . return (thunk id) . assocOut)))
+  uncurry (E f) = E (thunk (uncurry (force f) . assocIn . force id))
 
 instance Cbpv c d => Lambda.Lambda (Expr d) where
-  u64 x = Expr (thunk (return (u64 x)))
-  add = Expr (thunk (addLazy . force id))
+  u64 x = E (thunk (return (u64 x)))
+  add = E (thunk (addLazy . force id))
