@@ -3,7 +3,6 @@
 module Main where
 
 import AsCallByName
-import qualified AsLambda
 import qualified AsTerm
 import Cbpv (Cbpv)
 import qualified Cbpv.AsEval as AsEval
@@ -20,32 +19,30 @@ import Lambda (Lambda)
 import Lambda.AsOptimized
 import Lambda.AsView
 import qualified Lambda.Type
-import Term (Term)
-import qualified Term.AsView as AsTermView
 import Prelude hiding ((<*>))
 
 main :: IO ()
 main = do
-  Id.Stream _ (Id.Stream _ x (Id.Stream _ y v)) (Id.Stream _ z (Id.Stream _ w u)) <- Id.stream
+  x <- Id.stream
 
   putStrLn "The Program"
   putStrLn (AsHoasView.view (bound x))
 
   putStrLn ""
   putStrLn "Point-Free Program"
-  putStrLn (view (compiled z))
+  putStrLn (view (compiled x))
 
   putStrLn ""
   putStrLn "Optimized Program"
-  putStrLn (view (optimized w))
+  putStrLn (view (optimized x))
 
   putStrLn ""
   putStrLn "Cbpv Program"
-  putStrLn (AsViewCbpv.view (cbpv u))
+  putStrLn (AsViewCbpv.view (cbpv x))
 
   putStrLn ""
   putStrLn "Result"
-  putStrLn (show (result v))
+  putStrLn (show (result x))
 
 type TYPE = U64
 
