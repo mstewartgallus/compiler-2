@@ -20,9 +20,9 @@ import Prelude hiding ((.), id, curry, uncurry, Either (..))
 -- evaluation. Next this should really be moved back to the term level
 -- representation
 optimize :: Lambda k => Expr k a b -> k a b
-optimize (Expr x) = compile x
+optimize (E x) = compile x
 
-newtype Expr k a b = Expr { apply :: forall env. Value k env a -> Value k env b }
+newtype Expr k a b = E { apply :: forall env. Value k env a -> Value k env b }
 
 data Value k env a where
   StuckValue :: Category k => k a b -> Value k env a -> Value k env b
@@ -54,38 +54,38 @@ compile :: Lambda k => (forall env. Value k env a -> Value k env b) -> k a b
 compile f = toExpr (f EnvValue)
 
 instance Category k => Category (Expr k) where
-  id = Expr id
-  Expr f . Expr g = Expr (f . g)
+  id = E id
+  E f . E g = E (f . g)
 
 instance HasProduct k => HasProduct (Expr k) where
-  unit = Expr (const CoinValue)
-  Expr f &&& Expr g = Expr $ \x -> PairValue (f x) (g x)
-  first = Expr $ \x -> case x of
+  unit = E (const CoinValue)
+  E f &&& E g = E $ \x -> PairValue (f x) (g x)
+  first = E $ \x -> case x of
     PairValue l _ -> l
     _ -> StuckValue first x
-  second = Expr $ \x -> case x of
+  second = E $ \x -> case x of
     PairValue _ r -> r
     _ -> StuckValue second x
 
 instance Lambda k => HasSum (Expr k) where
-  absurd = Expr (StuckValue absurd)
-  Expr f ||| Expr g = Expr $ \x -> case x of
+  absurd = E (StuckValue absurd)
+  E f ||| E g = E $ \x -> case x of
     LeftValue l -> f l
     RightValue r -> g r
     _ -> StuckValue (compile f ||| compile g) x
-  left = Expr LeftValue
-  right = Expr RightValue
+  left = E LeftValue
+  right = E RightValue
 
 instance Lambda k => HasExp (Expr k) where
-  curry (Expr f) = Expr (\x ->  FnValue x f)
-  uncurry f = Expr (doUncurry f)
+  curry (E f) = E (\x ->  FnValue x f)
+  uncurry f = E (doUncurry f)
 
 instance Lambda k => Lambda (Expr k) where
-  u64 x = Expr (StuckValue $ u64 x)
-  add = Expr (StuckValue add)
+  u64 x = E (StuckValue $ u64 x)
+  add = E (StuckValue add)
 
 doUncurry :: Lambda k => Expr k a (b ~> c) -> Value k env (b * a) -> Value k env c
-doUncurry (Expr f) x = let
+doUncurry (E f) x = let
   stuck = StuckValue (uncurry (compile f)) x
   in case x of
   PairValue b a -> case f a of

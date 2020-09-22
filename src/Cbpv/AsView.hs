@@ -9,44 +9,44 @@ import Control.Category
 import Cbpv.Sort
 import Prelude hiding ((.), id)
 
-newtype Stack (a :: Algebra) (b :: Algebra) = Stack String
+newtype Stack (a :: Algebra) (b :: Algebra) = K String
 
-newtype Code (a :: Set) (b :: Set) = Code String
+newtype Code (a :: Set) (b :: Set) = C String
 
 view :: Code a b -> String
-view (Code v) = v
+view (C v) = v
 
 instance Category Stack where
-  id = Stack "id"
-  Stack f . Stack g = Stack (f ++ " ∘ " ++ g)
+  id = K "id"
+  K f . K g = K (f ++ " ∘ " ++ g)
 
 instance Category Code where
-  id = Code "id"
-  Code f . Code g = Code (f ++ " ∘ " ++ g)
+  id = C "id"
+  C f . C g = C (f ++ " ∘ " ++ g)
 
 instance Cbpv Stack Code where
-  to (Stack f) (Stack x) = Stack ("(to " ++ f ++ " " ++ x ++ ")")
-  return (Code f) = Stack ("(return " ++ f ++ ")")
+  to (K f) (K x) = K ("(to " ++ f ++ " " ++ x ++ ")")
+  return (C f) = K ("(return " ++ f ++ ")")
 
-  thunk (Stack f) = Code ("(thunk " ++ f ++ ")")
-  force (Code f) = Stack ("(force " ++ f ++ ")")
+  thunk (K f) = C ("(thunk " ++ f ++ ")")
+  force (C f) = K ("(force " ++ f ++ ")")
 
-  unit = Code "unit"
-  Code f &&& Code x = Code ("⟨" ++ f ++ " , " ++ x ++ "⟩")
-  first = Code "π₁"
-  second = Code "π₂"
+  unit = C "unit"
+  C f &&& C x = C ("⟨" ++ f ++ " , " ++ x ++ "⟩")
+  first = C "π₁"
+  second = C "π₂"
 
-  absurd = Code "absurd"
-  Code f ||| Code x = Code ("[" ++ f ++ " , " ++ x ++ "]")
-  left = Code "i₁"
-  right = Code "i₂"
+  absurd = C "absurd"
+  C f ||| C x = C ("[" ++ f ++ " , " ++ x ++ "]")
+  left = C "i₁"
+  right = C "i₂"
 
-  assocOut = Stack "out"
-  assocIn = Stack "in"
+  assocOut = K "out"
+  assocIn = K "in"
 
-  curry (Stack f) = Stack ("(λ " ++ f ++ ")")
-  uncurry (Stack f) = Stack ("(! " ++ f ++ ")")
+  curry (K f) = K ("(λ " ++ f ++ ")")
+  uncurry (K f) = K ("(! " ++ f ++ ")")
 
-  u64 x = Code (show x)
-  add = Code "add"
-  addLazy = Stack "add"
+  u64 x = C (show x)
+  add = C "add"
+  addLazy = K "add"
