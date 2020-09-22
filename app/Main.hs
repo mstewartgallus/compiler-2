@@ -32,10 +32,6 @@ main = do
   putStrLn (AsHoasView.view (bound x))
 
   putStrLn ""
-  putStrLn "De-Bruijn Program"
-  putStrLn (AsTermView.view (debruijn y))
-
-  putStrLn ""
   putStrLn "Point-Free Program"
   putStrLn (view (compiled z))
 
@@ -51,24 +47,23 @@ main = do
   putStrLn "Result"
   putStrLn (show (result v))
 
-program :: Hoas t => t Unit U64
+type TYPE = U64
+
+program :: Hoas t => t Unit TYPE
 program =
   u64 3 `letBe` \z ->
     add <*> z <*> z
 
-bound :: Bound t => Id.Stream -> t Unit U64
+bound :: Bound t => Id.Stream -> t Unit TYPE
 bound str = bindPoints str program
 
-debruijn :: Term k => Id.Stream -> k '[] U64
-debruijn str = AsTerm.pointFree (bound str)
+compiled :: Lambda k => Id.Stream -> k Lambda.Type.Unit (AsTerm.AsObject TYPE)
+compiled str = AsTerm.pointFree (bound str)
 
-compiled :: Lambda k => Id.Stream -> k Lambda.Type.Unit Lambda.Type.U64
-compiled str = AsLambda.asLambda (debruijn str)
-
-optimized :: Lambda k => Id.Stream -> k Lambda.Type.Unit Lambda.Type.U64
+optimized :: Lambda k => Id.Stream -> k Lambda.Type.Unit (AsTerm.AsObject TYPE)
 optimized str = optimize (compiled str)
 
-cbpv :: Cbpv c d => Id.Stream -> d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra Lambda.Type.U64))
+cbpv :: Cbpv c d => Id.Stream -> d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((AsTerm.AsObject TYPE))))
 cbpv str = toCbpv (optimized str)
 
 result :: Id.Stream -> Word64

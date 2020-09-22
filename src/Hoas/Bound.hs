@@ -11,6 +11,7 @@ import Control.Category
 
 class Category t => Bound t where
   be :: Id -> t x a -> ST a -> (t Unit a -> t x b) -> t x b
+  be n x t f = lam n t f <*> x
 
   lam :: Id -> ST a -> (t Unit a -> t x b) -> t x (a ~> b)
   (<*>) :: t x (a ~> b) -> t x a -> t x b
