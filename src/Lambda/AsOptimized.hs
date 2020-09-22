@@ -19,10 +19,10 @@ import Prelude hiding ((.), id, curry, uncurry, Either (..))
 -- | The optimizer is based off the idea of normalization by
 -- evaluation. Next this should really be moved back to the term level
 -- representation
-optimize :: Lambda k => Expr k a b -> k a b
+optimize :: Category k => Expr k a b -> k a b
 optimize (E x) = compile x
 
-newtype Expr k a b = E { apply :: forall env. Value k env a -> Value k env b }
+newtype Expr k a b = E (forall env. Value k env a -> Value k env b)
 
 data Value k env a where
   StuckValue :: Category k => k a b -> Value k env a -> Value k env b
@@ -36,7 +36,7 @@ data Value k env a where
   LeftValue :: HasSum k => Value k env a -> Value k env (a + b)
   RightValue :: HasSum k => Value k env b -> Value k env (a + b)
 
-toExpr :: Lambda k => Value k env result -> k env result
+toExpr :: Category k => Value k env result -> k env result
 toExpr expr = case expr of
   StuckValue hom x -> hom . toExpr x
   EnvValue -> id
@@ -50,7 +50,7 @@ toExpr expr = case expr of
   FnValue env f -> curry f' . toExpr env where
     f' = compile f
 
-compile :: Lambda k => (forall env. Value k env a -> Value k env b) -> k a b
+compile :: Category k => (forall env. Value k env a -> Value k env b) -> k a b
 compile f = toExpr (f EnvValue)
 
 instance Category k => Category (Expr k) where
@@ -67,7 +67,7 @@ instance HasProduct k => HasProduct (Expr k) where
     PairValue _ r -> r
     _ -> StuckValue second x
 
-instance Lambda k => HasSum (Expr k) where
+instance HasSum k => HasSum (Expr k) where
   absurd = E (StuckValue absurd)
   E f ||| E g = E $ \x -> case x of
     LeftValue l -> f l
@@ -76,15 +76,15 @@ instance Lambda k => HasSum (Expr k) where
   left = E LeftValue
   right = E RightValue
 
-instance Lambda k => HasExp (Expr k) where
-  curry (E f) = E (\x ->  FnValue x f)
+instance HasExp k => HasExp (Expr k) where
+  curry (E f) = E (\x -> FnValue x f)
   uncurry f = E (doUncurry f)
 
 instance Lambda k => Lambda (Expr k) where
   u64 x = E (StuckValue $ u64 x)
   add = E (StuckValue add)
 
-doUncurry :: Lambda k => Expr k a (b ~> c) -> Value k env (b * a) -> Value k env c
+doUncurry :: HasExp k => Expr k a (b ~> c) -> Value k env (b * a) -> Value k env c
 doUncurry (E f) x = let
   stuck = StuckValue (uncurry (compile f)) x
   in case x of
