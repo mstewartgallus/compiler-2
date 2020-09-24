@@ -6,6 +6,7 @@ import AsCallByName
 import qualified AsTerm
 import Cbpv (Cbpv)
 import qualified Cbpv.AsEval as AsEval
+import qualified Cbpv.AsOpt as AsOpt
 import qualified Cbpv.AsView as AsViewCbpv
 import qualified Cbpv.Sort
 import Data.Word
@@ -41,6 +42,10 @@ main = do
   putStrLn (AsViewCbpv.view (cbpv x))
 
   putStrLn ""
+  putStrLn "Cbpv Optimized"
+  putStrLn (AsViewCbpv.view (optCbpv x))
+
+  putStrLn ""
   putStrLn "Result"
   putStrLn (show (result x))
 
@@ -62,6 +67,9 @@ optimized str = optimize (compiled str)
 
 cbpv :: Cbpv c d => Id.Stream -> d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((AsTerm.AsObject TYPE))))
 cbpv str = toCbpv (optimized str)
+
+optCbpv :: Cbpv c d => Id.Stream -> d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((AsTerm.AsObject TYPE))))
+optCbpv str = AsOpt.opt (cbpv str)
 
 result :: Id.Stream -> Word64
 result str = AsEval.reify (cbpv str)
