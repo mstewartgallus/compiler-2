@@ -11,8 +11,6 @@
 module Cbpv.AsSimplified (Stack, Code, simplify) where
 
 import Cbpv
-import qualified Cbpv.AsCost as AsCost
-import qualified Cbpv.AsDup as AsDup
 import Control.Category
 import Cbpv.Sort
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), Either (..))

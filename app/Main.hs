@@ -17,7 +17,7 @@ import Hoas.Bound (Bound)
 import Hoas.Type
 import qualified Id
 import Lambda (Lambda)
-import Lambda.AsOptimized
+import Lambda.AsOpt
 import Lambda.AsView
 import qualified Lambda.Type
 import Prelude hiding ((<*>))
@@ -63,7 +63,7 @@ compiled :: Lambda k => Id.Stream -> k Lambda.Type.Unit (AsTerm.AsObject TYPE)
 compiled str = AsTerm.pointFree (bound str)
 
 optimized :: Lambda k => Id.Stream -> k Lambda.Type.Unit (AsTerm.AsObject TYPE)
-optimized str = optimize (compiled str)
+optimized str = opt (compiled str)
 
 cbpv :: Cbpv c d => Id.Stream -> d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((AsTerm.AsObject TYPE))))
 cbpv str = toCbpv (optimized str)

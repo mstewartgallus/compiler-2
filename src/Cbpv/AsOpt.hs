@@ -26,7 +26,7 @@ loop n x | n == 0 = outC x
          | otherwise = AsSimplified.simplify (loop (n - 1) (stepC x))
 
 instance (Category f, Category g) => Category (Stack f g) where
-  id = K {    outK = id,stepK = id}
+  id = K { outK = id,stepK = id}
   f . g = me where
     me = K {
       outK = outK f . outK g,
