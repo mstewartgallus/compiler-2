@@ -22,13 +22,24 @@ simplify = outC
 
 data Stack f g (a :: Algebra) (b :: Algebra) where
   K :: f a b -> Stack f g a b
+
   IdK :: Category f => Stack f g a a
+  ComposeK ::  Category f => Stack f g b c -> Stack f g a b -> Stack f g a c
+
   Force :: Cbpv f g => Code f g a (U b) -> Stack f g (F a) b
+
   Return :: Cbpv f g => Code f g a b -> Stack f g (F a) (F b)
+
+  AssocIn :: Cbpv f g => Stack f g ((a * b) & c) (a & (b & c))
+  To :: Cbpv f g =>
+    Stack f g (env & k) (F a) ->
+    Stack f g (F (env * a)) b ->
+    Stack f g (env & k) b
 
 data Code f g (a :: Set) (b :: Set) where
   C :: g a b -> Code f g a b
   IdC :: Category g => Code f g a a
+  ComposeC ::  Category g => Code f g b c -> Code f g a b -> Code f g a c
   Thunk :: Cbpv f g => Stack f g (F a) b -> Code f g a (U b)
 
   Unit :: Cbpv f g => Code f g a Unit
@@ -45,6 +56,7 @@ outC :: Code f g a b -> g a b
 outC expr = case expr of
   C x -> x
   IdC -> id
+  ComposeC f g -> outC f . outC g
 
   Thunk y -> thunk (outK y)
 
@@ -62,6 +74,9 @@ outK :: Stack f g a b -> f a b
 outK expr = case expr of
   K x -> x
   IdK -> id
+  ComposeK f g -> outK f . outK g
+  To f g -> outK f `to` outK g
+  AssocIn -> assocIn
   Return x -> return (outC x)
   Force y -> force (outC y)
 
@@ -69,59 +84,62 @@ instance (Category f, Category g) => Category (Stack f g) where
   id = IdK
   IdK . f = f
   f . IdK = f
-  Return f . Return g = Return (f . g)
+  Force f . Return g = force (f . g)
+  Return f . Return g = return (f . g)
 
-  Force f . Return g = Force (f . g)
+  h . To f g = to f (h . g)
 
-  f . g = K (outK f . outK g)
+  ComposeK f g . h  = f . (g . h)
+  f . g = ComposeK f g
 
 instance (Category f, Category g) => Category (Code f g) where
   id = IdC
   IdC . f = f
   f . IdC = f
 
-  _ . Absurd = Absurd
+  _ . Absurd = absurd
   Fanin f _  . Left = f
   Fanin _ f . Right = f
 
-  Unit . _ = Unit
+  Unit . _ = unit
   First . Fanout f _ = f
   Second . Fanout _ f = f
 
-  Thunk x . y = Thunk (x . Return y)
+  x . Fanin f g = (x . f) ||| (x . g)
+  Fanout f g . x = (f . x) &&& (g . x)
 
-  x . Fanin f g = Fanin (x . f) (x . g)
-  Fanout f g . x = Fanout (f . x) (g . x)
-
-  f . g = C (outC f . outC g)
+  ComposeC f g . h  = f . (g . h)
+  f . g = ComposeC f g
 
 instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
+  thunk (ComposeK f (Return g)) = thunk f . g
   thunk (Force f) = f
   thunk f = Thunk f
 
+  force (ComposeC f g) = force f . return g
   force (Thunk f) = f
   force f = Force f
 
-  Return f `to` Return x = Return (x . Fanout IdC f)
-  f `to` x = K (outK f `to` outK x)
+  Return f `to` Return x = return (x . (id &&& f))
+  f `to` x = f `To` x
 
-  return IdC = IdK
+  return IdC = id
   return x = Return x
 
   unit = Unit
-  First &&& Second = IdC
+  First &&& Second = id
   f &&& g = Fanout f g
   first = First
   second = Second
 
   absurd = Absurd
-  Left ||| Right = IdC
+  Left ||| Right = id
   f ||| g = Fanin f g
   left = Left
   right = Right
 
   assocOut = K assocOut
-  assocIn = K assocIn
+  assocIn = AssocIn
 
   curry f = K (curry (outK f))
   uncurry f = K (uncurry (outK f))
