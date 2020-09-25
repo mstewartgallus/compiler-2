@@ -36,6 +36,9 @@ data Expr f a b where
   Right :: HasSum f => Expr f b (a + b)
   Fanin :: HasSum f => Expr f a c -> Expr f b c -> Expr f (a + b) c
 
+  Curry :: HasExp f => Expr f (a * env) b -> Expr f env (a ~> b)
+  Uncurry :: HasExp f => Expr f env (a ~> b) -> Expr f (a * env) b
+
 out :: Expr f a b -> f a b
 out expr = case expr of
   E x -> x
@@ -51,6 +54,9 @@ out expr = case expr of
   Left -> left
   Right -> right
   Fanin f g -> out f ||| out g
+
+  Curry f -> curry (out f)
+  Uncurry f -> uncurry (out f)
 
 instance Category f => Category (Expr f) where
   id = Id
@@ -86,8 +92,12 @@ instance HasSum f => HasSum (Expr f) where
   right = Right
 
 instance HasExp f => HasExp (Expr f) where
-  curry f = E (curry (out f))
-  uncurry f = E (uncurry (out f))
+  curry (Uncurry f) = f
+  curry f = Curry f
+
+  uncurry (Compose f g) = uncurry f . (first &&& (g . second))
+  uncurry (Curry f) = f
+  uncurry f = Uncurry f
 
 instance Lambda f => Lambda (Expr f) where
   u64 x = E (u64 x)
