@@ -1,86 +1,100 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 -- | Remove duplicate force/thunk pairs
 module Cbpv.AsOpt (Stack, Code, opt) where
 
 import Cbpv
-import qualified Cbpv.AsCost as AsCost
-import qualified Cbpv.AsDup as AsDup
+import qualified Cbpv.AsSimplified as AsSimplified
 import Control.Category
 import Cbpv.Sort
 import Prelude hiding ((.), id, curry, uncurry, Monad (..))
 
-data Stack f g (a :: Algebra) (b :: Algebra) where
-  K :: f a b -> Stack f g a b
-  IdK :: Category f => Stack f g a a
-  Return :: Cbpv f g => g a b -> Stack f g (F a) (F b)
-  Force :: Cbpv f g => g a (U b) -> Stack f g (F a) b
-
-data Code f g (a :: Set) (b :: Set) where
-  C :: g a b -> Code f g a b
-  IdC :: Category g => Code f g a a
-  Thunk :: Cbpv f g => f (F a) b -> Code f g a (U b)
-
-outC :: Code f g a b -> g a b
-outC expr = case expr of
-  C x -> x
-  IdC -> id
-  Thunk y -> thunk y
-
-outK :: Stack f g a b -> f a b
-outK expr = case expr of
-  K x -> x
-  IdK -> id
-  Return x -> return x
-  Force y -> force y
+data Stack f g a b = K {
+  outK :: f a b,
+  stepK :: AsSimplified.Stack (Stack f g) (Code f g) a b
+  }
+data Code f g a b = C {
+  outC :: g a b,
+  stepC :: AsSimplified.Code (Stack f g) (Code f g) a b
+  }
 
 opt :: Code f g a b -> g a b
-opt = outC
+opt = loop 100 where
+  loop 0 (C x _ ) = x
+  loop n (C _ x) = loop (n - 1) (AsSimplified.simplify x)
 
 instance (Category f, Category g) => Category (Stack f g) where
-  id = IdK
-  IdK . f = f
-  f . IdK = f
-  Return f . Return g = Return (f . g)
-  f . g = K (outK f . outK g)
-
+  id = K {    outK = id,stepK = id}
+  f . g = me where
+    me = K {
+      outK = outK f . outK g,
+      stepK = stepK f . stepK g
+      }
 instance (Category f, Category g) => Category (Code f g) where
-  id = IdC
-  IdC . f = f
-  f . IdC = f
-  f . g = C (outC f . outC g)
+  id = C {outC = id,stepC = id}
+  f . g = me where
+    me = C {
+      outC = outC f . outC g,
+      stepC = stepC f . stepC g
+      }
 
 instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
-  thunk (Force f) = C f
-  thunk f = Thunk (outK f)
+  thunk f = me where
+    me = C {
+      outC = thunk (outK f),
+      stepC = thunk (stepK f)
+      }
+  force f = me where
+    me = K {
+      outK = force (outC f),
+      stepK = force (stepC f)
+      }
 
-  force (Thunk f) = K f
-  force f = Force (outC f)
+  f `to` x = me where
+    me = K {
+      outK = outK f `to` outK x,
+      stepK = stepK f `to` stepK x
+      }
 
-  f `to` x = K (outK f `to` outK x)
+  return f = me where
+    me = K {
+      outK = return (outC f),
+      stepK = return (stepC f)
+      }
 
-  return IdC = IdK
-  return f = Return (outC f)
+  unit = C unit unit
+  f &&& g = me where
+    me = C {
+      outC = outC f &&& outC g,
+      stepC = stepC f &&& stepC g
+      }
+  first = C first first
+  second = C second second
 
-  unit = C unit
-  f &&& g = C (outC f &&& outC g)
-  first = C first
-  second = C second
+  absurd = C absurd absurd
+  f ||| g = me where
+    me = C {
+      outC = outC f ||| outC g,
+      stepC = stepC f ||| stepC g
+      }
+  left = C left left
+  right = C right right
 
-  absurd = C absurd
-  f ||| g = C (outC f ||| outC g)
-  left = C left
-  right = C right
+  assocOut = K { outK = assocOut, stepK = assocOut }
+  assocIn = K { outK = assocIn, stepK = assocIn }
 
-  assocOut = K assocOut
-  assocIn = K assocIn
+  uncurry f = me where
+    me = K {
+      outK = uncurry (outK f),
+      stepK = uncurry (stepK f)
+      }
+  curry f = me where
+    me = K {
+      outK = curry (outK f),
+      stepK = curry (stepK f)
+      }
 
-  curry f = K (curry (outK f))
-  uncurry f = K (uncurry (outK f))
+  u64 x = C { outC = u64 x, stepC = u64 x}
 
-  u64 x = C (u64 x)
-  add = C add
-  addLazy = K addLazy
+  add = C {outC = add,stepC = add}
+  addLazy =  K {outK = addLazy,stepK = addLazy}
