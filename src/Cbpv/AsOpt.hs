@@ -11,17 +11,19 @@ import Prelude hiding ((.), id, curry, uncurry, Monad (..))
 
 data Stack f g a b = K {
   outK :: f a b,
-  stepK :: AsSimplified.Stack (Stack f g) (Code f g) a b
+  stepK :: Stack (AsSimplified.Stack f g) (AsSimplified.Code f g) a b
   }
 data Code f g a b = C {
   outC :: g a b,
-  stepC :: AsSimplified.Code (Stack f g) (Code f g) a b
+  stepC :: Code (AsSimplified.Stack f g) (AsSimplified.Code f g) a b
   }
 
 opt :: Code f g a b -> g a b
-opt = loop 10 where
-  loop n x | n == 0 = outC x
-           | otherwise = loop (n - 1) (AsSimplified.simplify (stepC x))
+opt = loop 10
+
+loop :: Int -> Code f g a b -> g a b
+loop n x | n == 0 = outC x
+         | otherwise = AsSimplified.simplify (loop (n - 1) (stepC x))
 
 instance (Category f, Category g) => Category (Stack f g) where
   id = K {    outK = id,stepK = id}
