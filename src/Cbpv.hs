@@ -52,13 +52,7 @@ class (Category stk, Category dta) => Cbpv stk dta | stk -> dta, dta -> stk wher
   curry :: stk (a & env) b -> stk env (a ~> b)
   uncurry :: stk env (a ~> b) -> stk (a & env) b
 
-  -- lam :: stk (a & env) b -> stk env (a ~> b)
-  -- read :: stk env (a ~> b) -> stk (a & env) b
-
-  -- var :: stk b (a + env) -> stk (a -< b) env
-  -- write :: stk (a -< b) env -> stk b (a + env)
-
-  u64 :: Word64 -> dta x U64
+  u64 :: Word64 -> dta Unit U64
 
   -- fixme.. have optimized version...
   add :: dta Unit (U (U64 ~> F (U (U64 ~> F U64))))

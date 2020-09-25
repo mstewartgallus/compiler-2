@@ -19,9 +19,9 @@ data Code f g a b = C {
   }
 
 opt :: Code f g a b -> g a b
-opt = loop 100 where
-  loop 0 (C x _ ) = x
-  loop n (C _ x) = loop (n - 1) (AsSimplified.simplify x)
+opt = loop 10 where
+  loop n x | n == 0 = outC x
+           | otherwise = loop (n - 1) (AsSimplified.simplify (stepC x))
 
 instance (Category f, Category g) => Category (Stack f g) where
   id = K {    outK = id,stepK = id}

@@ -37,7 +37,7 @@ instance Cbpv c d => Category (Expr d) where
   E f . E g = E (f . g)
 
 instance Cbpv c d => Product.HasProduct (Expr d) where
-  unit = E (thunk (return unit))
+  unit = E (thunk (return unit) . unit)
 
   first = E (thunk (force first . force id))
   second = E (thunk (force second . force id))
@@ -55,5 +55,5 @@ instance Cbpv c d => Exp.HasExp (Expr d) where
   uncurry (E f) = E (thunk (uncurry (force f) . assocIn . force id))
 
 instance Cbpv c d => Lambda.Lambda (Expr d) where
-  u64 x = E (thunk (return (u64 x)))
+  u64 x = E (thunk (return (u64 x)) . unit)
   add = E (thunk (addLazy . force id))
