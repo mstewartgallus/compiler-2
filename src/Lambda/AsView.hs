@@ -39,4 +39,4 @@ instance HasExp View where
 
 instance Lambda View where
   u64 x = V (show x)
-  add = V "add"
+  constant _ pkg name = V $ pkg ++ "/" ++ name

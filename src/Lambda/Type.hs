@@ -1,8 +1,9 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Lambda.Type (T, Void, Unit, type (~>), type (*), type (+), type U64) where
+module Lambda.Type (ST (..), T, Void, Unit, type (~>), type (*), type (+), type U64) where
 
 type Void = 'Void
 
@@ -23,3 +24,11 @@ infixl 0 *
 infixl 0 +
 
 data T = U64 | Void | Unit | Sum T T | Product T T | Exp T T
+
+data ST a where
+  SU64 :: ST U64
+  SVoid :: ST Void
+  SUnit :: ST Unit
+  (:+:) :: ST a -> ST b -> ST (a + b)
+  (:*:) :: ST a -> ST b -> ST (a * b)
+  (:->) :: ST a -> ST b -> ST (a ~> b)

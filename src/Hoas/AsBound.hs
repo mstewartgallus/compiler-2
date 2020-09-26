@@ -28,4 +28,4 @@ instance Bound t => Hoas.Hoas (Expr t) where
   E f <*> E x = E $ \(Stream _ fs xs) -> f fs <*> x xs
 
   u64 x = E $ const (u64 x)
-  add = E $ const add
+  constant t pkg name = E $ const $ constant t pkg name

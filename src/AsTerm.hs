@@ -26,6 +26,12 @@ type family AsObject a = r | r -> a where
   AsObject Type.U64 = U64
   AsObject Type.Unit = Unit
 
+asObject :: Type.ST a -> ST (AsObject a)
+asObject t = case t of
+  Type.SU64 -> SU64
+  Type.SUnit -> SUnit
+  a Type.:-> b -> asObject a :-> asObject b
+
 pointFree :: PointFree k a b -> k (AsObject a) (AsObject b)
 pointFree (PointFree x) = out x
 
@@ -47,7 +53,7 @@ instance Lambda k => Bound.Bound (PointFree k) where
         Just y -> y
 
   u64 x = PointFree (u64 x . unit)
-  add = PointFree (add . unit)
+  constant t pkg name = PointFree (constant (asObject t) pkg name . unit)
 
 instance HasProduct k => Category (Pf k) where
   id = lift0 id
@@ -120,7 +126,7 @@ shuffle = (first . second) &&& (first &&& (second . second))
 
 instance Lambda k => Lambda (Pf k) where
   u64 x = lift0 (u64 x)
-  add = lift0 add
+  constant t pkg name = lift0 (constant t pkg name)
 
 data Pf k (env :: T) (b :: T) = V
   { out :: k env b,

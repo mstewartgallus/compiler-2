@@ -90,7 +90,6 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
       stepK = curry (stepK f)
       }
 
-  u64 x = C { outC = u64 x, stepC = u64 x}
+  u64 x = C (u64 x) (u64 x)
 
-  add = C {outC = add,stepC = add}
-  addLazy =  K {outK = addLazy,stepK = addLazy}
+  constant t pkg name = K (constant t pkg name) (constant t pkg name)

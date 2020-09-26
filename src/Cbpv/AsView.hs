@@ -47,5 +47,4 @@ instance Cbpv Stack Code where
   uncurry (K f) = K ("(! " ++ f ++ ")")
 
   u64 x = C (show x)
-  add = C "add"
-  addLazy = K "add"
+  constant _ pkg name = K (pkg ++ "/" ++ name)

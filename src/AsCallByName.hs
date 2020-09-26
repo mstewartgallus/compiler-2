@@ -7,7 +7,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module AsCallByName (Expr, toCbpv, AsAlgebra) where
+module AsCallByName (Expr, toCbpv, AsAlgebra, AsSet) where
 
 import Cbpv
 import Cbpv.Sort
@@ -21,13 +21,25 @@ import Prelude hiding (curry, id, return, uncurry, (.), (<*>))
 
 newtype Expr c a b = E (c (U (AsAlgebra a)) (U (AsAlgebra b)))
 
-type family AsAlgebra a = r where
-  AsAlgebra Type.Unit = F Unit
-  AsAlgebra Type.Void = F Void
-  AsAlgebra (a Type.* b) = F (U (AsAlgebra a) * U (AsAlgebra b))
-  AsAlgebra (a Type.+ b) = F (U (AsAlgebra a) + U (AsAlgebra b))
+type family AsAlgebra a where
   AsAlgebra (a Type.~> b) = U (AsAlgebra a) ~> AsAlgebra b
-  AsAlgebra Type.U64 = F U64
+  AsAlgebra x = F (AsSet x)
+
+type family AsSet a where
+  AsSet Type.Unit = Unit
+  AsSet Type.Void = Void
+  AsSet (a Type.* b) = U (AsAlgebra a) * U (AsAlgebra b)
+  AsSet (a Type.+ b) = U (AsAlgebra a) + U (AsAlgebra b)
+  AsSet Type.U64 = U64
+
+asAlgebra :: Type.ST a -> SAlgebra (AsAlgebra a)
+asAlgebra t = case t of
+  a Type.:-> b -> SU (asAlgebra a) :-> asAlgebra b
+  a Type.:*: b -> (SU (asAlgebra a) :*: SU (asAlgebra b)) :&: SEmpty
+  a Type.:+: b -> (SU (asAlgebra a) :+: SU (asAlgebra b)) :&: SEmpty
+  Type.SU64 -> SU64 :&: SEmpty
+  Type.SUnit -> SUnit :&: SEmpty
+  Type.SVoid -> SVoid :&: SEmpty
 
 toCbpv :: Cbpv c d => Expr d Type.Unit a -> d (U (F Unit)) (U (AsAlgebra a))
 toCbpv (E x) = x
@@ -37,7 +49,7 @@ instance Cbpv c d => Category (Expr d) where
   E f . E g = E (f . g)
 
 instance Cbpv c d => Product.HasProduct (Expr d) where
-  unit = E (thunk (return unit) . unit)
+  unit = E (thunk (return unit))
 
   first = E (thunk (force first . force id))
   second = E (thunk (force second . force id))
@@ -55,5 +67,5 @@ instance Cbpv c d => Exp.HasExp (Expr d) where
   uncurry (E f) = E (thunk (uncurry (force f) . push . force id))
 
 instance Cbpv c d => Lambda.Lambda (Expr d) where
-  u64 x = E (thunk (return (u64 x)) . unit)
-  add = E (thunk (addLazy . force id))
+  u64 x = E (thunk (return (u64 x . unit)))
+  constant t pkg name = E (thunk (constant (asAlgebra t) pkg name . force id))

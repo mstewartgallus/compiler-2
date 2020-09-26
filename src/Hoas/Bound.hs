@@ -17,4 +17,4 @@ class Category t => Bound t where
   (<*>) :: t x (a ~> b) -> t x a -> t x b
 
   u64 :: Word64 -> t x U64
-  add :: t x (U64 ~> U64 ~> U64)
+  constant :: ST a -> String -> String -> t x a

@@ -28,4 +28,4 @@ instance Bound View where
   V f <*> V x = V ("(" ++ f ++ " " ++ x ++ ")")
 
   u64 n = V (show n)
-  add = V "add"
+  constant _ pkg name = V $ pkg ++ "/" ++ name

@@ -101,4 +101,4 @@ instance HasExp f => HasExp (Expr f) where
 
 instance Lambda f => Lambda (Expr f) where
   u64 x = E (u64 x)
-  add = E add
+  constant str pkg name = E $ constant str pkg name

@@ -1,9 +1,12 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
 module Cbpv.Sort
-  ( Set,
+  (SSet (..),
+   SAlgebra (..),
+    Set,
     U,
     Unit,
     Void,
@@ -52,3 +55,16 @@ type F x = x & Empty
 data SetImpl = U Algebra | Unit | Void | Sum Set Set | Product Set Set | U64
 
 data AlgebraImpl = Empty | Exp Set Algebra | Asym Set Algebra
+
+data SSet a where
+  SU64 :: SSet U64
+  SVoid :: SSet Void
+  SUnit :: SSet Unit
+  SU :: SAlgebra a -> SSet (U a)
+  (:+:) :: SSet a -> SSet b -> SSet (a + b)
+  (:*:) :: SSet a -> SSet b -> SSet (a * b)
+
+data SAlgebra a where
+  SEmpty :: SAlgebra Empty
+  (:&:) :: SSet a -> SAlgebra b -> SAlgebra (a & b)
+  (:->) :: SSet a -> SAlgebra b -> SAlgebra (a ~> b)

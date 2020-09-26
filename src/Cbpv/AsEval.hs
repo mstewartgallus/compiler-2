@@ -76,14 +76,10 @@ instance Cbpv Stack Code where
   push = S $ \(Pair a b :& c) -> a :& b :& c
 
   u64 x = C $ const (U64 x)
-  add = C $ \Unit ->
-    Thunk $ \w0 ->
-    Lam $ \(U64 x) ->
-    (:& Effect w0) $ Thunk $ \w1 ->
-    Lam $ \(U64 y) ->
-    U64 (x + y) :& Effect w1
-
-  addLazy = S $ \(Unit :& Effect w0) ->
-    Lam $ \(Thunk x) -> Lam $ \(Thunk y) -> case x w0 of
-       U64 x' :& Effect w1 -> case y w1 of
-         U64 y' :& Effect w2 -> U64 (x' + y') :& Effect w2
+  constant t pkg name = S $ case (t, pkg, name) of
+     (SU (SU64 :&: SEmpty) :-> (SU (SU64 :&: SEmpty) :-> (SU64 :&: SEmpty)),
+      "core", "add") ->
+          \(Unit :& Effect w0) ->
+              Lam $ \(Thunk x) -> Lam $ \(Thunk y) -> case x w0 of
+                 U64 x' :& Effect w1 -> case y w1 of
+                   U64 y' :& Effect w2 -> U64 (x' + y') :& Effect w2

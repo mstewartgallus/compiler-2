@@ -43,10 +43,7 @@ class (Category stack, Category code) => Cbpv stack code | stack -> code, code -
   uncurry :: stack env (a ~> b) -> stack (a & env) b
 
   u64 :: Word64 -> code Unit U64
-
-  -- fixme.. have optimized versions...
-  add :: code Unit (U (U64 ~> F (U (U64 ~> F U64))))
-  addLazy :: stack (F Unit) (U (F U64) ~> U (F U64) ~> F U64)
+  constant :: SAlgebra a -> String -> String -> stack (F Unit) a
 
 infixl 9 &&&
 

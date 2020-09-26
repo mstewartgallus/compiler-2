@@ -13,6 +13,6 @@ import Lambda.HasProduct
 import Lambda.HasSum
 import Lambda.Type
 
-class (HasSum k, HasProduct k, HasExp k) => Lambda k where
-  u64 :: Word64 -> k Unit U64
-  add :: k Unit (U64 ~> U64 ~> U64)
+class (HasSum hom, HasProduct hom, HasExp hom) => Lambda hom where
+  u64 :: Word64 -> hom Unit U64
+  constant :: ST a -> String -> String -> hom Unit a

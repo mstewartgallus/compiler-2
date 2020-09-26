@@ -136,5 +136,4 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   uncurry f = K (uncurry (outK f))
 
   u64 x = C (u64 x)
-  add = C add
-  addLazy = K addLazy
+  constant t pkg name = K (constant t pkg name)
