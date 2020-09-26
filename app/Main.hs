@@ -3,11 +3,12 @@
 module Main where
 
 import AsCallByName
-import qualified AsTerm
+import qualified AsLambda
 import Cbpv (Cbpv)
 import qualified Cbpv.AsEval as AsEval
 import qualified Cbpv.AsOpt as AsOpt
 import qualified Cbpv.AsView as AsViewCbpv
+import Cbpv.Sort (AsAlgebra)
 import qualified Cbpv.Sort
 import Data.Word
 import Hoas
@@ -59,16 +60,16 @@ program =
 bound :: Bound t => Id.Stream -> t Unit TYPE
 bound str = bindPoints str program
 
-compiled :: Lambda k => Id.Stream -> k Lambda.Type.Unit (AsTerm.AsObject TYPE)
-compiled str = AsTerm.pointFree (bound str)
+compiled :: Lambda k => Id.Stream -> k Lambda.Type.Unit (Lambda.Type.AsObject TYPE)
+compiled str = AsLambda.pointFree (bound str)
 
-optimized :: Lambda k => Id.Stream -> k Lambda.Type.Unit (AsTerm.AsObject TYPE)
+optimized :: Lambda k => Id.Stream -> k Lambda.Type.Unit (Lambda.Type.AsObject TYPE)
 optimized str = opt (compiled str)
 
-cbpv :: Cbpv c d => Id.Stream -> d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((AsTerm.AsObject TYPE))))
+cbpv :: Cbpv c d => Id.Stream -> d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Lambda.Type.AsObject TYPE))))
 cbpv str = toCbpv (optimized str)
 
-optCbpv :: Cbpv c d => Id.Stream -> d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((AsTerm.AsObject TYPE))))
+optCbpv :: Cbpv c d => Id.Stream -> d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Lambda.Type.AsObject TYPE))))
 optCbpv str = AsOpt.opt (cbpv str)
 
 result :: Id.Stream -> Word64

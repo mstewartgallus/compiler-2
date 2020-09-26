@@ -9,6 +9,8 @@ module Cbpv (Cbpv (..)) where
 import Cbpv.Sort
 import Control.Category
 import Data.Word (Word64)
+import qualified Hoas.Type as Hoas
+import qualified Lambda.Type as Lambda
 import Prelude hiding (curry, id, return, uncurry, (.), (<*>))
 
 -- |
@@ -43,7 +45,10 @@ class (Category stack, Category code) => Cbpv stack code | stack -> code, code -
   uncurry :: stack env (a ~> b) -> stack (a & env) b
 
   u64 :: Word64 -> code Unit U64
-  constant :: SAlgebra a -> String -> String -> stack (F Unit) a
+
+  constant :: Hoas.ST a -> String -> String -> stack (F Unit) (AsAlgebra (Lambda.AsObject a))
+  lambdaConstant :: Lambda.ST a -> String -> String -> stack (F Unit) (AsAlgebra a)
+  cbpvConstant :: SAlgebra a -> String -> String -> stack (F Unit) a
 
 infixl 9 &&&
 

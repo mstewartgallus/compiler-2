@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module AsTerm (PointFree, pointFree, AsObject) where
+module AsLambda (PointFree, pointFree) where
 
 import Control.Category
 import Data.Maybe
@@ -20,17 +20,6 @@ import Lambda.HasProduct
 import Lambda.HasSum
 import Lambda.Type
 import Prelude hiding (curry, id, uncurry, (.), (<*>))
-
-type family AsObject a = r | r -> a where
-  AsObject (a Type.~> b) = AsObject a ~> AsObject b
-  AsObject Type.U64 = U64
-  AsObject Type.Unit = Unit
-
-asObject :: Type.ST a -> ST (AsObject a)
-asObject t = case t of
-  Type.SU64 -> SU64
-  Type.SUnit -> SUnit
-  a Type.:-> b -> asObject a :-> asObject b
 
 pointFree :: PointFree k a b -> k (AsObject a) (AsObject b)
 pointFree (PointFree x) = out x
@@ -53,7 +42,7 @@ instance Lambda k => Bound.Bound (PointFree k) where
         Just y -> y
 
   u64 x = PointFree (u64 x . unit)
-  constant t pkg name = PointFree (constant (asObject t) pkg name . unit)
+  constant t pkg name = PointFree (constant t pkg name . unit)
 
 instance HasProduct k => Category (Pf k) where
   id = lift0 id

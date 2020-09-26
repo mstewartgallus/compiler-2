@@ -13,6 +13,8 @@ import Cbpv
 import Control.Category
 import Data.Word
 import Cbpv.Sort
+import qualified Lambda.Type as Lambda
+import qualified Hoas.Type as Hoas
 import Prelude hiding ((.), id)
 
 reify :: Code (U (F Unit)) (U (F U64)) -> Word64
@@ -76,10 +78,11 @@ instance Cbpv Stack Code where
   push = S $ \(Pair a b :& c) -> a :& b :& c
 
   u64 x = C $ const (U64 x)
-  constant t pkg name = S $ case (t, pkg, name) of
-     (SU (SU64 :&: SEmpty) :-> (SU (SU64 :&: SEmpty) :-> (SU64 :&: SEmpty)),
-      "core", "add") ->
-          \(Unit :& Effect w0) ->
+  constant t pkg name = case (t, pkg, name) of
+     (Hoas.SU64 Hoas.:-> (Hoas.SU64 Hoas.:-> Hoas.SU64), "core", "add") -> addImpl
+
+addImpl :: Stack (F Unit) (AsAlgebra (Lambda.AsObject (Hoas.U64 Hoas.~> Hoas.U64 Hoas.~> Hoas.U64)))
+addImpl = S $ \(Unit :& Effect w0) ->
               Lam $ \(Thunk x) -> Lam $ \(Thunk y) -> case x w0 of
                  U64 x' :& Effect w1 -> case y w1 of
                    U64 y' :& Effect w2 -> U64 (x' + y') :& Effect w2

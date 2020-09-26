@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
@@ -17,9 +19,12 @@ module Cbpv.Sort
     F,
     Empty,
     type (&),
-    type (~>)
+    type (~>),
+AsAlgebra,
+asAlgebra
   )
 where
+import qualified Lambda.Type as Type
 
 type Set = SetImpl
 
@@ -68,3 +73,21 @@ data SAlgebra a where
   SEmpty :: SAlgebra Empty
   (:&:) :: SSet a -> SAlgebra b -> SAlgebra (a & b)
   (:->) :: SSet a -> SAlgebra b -> SAlgebra (a ~> b)
+
+
+type family AsAlgebra a where
+  AsAlgebra (a Type.~> b) = U (AsAlgebra a) ~> AsAlgebra b
+  AsAlgebra Type.Unit = F Unit
+  AsAlgebra Type.Void = F Void
+  AsAlgebra (a Type.* b) = F (U (AsAlgebra a) * U (AsAlgebra b))
+  AsAlgebra (a Type.+ b) = F (U (AsAlgebra a) + U (AsAlgebra b))
+  AsAlgebra Type.U64 = F U64
+
+asAlgebra :: Type.ST a -> SAlgebra (AsAlgebra a)
+asAlgebra t = case t of
+  a Type.:-> b -> SU (asAlgebra a) :-> asAlgebra b
+  a Type.:*: b -> (SU (asAlgebra a) :*: SU (asAlgebra b)) :&: SEmpty
+  a Type.:+: b -> (SU (asAlgebra a) :+: SU (asAlgebra b)) :&: SEmpty
+  Type.SU64 -> SU64 :&: SEmpty
+  Type.SUnit -> SUnit :&: SEmpty
+  Type.SVoid -> SVoid :&: SEmpty
