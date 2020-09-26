@@ -12,6 +12,7 @@ import Lambda.HasExp
 import Lambda.HasProduct
 import Lambda.HasSum
 import Lambda.Type
+import qualified Hoas.Type as Hoas
 import qualified Lambda.AsRepeat as AsRepeat
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), Either (..))
 
@@ -42,4 +43,9 @@ instance HasExp f => HasExp (Expr f) where
 
 instance Lambda f => Lambda (Expr f) where
   u64 x = E (u64 x)
-  constant str pkg name = E $ constant str pkg name
+  constant t pkg name = E $ case (t, pkg, name) of
+    (Hoas.SU64 Hoas.:-> (Hoas.SU64 Hoas.:-> Hoas.SU64), "core", "add") -> addIntrinsic
+    _ -> constant t pkg name
+
+addIntrinsic :: Lambda f => f Unit (AsObject (Hoas.U64 Hoas.~> Hoas.U64 Hoas.~> Hoas.U64))
+addIntrinsic = curry (curry (uncurry add . (((first . second) &&& first) &&&  (second . second))))
