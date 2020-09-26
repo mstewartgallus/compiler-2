@@ -48,7 +48,7 @@ instance Cbpv c d => Sum.HasSum (Expr d) where
 
   left = E (thunk (return left))
   right = E (thunk (return right))
-  E f ||| E g = E (thunk (force id . return (f ||| g) . force id))
+  E f ||| E g = E (thunk (force (f ||| g) . force id))
 
 instance Cbpv c d => Exp.HasExp (Expr d) where
   curry (E f) = E (thunk (curry (force f . return (thunk id) . pop)))
