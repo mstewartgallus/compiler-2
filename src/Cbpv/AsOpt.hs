@@ -4,93 +4,48 @@
 module Cbpv.AsOpt (Stack, Code, opt) where
 
 import Cbpv
-import qualified Cbpv.AsSimplified as AsSimplified
+import qualified Cbpv.AsRepeat as AsRepeat
 import Control.Category
 import Cbpv.Sort
 import Prelude hiding ((.), id, curry, uncurry, Monad (..))
 
-data Stack f g a b = K {
-  outK :: f a b,
-  stepK :: Stack (AsSimplified.Stack f g) (AsSimplified.Code f g) a b
-  }
-data Code f g a b = C {
-  outC :: g a b,
-  stepC :: Code (AsSimplified.Stack f g) (AsSimplified.Code f g) a b
-  }
+newtype Stack f g a b = K (AsRepeat.Stack f g a b)
+newtype Code f g a b = C (AsRepeat.Code f g a b)
 
 opt :: Code f g a b -> g a b
-opt = loop 10
-
-loop :: Int -> Code f g a b -> g a b
-loop n x | n == 0 = outC x
-         | otherwise = AsSimplified.simplify (loop (n - 1) (stepC x))
+opt (C x) = AsRepeat.repeat 20 x
 
 instance (Category f, Category g) => Category (Stack f g) where
-  id = K { outK = id,stepK = id}
-  f . g = me where
-    me = K {
-      outK = outK f . outK g,
-      stepK = stepK f . stepK g
-      }
+  id = K id
+  K f . K g = K (f . g)
+
 instance (Category f, Category g) => Category (Code f g) where
-  id = C {outC = id,stepC = id}
-  f . g = me where
-    me = C {
-      outC = outC f . outC g,
-      stepC = stepC f . stepC g
-      }
+  id = C id
+  C f . C g = C (f . g)
 
 instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
-  thunk f = me where
-    me = C {
-      outC = thunk (outK f),
-      stepC = thunk (stepK f)
-      }
-  force f = me where
-    me = K {
-      outK = force (outC f),
-      stepK = force (stepC f)
-      }
+  thunk (K f) = C (thunk f)
+  force (C f) = K (force f)
 
-  return f = me where
-    me = K {
-      outK = return (outC f),
-      stepK = return (stepC f)
-      }
+  return (C f) = K (return f)
 
-  unit = C unit unit
-  f &&& g = me where
-    me = C {
-      outC = outC f &&& outC g,
-      stepC = stepC f &&& stepC g
-      }
-  first = C first first
-  second = C second second
+  unit = C unit
+  C f &&& C g = C (f &&& g)
+  first = C first
+  second = C second
 
-  absurd = C absurd absurd
-  f ||| g = me where
-    me = C {
-      outC = outC f ||| outC g,
-      stepC = stepC f ||| stepC g
-      }
-  left = C left left
-  right = C right right
+  absurd = C absurd
+  C f ||| C g = C (f ||| g)
+  left = C left
+  right = C right
 
-  pop = K { outK = pop, stepK = pop }
-  push = K { outK = push, stepK = push }
+  pop = K pop
+  push = K push
 
-  uncurry f = me where
-    me = K {
-      outK = uncurry (outK f),
-      stepK = uncurry (stepK f)
-      }
-  curry f = me where
-    me = K {
-      outK = curry (outK f),
-      stepK = curry (stepK f)
-      }
+  uncurry (K f) = K (uncurry f)
+  curry (K f) = K (curry f)
 
-  u64 x = C (u64 x) (u64 x)
+  u64 x = C (u64 x)
 
-  constant t pkg name = K (constant t pkg name) (constant t pkg name)
-  lambdaConstant t pkg name = K (lambdaConstant t pkg name) (lambdaConstant t pkg name)
+  constant t pkg name = K (constant t pkg name)
+  lambdaConstant t pkg name = K (lambdaConstant t pkg name)
