@@ -12,7 +12,7 @@ module Cbpv.Sort
     U64,
     Algebra,
     F,
-    Initial,
+    Empty,
     type (&),
     type (~>)
   )
@@ -36,7 +36,7 @@ type U64 = 'U64
 
 type Algebra = AlgebraImpl
 
-type Initial = 'Initial
+type Empty = 'Empty
 
 type (~>) = 'Exp
 infixr 9 ~>
@@ -47,8 +47,8 @@ infixr 0 &
 
 type U x = 'U x
 
-type F x = x & Initial
+type F x = x & Empty
 
 data SetImpl = U Algebra | Unit | Void | Sum Set Set | Product Set Set | U64
 
-data AlgebraImpl = Initial | Exp Set Algebra | Asym Set Algebra
+data AlgebraImpl = Empty | Exp Set Algebra | Asym Set Algebra

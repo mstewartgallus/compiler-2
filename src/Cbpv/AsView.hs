@@ -41,8 +41,8 @@ instance Cbpv Stack Code where
   left = C "i₁"
   right = C "i₂"
 
-  assocOut = K "out"
-  assocIn = K "in"
+  pop = K "pop"
+  push = K "push"
 
   curry (K f) = K ("(λ " ++ f ++ ")")
   uncurry (K f) = K ("(! " ++ f ++ ")")

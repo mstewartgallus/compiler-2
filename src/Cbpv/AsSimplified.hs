@@ -28,7 +28,9 @@ data Stack f g (a :: Algebra) (b :: Algebra) where
 
   Return :: Cbpv f g => Code f g a b -> Stack f g (F a) (F b)
 
-  AssocIn :: Cbpv f g => Stack f g ((a * b) & c) (a & (b & c))
+  Push :: Cbpv f g => Stack f g ((a * b) & c) (a & (b & c))
+  Pop :: Cbpv f g => Stack f g (a & (b & c)) ((a * b) & c)
+
   To :: Cbpv f g =>
     Stack f g (env & k) (F a) ->
     Stack f g (F (env * a)) b ->
@@ -74,7 +76,8 @@ outK expr = case expr of
   IdK -> id
   ComposeK f g -> outK f . outK g
   To f g -> outK f `to` outK g
-  AssocIn -> assocIn
+  Push -> push
+  Pop -> pop
   Return x -> return (outC x)
   Force y -> force (outC y)
 
@@ -82,6 +85,7 @@ instance (Category f, Category g) => Category (Stack f g) where
   id = IdK
   IdK . f = f
   f . IdK = f
+
   Force f . Return g = force (f . g)
   Return f . Return g = return (f . g)
 
@@ -136,8 +140,8 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   left = Left
   right = Right
 
-  assocOut = K assocOut
-  assocIn = AssocIn
+  pop = Pop
+  push = Push
 
   curry f = K (curry (outK f))
   uncurry f = K (uncurry (outK f))

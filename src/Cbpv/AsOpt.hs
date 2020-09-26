@@ -82,8 +82,8 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   left = C left left
   right = C right right
 
-  assocOut = K { outK = assocOut, stepK = assocOut }
-  assocIn = K { outK = assocIn, stepK = assocIn }
+  pop = K { outK = pop, stepK = pop }
+  push = K { outK = push, stepK = push }
 
   uncurry f = me where
     me = K {

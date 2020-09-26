@@ -20,43 +20,37 @@ import Prelude hiding (curry, id, return, uncurry, (.), (<*>))
 -- difficult to work with.
 --
 -- Paul Blain Levy. "Call-by-Push-Value: A Subsuming Paradigm".
-class (Category stk, Category dta) => Cbpv stk dta | stk -> dta, dta -> stk where
-  thunk ::
-    stk (F x) y ->
-    dta x (U y)
-  force ::
-    dta x (U y) ->
-    stk (F x) y
+class (Category stack, Category code) => Cbpv stack code | stack -> code, code -> stack where
+  thunk :: stack (F x) y -> code x (U y)
+  force :: code x (U y) -> stack (F x) y
 
-  return ::
-    dta env a ->
-    stk (F env) (F a)
+  return :: code env a -> stack (F env) (F a)
   to ::
-    stk (env & k) (F a) ->
-    stk (F (env * a)) b ->
-    stk (env & k) b
+    stack (env & k) (F a) ->
+    stack (F (env * a)) b ->
+    stack (env & k) b
 
-  unit :: dta x Unit
-  (&&&) :: dta env a -> dta env b -> dta env (a * b)
-  first :: dta (a * b) a
-  second :: dta (a * b) b
+  unit :: code x Unit
+  (&&&) :: code env a -> code env b -> code env (a * b)
+  first :: code (a * b) a
+  second :: code (a * b) b
 
-  absurd :: dta Void x
-  (|||) :: dta a c -> dta b c -> dta (a + b) c
-  left :: dta a (a + b)
-  right :: dta b (a + b)
+  absurd :: code Void x
+  (|||) :: code a c -> code b c -> code (a + b) c
+  left :: code a (a + b)
+  right :: code b (a + b)
 
-  assocOut :: stk (a & (b & c)) ((a * b) & c)
-  assocIn :: stk ((a * b) & c) (a & (b & c))
+  pop :: stack (a & (b & c)) ((a * b) & c)
+  push :: stack ((a * b) & c) (a & (b & c))
 
-  curry :: stk (a & env) b -> stk env (a ~> b)
-  uncurry :: stk env (a ~> b) -> stk (a & env) b
+  curry :: stack (a & env) b -> stack env (a ~> b)
+  uncurry :: stack env (a ~> b) -> stack (a & env) b
 
-  u64 :: Word64 -> dta Unit U64
+  u64 :: Word64 -> code Unit U64
 
-  -- fixme.. have optimized version...
-  add :: dta Unit (U (U64 ~> F (U (U64 ~> F U64))))
-  addLazy :: stk (F Unit) (U (F U64) ~> U (F U64) ~> F U64)
+  -- fixme.. have optimized versions...
+  add :: code Unit (U (U64 ~> F (U (U64 ~> F U64))))
+  addLazy :: stack (F Unit) (U (F U64) ~> U (F U64) ~> F U64)
 
 infixl 9 &&&
 

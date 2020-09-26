@@ -36,8 +36,9 @@ newtype instance Data U64 = U64 Word64
 
 -- | Actions are CBPVs computations but we use a different name for brevity
 data family Action (a :: Algebra)
-data instance Action Initial = Effect Int
+data instance Action Empty = Effect Int
 data instance Action (a & b) = Data a :& Action b
+infixr 9 :&
 newtype instance Action (a ~> b) = Lam (Data a -> Action b)
 
 instance Category Code where
@@ -73,8 +74,8 @@ instance Cbpv Stack Code where
   uncurry (S f) = S $ \(x :& env) -> case f env of
      Lam y -> y x
 
-  assocOut = S $ \(a :& (b :& c)) -> (Pair a b) :& c
-  assocIn = S $ \((Pair a b) :& c) -> a :& (b :& c)
+  pop = S $ \(a :& b :& c) -> Pair a b :& c
+  push = S $ \(Pair a b :& c) -> a :& b :& c
 
   u64 x = C $ const (U64 x)
   add = C $ \Unit ->

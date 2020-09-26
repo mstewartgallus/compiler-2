@@ -51,8 +51,8 @@ instance Cbpv c d => Sum.HasSum (Expr d) where
   E f ||| E g = E (thunk (force id . force (thunk (return f) ||| thunk (return g)) . force id))
 
 instance Cbpv c d => Exp.HasExp (Expr d) where
-  curry (E f) = E (thunk (curry (force f . return (thunk id) . assocOut)))
-  uncurry (E f) = E (thunk (uncurry (force f) . assocIn . force id))
+  curry (E f) = E (thunk (curry (force f . return (thunk id) . pop)))
+  uncurry (E f) = E (thunk (uncurry (force f) . push . force id))
 
 instance Cbpv c d => Lambda.Lambda (Expr d) where
   u64 x = E (thunk (return (u64 x)) . unit)
