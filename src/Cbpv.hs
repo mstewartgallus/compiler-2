@@ -21,14 +21,10 @@ import Prelude hiding (curry, id, return, uncurry, (.), (<*>))
 --
 -- Paul Blain Levy. "Call-by-Push-Value: A Subsuming Paradigm".
 class (Category stack, Category code) => Cbpv stack code | stack -> code, code -> stack where
+  return :: code env a -> stack (F env) (F a)
+
   thunk :: stack (F x) y -> code x (U y)
   force :: code x (U y) -> stack (F x) y
-
-  return :: code env a -> stack (F env) (F a)
-  to ::
-    stack (env & k) (F a) ->
-    stack (F (env * a)) b ->
-    stack (env & k) b
 
   unit :: code x Unit
   (&&&) :: code env a -> code env b -> code env (a * b)

@@ -25,7 +25,6 @@ instance Category Code where
   C f . C g = C (f ++ " ∘ " ++ g)
 
 instance Cbpv Stack Code where
-  to (K f) (K x) = K ("(to " ++ f ++ " " ++ x ++ ")")
   return (C f) = K ("(return " ++ f ++ ")")
 
   thunk (K f) = C ("(thunk " ++ f ++ ")")

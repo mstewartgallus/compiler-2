@@ -50,8 +50,6 @@ instance Category Stack where
   S f . S g = S (f . g)
 
 instance Cbpv Stack Code where
-  to (S f) (S g) = S $ \x@(env :& _) -> case f x of
-    (y :& k) -> g ((Pair env y) :& k)
   return (C f) = S $ \(x :& w) -> f x :& w
 
   thunk (S f) = C $ \x -> Thunk $ \w -> f (x :& Effect w)

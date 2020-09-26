@@ -41,7 +41,7 @@ instance Cbpv c d => Product.HasProduct (Expr d) where
 
   first = E (thunk (force first . force id))
   second = E (thunk (force second . force id))
-  E f &&& E g = E (thunk (return f `to` ((return g . return first) `to` return ((second . first) &&& second))))
+  E f &&& E g = E (thunk (return (f &&& g)))
 
 instance Cbpv c d => Sum.HasSum (Expr d) where
   absurd = E (thunk (force absurd . force id))

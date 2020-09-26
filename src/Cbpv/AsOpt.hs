@@ -52,12 +52,6 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
       stepK = force (stepC f)
       }
 
-  f `to` x = me where
-    me = K {
-      outK = outK f `to` outK x,
-      stepK = stepK f `to` stepK x
-      }
-
   return f = me where
     me = K {
       outK = return (outC f),

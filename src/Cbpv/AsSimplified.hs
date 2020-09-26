@@ -31,11 +31,6 @@ data Stack f g (a :: Algebra) (b :: Algebra) where
   Push :: Cbpv f g => Stack f g ((a * b) & c) (a & (b & c))
   Pop :: Cbpv f g => Stack f g (a & (b & c)) ((a * b) & c)
 
-  To :: Cbpv f g =>
-    Stack f g (env & k) (F a) ->
-    Stack f g (F (env * a)) b ->
-    Stack f g (env & k) b
-
 data Code f g (a :: Set) (b :: Set) where
   C :: g a b -> Code f g a b
   IdC :: Category g => Code f g a a
@@ -75,7 +70,6 @@ outK expr = case expr of
   K x -> x
   IdK -> id
   ComposeK f g -> outK f . outK g
-  To f g -> outK f `to` outK g
   Push -> push
   Pop -> pop
   Return x -> return (outC x)
@@ -88,8 +82,6 @@ instance (Category f, Category g) => Category (Stack f g) where
 
   Force f . Return g = force (f . g)
   Return f . Return g = return (f . g)
-
-  h . To f g = to f (h . g)
 
   ComposeK f g . h  = f . (g . h)
   f . g = ComposeK f g
@@ -114,6 +106,9 @@ instance (Category f, Category g) => Category (Code f g) where
   f . g = ComposeC f g
 
 instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
+  return IdC = id
+  return x = Return x
+
   thunk (ComposeK f (Return g)) = thunk f . g
   thunk (Force f) = f
   thunk f = Thunk f
@@ -121,12 +116,6 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   force (ComposeC f g) = force f . return g
   force (Thunk f) = f
   force f = Force f
-
-  Return f `to` Return x = return (x . (id &&& f))
-  f `to` x = f `To` x
-
-  return IdC = id
-  return x = Return x
 
   unit = Unit
   First &&& Second = id
