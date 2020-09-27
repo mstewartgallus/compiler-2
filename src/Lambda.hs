@@ -20,5 +20,5 @@ class (HasSum hom, HasProduct hom, HasExp hom) => Lambda hom where
   constant :: Hoas.ST a -> String -> String -> hom Unit (AsObject a)
   lambdaConstant :: ST a -> String -> String -> hom Unit a
 
-  add :: hom Unit ((U64 * U64) ~> U64)
-  add = lambdaConstant ((SU64 :*: SU64) :-> SU64) "core" "add"
+  add :: hom Unit (U64 ~> (U64 ~> U64))
+  add = lambdaConstant (SU64 :-> (SU64 :-> SU64)) "core" "add"

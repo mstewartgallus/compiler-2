@@ -82,9 +82,9 @@ instance Cbpv Stack Code where
      (Hoas.SU64 Hoas.:-> (Hoas.SU64 Hoas.:-> Hoas.SU64), "core", "add") -> addImpl
   -- fixme.. rename to intrinsics...
   lambdaConstant t pkg name = case (t, pkg, name) of
-     ((Lambda.SU64 Lambda.:*: Lambda.SU64) Lambda.:-> Lambda.SU64, "core", "add") -> addLambdaImpl
+     (Lambda.SU64 Lambda.:->  (Lambda.SU64 Lambda.:-> Lambda.SU64), "core", "add") -> addLambdaImpl
   cbpvConstant t pkg name = case (t, pkg, name) of
-     ((SU64 :*: SU64) :-> (SU64 :&: SEmpty), "core", "add") -> addCbpvImpl
+     (SU64 :-> (SU64 :-> (SU64 :&: SEmpty)), "core", "add") -> addCbpvImpl
 
 addImpl :: Stack (F Unit) (AsAlgebra (Lambda.AsObject (Hoas.U64 Hoas.~> Hoas.U64 Hoas.~> Hoas.U64)))
 addImpl = S $ \(Unit :& Effect w0) ->
@@ -92,14 +92,11 @@ addImpl = S $ \(Unit :& Effect w0) ->
                  U64 x' :& Effect w1 -> case y w1 of
                    U64 y' :& Effect w2 -> U64 (x' + y') :& Effect w2
 
-addLambdaImpl :: Stack (F Unit) (AsAlgebra ((Lambda.U64 Lambda.* Lambda.U64) Lambda.~> Lambda.U64))
-addLambdaImpl = S $ \(Unit :& Effect w0) ->
-              Lam $ \(Thunk p) -> case p w0 of
-                 Pair (Thunk x) (Thunk y) :& Effect w1 -> case x w1 of
-                    U64 x' :& Effect w2 -> case y w2 of
-                       U64 y' :& Effect w3 -> U64 (x' + y') :& Effect w3
+addLambdaImpl :: Stack (F Unit) (AsAlgebra (Lambda.U64 Lambda.~> (Lambda.U64 Lambda.~> Lambda.U64)))
+addLambdaImpl = addImpl
 
-addCbpvImpl :: Stack (F Unit) ((U64 * U64) ~> F U64)
+addCbpvImpl :: Stack (F Unit) (U64 ~> (U64 ~> F U64))
 addCbpvImpl = S $ \(Unit :& Effect w0) ->
-              Lam $ \(Pair (U64 x) (U64 y)) ->
+              Lam $ \(U64 x) ->
+              Lam $ \(U64 y) ->
                    U64 (x + y) :& Effect w0

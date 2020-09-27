@@ -48,7 +48,7 @@ instance Lambda f => Lambda (Expr f) where
     _ -> constant t pkg name
 
 addIntrinsic :: Lambda f => f Unit (AsObject (Hoas.U64 Hoas.~> Hoas.U64 Hoas.~> Hoas.U64))
-addIntrinsic = curry (curry (uncurry add . shuffle))
+addIntrinsic = add
 
 shuffle :: Lambda hom => hom (a * (b * c)) ((b * a) * c)
 shuffle = ((first . second) &&& first) &&&  (second . second)

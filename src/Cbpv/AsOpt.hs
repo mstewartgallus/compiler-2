@@ -53,18 +53,22 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
 
   constant t pkg name = K (constant t pkg name)
   lambdaConstant t pkg name = K $ case (t, pkg, name) of
-    ((Lambda.SU64 Lambda.:*: Lambda.SU64) Lambda.:-> Lambda.SU64, pkg, name) -> addIntrinsic
+    (Lambda.SU64 Lambda.:-> (Lambda.SU64 Lambda.:-> Lambda.SU64), pkg, name) -> addIntrinsic
     _ -> lambdaConstant t pkg name
 
 -- | fixme.. cleanup this mess
-addIntrinsic :: Cbpv stack code => stack (F Unit) (AsAlgebra ((Lambda.U64 Lambda.* Lambda.U64) Lambda.~> Lambda.U64))
-addIntrinsic = curry (bar . push . force first . pop)
-
-foo :: Cbpv stack code => stack (F U64) (U64 ~> F U64)
-foo = uncurry add . push . return (id &&& unit)
-
-bar :: Cbpv stack code => stack (U (F U64) & F (U (F U64))) (F U64)
-bar = uncurry (curry (uncurry (foo . force id) . push . return (second &&& first) . pop) . force id)
-
-swap :: Cbpv stack code => code (a * b) (b * a)
-swap = second &&& first
+addIntrinsic :: Cbpv stack code => stack (F Unit) (AsAlgebra (Lambda.U64 Lambda.~> (Lambda.U64 Lambda.~> Lambda.U64)))
+addIntrinsic = curry (
+  pop
+  >>> return first
+  >>> force id
+  >>> curry (
+    pop
+    >>> (push . return (second &&& first))
+    >>> uncurry (
+        force id
+            >>> (push . return (id &&& unit))
+            >>> uncurry add
+            )
+  )
+  )
