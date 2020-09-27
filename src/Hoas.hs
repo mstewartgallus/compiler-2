@@ -13,7 +13,6 @@ class Category t => Hoas t where
   (<*>) :: t x (a ~> b) -> t x a -> t x b
 
   be :: t x a -> ST a -> (t Unit a -> t x b) -> t x b
-  be x t f = lam t f <*> x
 
   u64 :: Word64 -> t x U64
   add :: t x (U64 ~> U64 ~> U64)
