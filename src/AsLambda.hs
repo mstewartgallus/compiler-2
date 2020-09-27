@@ -41,6 +41,14 @@ instance Lambda k => Bound.Bound (PointFree k) where
         Nothing -> body . second
         Just y -> y
 
+  be n (PointFree x) t f = PointFree me
+    where
+      v = Var t n
+      PointFree body = f (PointFree (mkVar v))
+      me = case removeVar body v of
+        Nothing -> body
+        Just y -> y . (x &&& id)
+
   u64 x = PointFree (u64 x . unit)
   constant t pkg name = PointFree (constant t pkg name . unit)
 

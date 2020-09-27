@@ -15,7 +15,6 @@ import Lambda.HasExp
 import Lambda.HasProduct
 import Lambda.HasSum
 import Lambda.Type
-import Data.Typeable
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), Either (..))
 
 simplify :: Expr f a b -> f a b

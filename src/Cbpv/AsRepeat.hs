@@ -25,14 +25,14 @@ loop n x | n == 0 = outC x
          | otherwise = AsSimplified.simplify (loop (n - 1) (stepC x))
 
 instance (Category f, Category g) => Category (Stack f g) where
-  id = K { outK = id,stepK = id}
+  id = K id id
   f . g = me where
     me = K {
       outK = outK f . outK g,
       stepK = stepK f . stepK g
       }
 instance (Category f, Category g) => Category (Code f g) where
-  id = C {outC = id,stepC = id}
+  id = C id id
   f . g = me where
     me = C {
       outC = outC f . outC g,
@@ -75,8 +75,8 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   left = C left left
   right = C right right
 
-  pop = K { outK = pop, stepK = pop }
-  push = K { outK = push, stepK = push }
+  pop = K pop pop
+  push = K push push
 
   uncurry f = me where
     me = K {
