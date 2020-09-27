@@ -50,6 +50,9 @@ class (Category stack, Category code) => Cbpv stack code | stack -> code, code -
   lambdaConstant :: Lambda.ST a -> String -> String -> stack (F Unit) (AsAlgebra a)
   cbpvConstant :: SAlgebra a -> String -> String -> stack (F Unit) a
 
+  add :: stack (F Unit) (U64 ~> (U64 ~> F U64))
+  add = cbpvConstant (SU64 :-> (SU64 :-> (SU64 :&: SEmpty))) "core" "add"
+
 infixl 9 &&&
 
 infixl 9 |||

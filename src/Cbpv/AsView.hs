@@ -49,3 +49,4 @@ instance Cbpv Stack Code where
   u64 x = C (show x)
   constant _ pkg name = K (pkg ++ "/" ++ name)
   lambdaConstant _ pkg name = K ("#" ++ pkg ++ "/" ++ name)
+  cbpvConstant _ pkg name = K ("$" ++ pkg ++ "/" ++ name)

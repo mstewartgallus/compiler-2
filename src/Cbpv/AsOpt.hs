@@ -1,4 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE GADTs #-}
 
 -- | Remove duplicate force/thunk pairs
 module Cbpv.AsOpt (Stack, Code, opt) where
@@ -7,6 +10,7 @@ import Cbpv
 import qualified Cbpv.AsRepeat as AsRepeat
 import Control.Category
 import Cbpv.Sort
+import qualified Lambda.Type as Lambda
 import Prelude hiding ((.), id, curry, uncurry, Monad (..))
 
 newtype Stack f g a b = K (AsRepeat.Stack f g a b)
@@ -48,4 +52,19 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   u64 x = C (u64 x)
 
   constant t pkg name = K (constant t pkg name)
-  lambdaConstant t pkg name = K (lambdaConstant t pkg name)
+  lambdaConstant t pkg name = K $ case (t, pkg, name) of
+    ((Lambda.SU64 Lambda.:*: Lambda.SU64) Lambda.:-> Lambda.SU64, pkg, name) -> addIntrinsic
+    _ -> lambdaConstant t pkg name
+
+-- | fixme.. cleanup this mess
+addIntrinsic :: Cbpv stack code => stack (F Unit) (AsAlgebra ((Lambda.U64 Lambda.* Lambda.U64) Lambda.~> Lambda.U64))
+addIntrinsic = curry (bar . force id . return first . pop)
+
+foo :: Cbpv stack code => stack (F Unit) (U (F U64) ~> (U (F U64) ~> F U64))
+foo = curry (curry (uncurry (uncurry add . push . return (id &&& unit) . force id) . push . return (second &&& first) . pop) . force first . pop)
+
+bar :: Cbpv stack code => stack (F (U (F U64) * U (F U64))) (F U64)
+bar = uncurry (uncurry foo . push . return (id &&& unit)) . push
+
+swap :: Cbpv stack code => code (a * b) (b * a)
+swap = second &&& first
