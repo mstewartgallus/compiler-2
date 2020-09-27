@@ -15,6 +15,7 @@ import Lambda.HasExp
 import Lambda.HasProduct
 import Lambda.HasSum
 import Lambda.Type
+import Data.Typeable
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), Either (..))
 
 simplify :: Expr f a b -> f a b
@@ -51,6 +52,9 @@ opt expr  = case expr of
 
   Compose (Curry f) g -> Just $ curry (f . (first &&& (g . second)))
   Uncurry (Compose f g) -> Just $ uncurry f . (first &&& (g . second))
+
+  Curry (Uncurry f) -> Just f
+  Uncurry (Curry f) -> Just f
 
   Compose Id f -> Just f
   Compose f Id -> Just f
