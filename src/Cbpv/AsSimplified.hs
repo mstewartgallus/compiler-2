@@ -113,9 +113,6 @@ recurseK expr = case expr of
 optC :: Code f g a b -> Maybe (Code f g a b)
 optC expr = case expr of
   ComposeC IdC f -> Just f
-  ComposeC f IdC -> Just f
-
-  ComposeC _ Absurd -> Just absurd
   ComposeC (Fanin f _) Left -> Just f
   ComposeC (Fanin _ f) Right -> Just f
 
@@ -123,12 +120,15 @@ optC expr = case expr of
   ComposeC First (Fanout f _) -> Just f
   ComposeC Second (Fanout _ f) -> Just f
 
-  ComposeC x (Fanin f g) -> Just $ (x . f) ||| (x . g)
   ComposeC (Fanout f g) x -> Just $ (f . x) &&& (g . x)
+  ComposeC (Thunk f) g -> Just $ thunk (f . return g)
 
   ComposeC (ComposeC f g) h  -> Just $ f . (g . h)
 
-  Thunk (ComposeK f (Return g)) -> Just $ thunk f . g
+  ComposeC f IdC -> Just f
+  ComposeC _ Absurd -> Just absurd
+  ComposeC x (Fanin f g) -> Just $ (x . f) ||| (x . g)
+
   Thunk (Force f) -> Just f
 
   Fanout First Second -> Just id
@@ -142,16 +142,16 @@ optK expr = case expr of
   ComposeK f IdK -> Just f
 
   ComposeK (Force f) (Return g) -> Just $ force (f . g)
-  ComposeK (Return f) (Return g) -> Just $ return (f . g)
 
   ComposeK Pop Push -> Just id
   ComposeK Push Pop -> Just id
+
+  ComposeK (Return f) (Return g)  -> Just $ return (f . g)
 
   ComposeK (ComposeK f g) h  -> Just $ f . (g . h)
 
   Return IdC -> Just id
 
-  Force (ComposeC f g) -> Just $ force f . return g
   Force (Thunk f) -> Just f
 
   Curry (Uncurry f) -> Just f
