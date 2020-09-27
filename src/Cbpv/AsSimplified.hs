@@ -88,6 +88,9 @@ instance (Category f, Category g) => Category (Stack f g) where
   Force f . Return g = force (f . g)
   Return f . Return g = return (f . g)
 
+  Pop . Push = IdK
+  Push . Pop = IdK
+
   ComposeK f g . h  = f . (g . h)
   f . g = ComposeK f g
 
