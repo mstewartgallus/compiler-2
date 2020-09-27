@@ -31,6 +31,9 @@ data Stack f g (a :: Algebra) (b :: Algebra) where
   Push :: Cbpv f g => Stack f g ((a * b) & c) (a & (b & c))
   Pop :: Cbpv f g => Stack f g (a & (b & c)) ((a * b) & c)
 
+  Curry :: Cbpv f g => Stack f g (a & env) b -> Stack f g env (a ~> b)
+  Uncurry :: Cbpv f g => Stack f g env (a ~> b) -> Stack f g (a & env) b
+
 data Code f g (a :: Set) (b :: Set) where
   C :: g a b -> Code f g a b
   IdC :: Category g => Code f g a a
@@ -72,6 +75,8 @@ outK expr = case expr of
   ComposeK f g -> outK f . outK g
   Push -> push
   Pop -> pop
+  Curry f -> curry (outK f)
+  Uncurry f -> uncurry (outK f)
   Return x -> return (outC x)
   Force y -> force (outC y)
 
@@ -132,8 +137,11 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   pop = Pop
   push = Push
 
-  curry f = K (curry (outK f))
-  uncurry f = K (uncurry (outK f))
+  curry (Uncurry f) = f
+  curry f = Curry f
+
+  uncurry (Curry f) = f
+  uncurry f = Uncurry f
 
   u64 x = C (u64 x)
   constant t pkg name = K (constant t pkg name)
