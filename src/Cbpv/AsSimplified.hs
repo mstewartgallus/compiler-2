@@ -16,7 +16,7 @@ import Cbpv.Sort
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), Either (..))
 
 simplify :: Code f g a b -> g a b
-simplify = outC
+simplify x = outC (simpC x)
 
 data Stack f g (a :: Algebra) (b :: Algebra) where
   K :: f a b -> Stack f g a b
@@ -80,71 +80,124 @@ outK expr = case expr of
   Return x -> return (outC x)
   Force y -> force (outC y)
 
-instance (Category f, Category g) => Category (Stack f g) where
+recurseC :: Code f g a b -> Code f g a b
+recurseC expr = case expr of
+  C x -> C x
+  IdC -> id
+  ComposeC f g -> simpC f . simpC g
+
+  Thunk y -> thunk (simpK y)
+
+  Unit -> unit
+  First -> first
+  Second -> second
+  Fanout f g -> simpC f &&& simpC g
+
+  Absurd -> absurd
+  Left -> left
+  Right -> right
+  Fanin f g -> simpC f ||| simpC g
+
+recurseK :: Stack f g a b -> Stack f g a b
+recurseK expr = case expr of
+  K x -> K x
+  IdK -> id
+  ComposeK f g -> simpK f . simpK g
+  Push -> push
+  Pop -> pop
+  Curry f -> curry (simpK f)
+  Uncurry f -> uncurry (simpK f)
+  Return x -> return (simpC x)
+  Force y -> force (simpC y)
+
+optC :: Code f g a b -> Maybe (Code f g a b)
+optC expr = case expr of
+  ComposeC IdC f -> Just f
+  ComposeC f IdC -> Just f
+
+  ComposeC _ Absurd -> Just absurd
+  ComposeC (Fanin f _) Left -> Just f
+  ComposeC (Fanin _ f) Right -> Just f
+
+  ComposeC Unit _ -> Just unit
+  ComposeC First (Fanout f _) -> Just f
+  ComposeC Second (Fanout _ f) -> Just f
+
+  ComposeC x (Fanin f g) -> Just $ (x . f) ||| (x . g)
+  ComposeC (Fanout f g) x -> Just $ (f . x) &&& (g . x)
+
+  ComposeC (ComposeC f g) h  -> Just $ f . (g . h)
+
+  Thunk (ComposeK f (Return g)) -> Just $ thunk f . g
+  Thunk (Force f) -> Just f
+
+  Fanout First Second -> Just id
+  Fanin Left Right -> Just id
+
+  _ -> Nothing
+
+optK :: Stack f g a b -> Maybe (Stack f g a b)
+optK expr = case expr of
+  ComposeK IdK f -> Just f
+  ComposeK f IdK -> Just f
+
+  ComposeK (Force f) (Return g) -> Just $ force (f . g)
+  ComposeK (Return f) (Return g) -> Just $ return (f . g)
+
+  ComposeK Pop Push -> Just id
+  ComposeK Push Pop -> Just id
+
+  ComposeK (ComposeK f g) h  -> Just $ f . (g . h)
+
+  Return IdC -> Just id
+
+  Force (ComposeC f g) -> Just $ force f . return g
+  Force (Thunk f) -> Just f
+
+  Curry (Uncurry f) -> Just f
+  Uncurry (Curry f) -> Just f
+
+  _ -> Nothing
+
+simpC :: Code f g a b -> Code f g a b
+simpC expr = case optC expr of
+  Just x -> simpC x
+  Nothing -> recurseC expr
+
+simpK :: Stack f g a b -> Stack f g a b
+simpK expr = case optK expr of
+  Just x -> simpK x
+  Nothing -> recurseK expr
+
+instance Category f => Category (Stack f g) where
   id = IdK
-  IdK . f = f
-  f . IdK = f
+  (.) = ComposeK
 
-  Force f . Return g = force (f . g)
-  Return f . Return g = return (f . g)
-
-  Pop . Push = IdK
-  Push . Pop = IdK
-
-  ComposeK f g . h  = f . (g . h)
-  f . g = ComposeK f g
-
-instance (Category f, Category g) => Category (Code f g) where
+instance Category g => Category (Code f g) where
   id = IdC
-  IdC . f = f
-  f . IdC = f
-
-  _ . Absurd = absurd
-  Fanin f _  . Left = f
-  Fanin _ f . Right = f
-
-  Unit . _ = unit
-  First . Fanout f _ = f
-  Second . Fanout _ f = f
-
-  x . Fanin f g = (x . f) ||| (x . g)
-  Fanout f g . x = (f . x) &&& (g . x)
-
-  ComposeC f g . h  = f . (g . h)
-  f . g = ComposeC f g
+  (.) = ComposeC
 
 instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
-  return IdC = id
-  return x = Return x
+  return = Return
 
-  thunk (ComposeK f (Return g)) = thunk f . g
-  thunk (Force f) = f
-  thunk f = Thunk f
-
-  force (ComposeC f g) = force f . return g
-  force (Thunk f) = f
-  force f = Force f
+  thunk = Thunk
+  force = Force
 
   unit = Unit
-  First &&& Second = id
-  f &&& g = Fanout f g
+  (&&&) = Fanout
   first = First
   second = Second
 
   absurd = Absurd
-  Left ||| Right = id
-  f ||| g = Fanin f g
+  (|||) = Fanin
   left = Left
   right = Right
 
   pop = Pop
   push = Push
 
-  curry (Uncurry f) = f
-  curry f = Curry f
-
-  uncurry (Curry f) = f
-  uncurry f = Uncurry f
+  curry = Curry
+  uncurry = Uncurry
 
   u64 x = C (u64 x)
   constant t pkg name = K (constant t pkg name)
