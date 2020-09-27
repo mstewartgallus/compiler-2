@@ -60,11 +60,11 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
 addIntrinsic :: Cbpv stack code => stack (F Unit) (AsAlgebra ((Lambda.U64 Lambda.* Lambda.U64) Lambda.~> Lambda.U64))
 addIntrinsic = curry (bar . push . force first . pop)
 
-foo :: Cbpv stack code => stack (U (F U64) & F U64) (F U64)
-foo = uncurry (uncurry add . push . return (id &&& unit) . force id) . push . return (second &&& first) . pop
+foo :: Cbpv stack code => stack (F U64) (U64 ~> F U64)
+foo = uncurry add . push . return (id &&& unit)
 
 bar :: Cbpv stack code => stack (U (F U64) & F (U (F U64))) (F U64)
-bar = uncurry (curry foo . force id)
+bar = uncurry (curry (uncurry (foo . force id) . push . return (second &&& first) . pop) . force id)
 
 swap :: Cbpv stack code => code (a * b) (b * a)
 swap = second &&& first
