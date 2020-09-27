@@ -60,14 +60,15 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
 addIntrinsic :: Cbpv stack code => stack (F Unit) (AsAlgebra (Lambda.U64 Lambda.~> (Lambda.U64 Lambda.~> Lambda.U64)))
 addIntrinsic = curry (
   pop
-  >>> return first
-  >>> force id
+  >>> force first
   >>> curry (
     pop
-    >>> (push . return (second &&& first))
+    >>> return (second &&& first)
+    >>> push
     >>> uncurry (
         force id
-            >>> (push . return (id &&& unit))
+            >>> return (id &&& unit)
+            >>> push
             >>> uncurry add
             )
   )
