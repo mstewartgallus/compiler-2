@@ -47,3 +47,9 @@ asObject t = case t of
   Type.SU64 -> SU64
   Type.SUnit -> SUnit
   a Type.:-> b -> asObject a :-> asObject b
+
+instance Show (ST a) where
+  show expr = case expr of
+    SUnit -> "unit"
+    SU64 -> "u64"
+    x :-> y -> "(" ++ show x ++ " → " ++ show y ++ ")"

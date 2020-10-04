@@ -8,6 +8,7 @@ import Lambda.HasExp
 import Lambda
 import Lambda.HasProduct
 import Lambda.HasSum
+import Lambda.HasLet
 import Lambda.Type
 
 newtype View (a :: T) (b :: T) = V String
@@ -36,6 +37,11 @@ instance HasSum View where
 instance HasExp View where
   curry (V f) = V ("(λ " ++ f ++ ")")
   uncurry (V f) = V ("(! " ++ f ++ ")")
+
+instance HasLet View where
+  be (V x) t f = V ("(" ++ x ++ " be " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")") where
+    v = "v?"
+    V body = f (V v)
 
 instance Lambda View where
   u64 x = V (show x)

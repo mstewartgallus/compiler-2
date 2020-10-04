@@ -199,6 +199,8 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   curry = Curry
   uncurry = Uncurry
 
+  be x f = C $ be (outC x) $ \x' -> outC (f (C x'))
+
   u64 x = C (u64 x)
   constant t pkg name = K (constant t pkg name)
   lambdaConstant t pkg name = K (lambdaConstant t pkg name)

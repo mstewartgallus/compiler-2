@@ -9,6 +9,7 @@ module Lambda.AsOpt (Expr, opt) where
 import Lambda
 import Control.Category
 import Lambda.HasExp
+import Lambda.HasLet
 import Lambda.HasProduct
 import Lambda.HasSum
 import Lambda.Type
@@ -40,6 +41,10 @@ instance HasSum f => HasSum (Expr f) where
 instance HasExp f => HasExp (Expr f) where
   curry (E f) = E (curry f)
   uncurry (E f) = E (uncurry f)
+
+instance HasLet f => HasLet (Expr f) where
+  be (E x) t f = E $ be x t $ \x' -> case f (E x') of
+    E y -> y
 
 instance Lambda f => Lambda (Expr f) where
   u64 x = E (u64 x)

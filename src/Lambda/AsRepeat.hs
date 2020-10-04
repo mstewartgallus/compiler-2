@@ -5,6 +5,7 @@ import qualified Lambda.AsSimplified as AsSimplified
 import Control.Category
 import Lambda.Type
 import Lambda.HasExp
+import Lambda.HasLet
 import Lambda.HasProduct
 import Lambda.HasSum
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), repeat)
@@ -57,6 +58,12 @@ instance HasExp f => HasExp (Expr f) where
       out = curry (out f),
       step = curry (step f)
       }
+instance HasLet f => HasLet (Expr f) where
+  be x t f = me where
+    me = E {
+      out = be (out x) t $ \x' -> out (f (E x' undefined)),
+      step = be (step x) t $ \x' -> step (f (E undefined x'))
+           }
 instance Lambda f => Lambda (Expr f) where
   u64 x = E (u64 x) (u64 x)
   constant t pkg name = E (constant t pkg name) (constant t pkg name)

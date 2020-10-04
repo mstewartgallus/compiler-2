@@ -14,6 +14,7 @@ import Cbpv.Sort
 import Control.Category
 import qualified Lambda
 import qualified Lambda.HasExp as Exp
+import qualified Lambda.HasLet as Let
 import qualified Lambda.HasProduct as Product
 import qualified Lambda.HasSum as Sum
 import qualified Lambda.Type as Lambda
@@ -45,6 +46,11 @@ instance Cbpv c d => Sum.HasSum (Expr d) where
 instance Cbpv c d => Exp.HasExp (Expr d) where
   curry (E f) = E (thunk (curry (force f . return (thunk id) . pop)))
   uncurry (E f) = E (thunk (uncurry (force f) . push . force id))
+
+instance Cbpv c d => Let.HasLet (Expr d) where
+  be (E x) t f = E $
+    be x $ \x' -> case f (E (x' . unit)) of
+      E y -> y
 
 instance Cbpv c d => Lambda.Lambda (Expr d) where
   u64 x = E (thunk (return (u64 x . unit)))

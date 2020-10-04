@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module AsLambda (PointFree, pointFree) where
+module AsPointfree (PointFree, pointFree) where
 
 import Control.Category
 import Data.Maybe
@@ -42,27 +42,20 @@ instance Lambda k => Bound.Bound (PointFree k) where
         Nothing -> body . second
         Just y -> y
 
-  be n (PointFree x) t f = PointFree $
-    be x (asObject t) $ \x' -> case f (PointFree x') of
-      PointFree y -> y
-
-  -- where
-  --   v = Var t n
-  --   PointFree body = f (PointFree (mkVar v))
-  --   me = case removeVar body v of
-  --     Nothing -> body
-  --     Just y -> y . (x &&& id)
+  be n (PointFree x) t f = PointFree me
+    where
+      v = Var t n
+      PointFree body = f (PointFree (mkVar v))
+      me = case removeVar body v of
+        Nothing -> body
+        Just y -> y . (x &&& id)
 
   u64 x = PointFree (u64 x . unit)
   constant t pkg name = PointFree (constant t pkg name . unit)
 
-instance (HasProduct k, HasLet k) => HasLet (Pf k) where
-  be x t f = me
-    where
-      me =
-        V
-          { out = be (out x) t $ \x' -> out (f (V x' undefined))
-          }
+instance (HasProduct k, HasLet k) => HasLet (Pf k)
+
+-- be (PointFree x) t f = undefined
 
 instance HasProduct k => Category (Pf k) where
   id = lift0 id

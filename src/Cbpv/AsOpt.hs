@@ -49,6 +49,9 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   uncurry (K f) = K (uncurry f)
   curry (K f) = K (curry f)
 
+  be (C x) f = C $ be x $ \x' -> case f (C x') of
+    C y -> y
+
   u64 x = C (u64 x)
 
   constant t pkg name = K (constant t pkg name)

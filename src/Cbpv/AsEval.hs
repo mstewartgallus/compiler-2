@@ -77,6 +77,9 @@ instance Cbpv Stack Code where
   pop = S $ \(a :& b :& c) -> Pair a b :& c
   push = S $ \(Pair a b :& c) -> a :& b :& c
 
+  be (C x) f = C $ \env -> case f (C $ const (x env)) of
+    C y -> y env
+
   u64 x = C $ const (U64 x)
   constant t pkg name = case (t, pkg, name) of
      (Hoas.SU64 Hoas.:-> (Hoas.SU64 Hoas.:-> Hoas.SU64), "core", "add") -> addImpl

@@ -44,6 +44,8 @@ class (Category stack, Category code) => Cbpv stack code | stack -> code, code -
   curry :: stack (a & env) b -> stack env (a ~> b)
   uncurry :: stack env (a ~> b) -> stack (a & env) b
 
+  be :: code x a -> (code Unit a -> code x c) -> code x c
+
   u64 :: Word64 -> code Unit U64
 
   constant :: Hoas.ST a -> String -> String -> stack (F Unit) (AsAlgebra (Lambda.AsObject a))
