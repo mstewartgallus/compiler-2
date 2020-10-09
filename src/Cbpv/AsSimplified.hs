@@ -200,6 +200,7 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   uncurry = Uncurry
 
   be x f = C $ be (outC x) $ \x' -> outC (f (C x'))
+  letTo x f = K $ letTo (outK x) $ \x' -> outK (f (C x'))
 
   u64 x = C (u64 x)
   constant t pkg name = K (constant t pkg name)

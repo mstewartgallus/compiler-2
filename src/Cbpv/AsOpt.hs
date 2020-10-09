@@ -52,6 +52,9 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   be (C x) f = C $ be x $ \x' -> case f (C x') of
     C y -> y
 
+  letTo (K x) f = K $ letTo x $ \x' -> case f (C x') of
+    K y -> y
+
   u64 x = C (u64 x)
 
   constant t pkg name = K (constant t pkg name)

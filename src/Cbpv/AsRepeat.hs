@@ -93,6 +93,10 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
     outF x' = outC (f (C x' undefined))
     stepF x' = stepC (f (C undefined x'))
 
+  letTo x f = K (letTo (outK x) outF) (letTo (stepK x) stepF) where
+    outF x' = outK (f (C x' undefined))
+    stepF x' = stepK (f (C undefined x'))
+
   u64 x = C (u64 x) (u64 x)
 
   constant t pkg name = K (constant t pkg name) (constant t pkg name)

@@ -50,6 +50,10 @@ instance Cbpv Stack Code where
     v = "v?"
     C body = f (C v)
 
+  letTo (K x) f = K ("(" ++ x ++ " to " ++ v ++ ". " ++ body ++ ")") where
+    v = "v?"
+    K body = f (C v)
+
   u64 x = C (show x)
   constant _ pkg name = K (pkg ++ "/" ++ name)
   lambdaConstant _ pkg name = K ("#" ++ pkg ++ "/" ++ name)

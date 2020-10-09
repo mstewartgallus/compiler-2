@@ -36,32 +36,23 @@ instance Lambda k => Bound.Bound (PointFree k) where
 
   lam n t f = PointFree (curry me)
     where
-      v = Var t n
-      PointFree body = f (PointFree (mkVar v))
-      me = case removeVar body v of
-        Nothing -> body . second
-        Just y -> y
+      me = be (asObject t) $ \x' -> case f (PointFree x') of
+        PointFree y -> y
 
-  be n (PointFree x) t f = PointFree $
-    be x (asObject t) $ \x' -> case f (PointFree x') of
-      PointFree y -> y
-
-  -- where
-  --   v = Var t n
-  --   PointFree body = f (PointFree (mkVar v))
-  --   me = case removeVar body v of
-  --     Nothing -> body
-  --     Just y -> y . (x &&& id)
+  be n (PointFree x) t f = PointFree (me . (x &&& id))
+    where
+      me = be (asObject t) $ \x' -> case f (PointFree x') of
+        PointFree y -> y
 
   u64 x = PointFree (u64 x . unit)
   constant t pkg name = PointFree (constant t pkg name . unit)
 
 instance (HasProduct k, HasLet k) => HasLet (Pf k) where
-  be x t f = me
+  be t f = me
     where
       me =
         V
-          { out = be (out x) t $ \x' -> out (f (V x' undefined))
+          { out = be t $ \x' -> out (f (V x' undefined))
           }
 
 instance HasProduct k => Category (Pf k) where

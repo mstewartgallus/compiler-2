@@ -80,6 +80,11 @@ instance Cbpv Stack Code where
   be (C x) f = C $ \env -> case f (C $ const (x env)) of
     C y -> y env
 
+  -- | fixme... not quite right..
+  letTo (S x) f = S $ \env -> case x env of
+    x' :& env' -> case f (C $ const x') of
+          S y -> y env
+
   u64 x = C $ const (U64 x)
   constant t pkg name = case (t, pkg, name) of
      (Hoas.SU64 Hoas.:-> (Hoas.SU64 Hoas.:-> Hoas.SU64), "core", "add") -> addImpl

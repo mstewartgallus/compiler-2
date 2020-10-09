@@ -43,7 +43,7 @@ instance HasExp f => HasExp (Expr f) where
   uncurry (E f) = E (uncurry f)
 
 instance HasLet f => HasLet (Expr f) where
-  be (E x) t f = E $ be x t $ \x' -> case f (E x') of
+  be t f = E $ be t $ \x' -> case f (E x') of
     E y -> y
 
 instance Lambda f => Lambda (Expr f) where

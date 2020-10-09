@@ -134,7 +134,7 @@ instance HasExp f => HasExp (Expr f) where
   uncurry = Uncurry
 
 instance HasLet f => HasLet (Expr f) where
-  be x t f = E $ be (out x) t $ \x' -> out (f (E x'))
+  be t f = E $ be t $ \x' -> out (f (E x'))
 
 instance Lambda f => Lambda (Expr f) where
   u64 x = E (u64 x)

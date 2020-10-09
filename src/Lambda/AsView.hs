@@ -39,7 +39,7 @@ instance HasExp View where
   uncurry (V f) = V ("(! " ++ f ++ ")")
 
 instance HasLet View where
-  be (V x) t f = V ("(" ++ x ++ " be " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")") where
+  be t f = V ("(be " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")") where
     v = "v?"
     V body = f (V v)
 
