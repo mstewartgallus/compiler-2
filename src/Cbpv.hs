@@ -1,15 +1,17 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Cbpv (Cbpv (..)) where
+module Cbpv (Cbpv (..), Intrinsic (..)) where
 
 import Cbpv.Sort
 import Control.Category
 import Data.Word (Word64)
 import qualified Hoas.Type as Hoas
+import qualified Lambda as Lambda
 import qualified Lambda.Type as Lambda
 import Prelude hiding (curry, id, return, uncurry, (.), (<*>))
 
@@ -50,11 +52,18 @@ class (Category stack, Category code) => Cbpv stack code | stack -> code, code -
   u64 :: Word64 -> code Unit U64
 
   constant :: Hoas.ST a -> String -> String -> stack (F Unit) (AsAlgebra (Lambda.AsObject a))
-  lambdaConstant :: Lambda.ST a -> String -> String -> stack (F Unit) (AsAlgebra a)
-  cbpvConstant :: SAlgebra a -> String -> String -> stack (F Unit) a
+  lambdaIntrinsic :: Lambda.Intrinsic a b -> code (U (AsAlgebra a)) (U (AsAlgebra b))
+  cbpvIntrinsic :: Intrinsic a b -> code a b
 
-  add :: stack (F Unit) (U64 ~> (U64 ~> F U64))
-  add = cbpvConstant (SU64 :-> (SU64 :-> (SU64 :&: SEmpty))) "core" "add"
+  add :: code (U64 * U64) U64
+  add = cbpvIntrinsic AddIntrinsic
+
+data Intrinsic a b where
+  AddIntrinsic :: Intrinsic (U64 * U64) U64
+
+instance Show (Intrinsic a b) where
+  show x = case x of
+    AddIntrinsic -> "$add"
 
 infixl 9 &&&
 

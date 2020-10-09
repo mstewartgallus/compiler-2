@@ -11,6 +11,7 @@ import qualified Cbpv.AsRepeat as AsRepeat
 import Control.Category
 import Cbpv.Sort
 import qualified Lambda.Type as Lambda
+import qualified Lambda as Lambda
 import Prelude hiding ((.), id, curry, uncurry, Monad (..))
 
 newtype Stack f g a b = K (AsRepeat.Stack f g a b)
@@ -58,24 +59,15 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   u64 x = C (u64 x)
 
   constant t pkg name = K (constant t pkg name)
-  lambdaConstant t pkg name = K $ case (t, pkg, name) of
-    (Lambda.SU64 Lambda.:-> (Lambda.SU64 Lambda.:-> Lambda.SU64), pkg, name) -> addIntrinsic
-    _ -> lambdaConstant t pkg name
+
+  lambdaIntrinsic x = C $ case x of
+    Lambda.AddIntrinsic -> addIntrinsic
+    _ -> lambdaIntrinsic x
+  cbpvIntrinsic x = C (cbpvIntrinsic x)
 
 -- | fixme.. cleanup this mess
-addIntrinsic :: Cbpv stack code => stack (F Unit) (AsAlgebra (Lambda.U64 Lambda.~> (Lambda.U64 Lambda.~> Lambda.U64)))
-addIntrinsic = curry (
-  pop
-  >>> force first
-  >>> curry (
-    pop
-    >>> return (second &&& first)
-    >>> push
-    >>> uncurry (
-        force id
-            >>> return (id &&& unit)
-            >>> push
-            >>> uncurry add
-            )
-  )
-  )
+addIntrinsic :: Cbpv stack code => code (U (AsAlgebra (Lambda.U64 Lambda.* Lambda.U64))) (U (AsAlgebra Lambda.U64))
+addIntrinsic = thunk (doAdd . force id)
+
+doAdd :: Cbpv stack code => stack (F (U (F U64) * U (F U64))) (F U64)
+doAdd = uncurry (curry (uncurry (curry (return add . pop) . force id) . push . return (second &&& first) . pop) . force id) . push

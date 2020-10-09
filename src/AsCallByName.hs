@@ -57,4 +57,4 @@ instance Cbpv c d => Let.HasLet (Expr d) where
 instance Cbpv c d => Lambda.Lambda (Expr d) where
   u64 x = E (thunk (return (u64 x . unit)))
   constant t pkg name = E (thunk (constant t pkg name . force id))
-  lambdaConstant t pkg name = E (thunk (lambdaConstant t pkg name . force id))
+  lambdaIntrinsic x = E (lambdaIntrinsic x)

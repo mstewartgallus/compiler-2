@@ -100,5 +100,5 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   u64 x = C (u64 x) (u64 x)
 
   constant t pkg name = K (constant t pkg name) (constant t pkg name)
-  lambdaConstant t pkg name = K (lambdaConstant t pkg name) (lambdaConstant t pkg name)
-  cbpvConstant t pkg name = K (cbpvConstant t pkg name) (cbpvConstant t pkg name)
+  lambdaIntrinsic x = C (lambdaIntrinsic x) (lambdaIntrinsic x)
+  cbpvIntrinsic x = C (cbpvIntrinsic x) (cbpvIntrinsic x)

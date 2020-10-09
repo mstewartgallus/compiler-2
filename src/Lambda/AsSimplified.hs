@@ -139,4 +139,4 @@ instance HasLet f => HasLet (Expr f) where
 instance Lambda f => Lambda (Expr f) where
   u64 x = E (u64 x)
   constant t pkg name = E $ constant t pkg name
-  lambdaConstant t pkg name = E $ lambdaConstant t pkg name
+  lambdaIntrinsic x = E $ lambdaIntrinsic x

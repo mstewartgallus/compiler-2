@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
@@ -6,7 +7,7 @@
 -- Export the final type class of the simple lambda calculus language.
 -- Here we finish the Lambda type class off with some basic operations on
 -- integers.
-module Lambda (Lambda (..)) where
+module Lambda (Intrinsic (..), Lambda (..)) where
 
 import Data.Word (Word64)
 import qualified Hoas.Type as Hoas
@@ -19,7 +20,14 @@ import Lambda.Type
 class (HasSum hom, HasProduct hom, HasExp hom, HasLet hom) => Lambda hom where
   u64 :: Word64 -> hom Unit U64
   constant :: Hoas.ST a -> String -> String -> hom Unit (AsObject a)
-  lambdaConstant :: ST a -> String -> String -> hom Unit a
+  lambdaIntrinsic :: Intrinsic a b -> hom a b
 
-  add :: hom Unit (U64 ~> (U64 ~> U64))
-  add = lambdaConstant (SU64 :-> (SU64 :-> SU64)) "core" "add"
+  add :: hom (U64 * U64) U64
+  add = lambdaIntrinsic AddIntrinsic
+
+data Intrinsic a b where
+  AddIntrinsic :: Intrinsic (U64 * U64) U64
+
+instance Show (Intrinsic a b) where
+  show x = case x of
+    AddIntrinsic -> "#add"

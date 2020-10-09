@@ -14,6 +14,7 @@ import Control.Category
 import Data.Word
 import Cbpv.Sort
 import qualified Lambda.Type as Lambda
+import qualified Lambda as Lambda
 import qualified Hoas.Type as Hoas
 import Prelude hiding ((.), id)
 
@@ -88,11 +89,10 @@ instance Cbpv Stack Code where
   u64 x = C $ const (U64 x)
   constant t pkg name = case (t, pkg, name) of
      (Hoas.SU64 Hoas.:-> (Hoas.SU64 Hoas.:-> Hoas.SU64), "core", "add") -> addImpl
-  -- fixme.. rename to intrinsics...
-  lambdaConstant t pkg name = case (t, pkg, name) of
-     (Lambda.SU64 Lambda.:->  (Lambda.SU64 Lambda.:-> Lambda.SU64), "core", "add") -> addLambdaImpl
-  cbpvConstant t pkg name = case (t, pkg, name) of
-     (SU64 :-> (SU64 :-> (SU64 :&: SEmpty)), "core", "add") -> addCbpvImpl
+  lambdaIntrinsic x = case x of
+     Lambda.AddIntrinsic -> addLambdaImpl
+  cbpvIntrinsic x = case x of
+     AddIntrinsic -> addCbpvImpl
 
 addImpl :: Stack (F Unit) (AsAlgebra (Lambda.AsObject (Hoas.U64 Hoas.~> Hoas.U64 Hoas.~> Hoas.U64)))
 addImpl = S $ \(Unit :& Effect w0) ->
@@ -100,11 +100,11 @@ addImpl = S $ \(Unit :& Effect w0) ->
                  U64 x' :& Effect w1 -> case y w1 of
                    U64 y' :& Effect w2 -> U64 (x' + y') :& Effect w2
 
-addLambdaImpl :: Stack (F Unit) (AsAlgebra (Lambda.U64 Lambda.~> (Lambda.U64 Lambda.~> Lambda.U64)))
-addLambdaImpl = addImpl
+addLambdaImpl :: Code (U (AsAlgebra (Lambda.U64 Lambda.* Lambda.U64))) (U (AsAlgebra Lambda.U64))
+addLambdaImpl = C $ \(Thunk input) -> Thunk $ \w0 -> case input w0 of
+  Pair (Thunk x) (Thunk y) :& Effect w1 -> case x w1 of
+    U64 x' :& Effect w2 -> case y w2 of
+      U64 y' :& Effect w3 -> U64 (x' + y') :& Effect w3
 
-addCbpvImpl :: Stack (F Unit) (U64 ~> (U64 ~> F U64))
-addCbpvImpl = S $ \(Unit :& Effect w0) ->
-              Lam $ \(U64 x) ->
-              Lam $ \(U64 y) ->
-                   U64 (x + y) :& Effect w0
+addCbpvImpl :: Code (U64 * U64) U64
+addCbpvImpl = C $ \(Pair (U64 x) (U64 y)) -> U64 (x + y)

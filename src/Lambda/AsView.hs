@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE GADTs #-}
 
 module Lambda.AsView (View, view) where
 
@@ -48,7 +49,7 @@ instance HasLet View where
 instance Lambda View where
   u64 x = V $ pure (show x)
   constant _ pkg name = V $ pure (pkg ++ "/" ++ name)
-  lambdaConstant _ pkg name = V $ pure ("#" ++ pkg ++ "/" ++ name)
+  lambdaIntrinsic x = V $ pure (show x)
 
 fresh :: State Int String
 fresh = do

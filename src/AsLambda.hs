@@ -44,4 +44,4 @@ instance Lambda k => Hoas.Hoas (PointFree k) where
         Pf y -> y
 
   u64 x = Pf (u64 x)
-  constant t pkg name = Pf (constant t pkg name . unit)
+  constant t pkg name = Pf (constant t pkg name)

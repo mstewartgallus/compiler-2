@@ -65,4 +65,4 @@ optCbpv :: Cbpv c d => d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U
 optCbpv = AsOpt.opt cbpv
 
 result :: Word64
-result = AsEval.reify cbpv
+result = AsEval.reify optCbpv
