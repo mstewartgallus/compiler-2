@@ -59,10 +59,10 @@ instance HasExp f => HasExp (Expr f) where
       step = curry (step f)
       }
 instance HasLet f => HasLet (Expr f) where
-  be t f = me where
+  be t x f = me where
     me = E {
-      out = be t $ \x' -> out (f (E x' undefined)),
-      step = be t $ \x' -> step (f (E undefined x'))
+      out = be t (out x) $ \x' -> out (f (E x' undefined)),
+      step = be t (step x) $ \x' -> step (f (E undefined x'))
            }
 instance Lambda f => Lambda (Expr f) where
   u64 x = E (u64 x) (u64 x)

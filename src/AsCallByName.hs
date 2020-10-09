@@ -48,13 +48,11 @@ instance Cbpv c d => Exp.HasExp (Expr d) where
   uncurry (E f) = E (thunk (uncurry (force f) . push . force id))
 
 instance Cbpv c d => Let.HasLet (Expr d) where
-  be t f =
+  be t (E x) f =
     E $
-      thunk $
-        ( letTo (return first) $ \x' -> case f (E (x' . unit)) of
-            E y -> force (y . second)
-        )
-          . force id
+      ( x `be` \x' -> case f (E (x' . unit)) of
+          E y -> y
+      )
 
 instance Cbpv c d => Lambda.Lambda (Expr d) where
   u64 x = E (thunk (return (u64 x . unit)))

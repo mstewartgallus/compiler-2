@@ -40,10 +40,10 @@ instance HasExp View where
   uncurry (V f) = V $ pure (\f' -> "(! " ++ f' ++ ")") <*> f
 
 instance HasLet View where
-  be t f = V $ do
+  be t (V x) f = V $ do
     v <- fresh
     let V body = f (V $ pure v)
-    pure (\body' -> "(be " ++ v ++ ": " ++ show t ++ ". " ++ body' ++ ")") <*> body
+    pure (\x' body' -> "(" ++ x' ++ " be " ++ v ++ ": " ++ show t ++ ".\n" ++ body' ++ ")") <*> x <*> body
 
 instance Lambda View where
   u64 x = V $ pure (show x)

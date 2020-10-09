@@ -46,11 +46,11 @@ instance Cbpv Stack Code where
   curry (K f) = K ("(λ " ++ f ++ ")")
   uncurry (K f) = K ("(! " ++ f ++ ")")
 
-  be (C x) f = C ("(" ++ x ++ " be " ++ v ++ ". " ++ body ++ ")") where
+  be (C x) f = C ("(" ++ x ++ " be " ++ v ++ ".\n" ++ body ++ ")") where
     v = "v?"
     C body = f (C v)
 
-  letTo (K x) f = K ("(" ++ x ++ " to " ++ v ++ ". " ++ body ++ ")") where
+  letTo (K x) f = K ("(" ++ x ++ " to " ++ v ++ ".\n" ++ body ++ ")") where
     v = "v?"
     K body = f (C v)
 

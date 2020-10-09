@@ -26,7 +26,7 @@ main = do
   putStrLn (AsHoasView.view program)
 
   putStrLn ""
-  putStrLn "Point-Free Program"
+  putStrLn "With Products"
   putStrLn (view compiled)
 
   putStrLn ""
