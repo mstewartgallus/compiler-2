@@ -3,29 +3,39 @@
 
 module Hoas.AsView (View, view) where
 
-import Hoas.Bound
+import Hoas hiding ((<*>))
+import qualified Hoas as H ((<*>))
 import Hoas.Type
 import Control.Category
+import Control.Monad.State
 
-newtype View (a :: T) (b :: T) = V String
+newtype View (a :: T) (b :: T) = V (State Int String)
 
 view :: View a b -> String
-view (V v) = v
+view (V v) = evalState v 0
 
 instance Category View where
-  id = V "id"
-  V f . V g = V $ f ++ " . " ++ g
+  id = V $ pure "id"
+  V f . V g = V $ pure (\f' g' -> f' ++ " . " ++ g') <*> f <*> g
 
-instance Bound View where
-  be n (V x) t f = V (x ++ " be " ++ v ++ ": " ++ show t ++ ".\n" ++ body) where
-        v = "v" ++ show n
-        V body = f (V v)
+instance Hoas View where
+  be (V x) t f = V $ do
+    v <- fresh
+    let V body = f (V $ pure v)
+    pure (\x' body' -> x' ++ " be " ++ v ++ ": " ++ show t ++ ".\n" ++ body') <*> x <*> body
 
-  lam n t f = V ("λ " ++ v ++ ": " ++ show t ++ ".\n" ++ body) where
-        v = "v" ++ show n
-        V body = f (V v)
+  lam t f = V $ do
+    v <- fresh
+    let V body = f (V $ pure v)
+    pure (\body' -> "λ " ++ v ++ ": " ++ show t ++ ".\n" ++ body') <*> body
 
-  V f <*> V x = V ("(" ++ f ++ " " ++ x ++ ")")
+  V f <*> V x = V $ pure (\f' x' -> "(" ++ f' ++ " " ++ x' ++ ")") <*> f <*> x
 
-  u64 n = V (show n)
-  constant _ pkg name = V $ pkg ++ "/" ++ name
+  u64 n = V $ pure (show n)
+  constant _ pkg name = V $ pure (pkg ++ "/" ++ name)
+
+fresh :: State Int String
+fresh = do
+  n <- get
+  put (n + 1)
+  pure ("v" ++ show n)

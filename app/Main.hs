@@ -12,11 +12,8 @@ import Cbpv.Sort (AsAlgebra)
 import qualified Cbpv.Sort
 import Data.Word
 import Hoas
-import Hoas.AsBound
 import qualified Hoas.AsView as AsHoasView
-import Hoas.Bound (Bound)
 import Hoas.Type
-import qualified Id
 import Lambda (Lambda)
 import Lambda.AsOpt
 import Lambda.AsView
@@ -25,30 +22,28 @@ import Prelude hiding ((<*>))
 
 main :: IO ()
 main = do
-  x <- Id.stream
-
   putStrLn "The Program"
-  putStrLn (AsHoasView.view (bound x))
+  putStrLn (AsHoasView.view program)
 
   putStrLn ""
   putStrLn "Point-Free Program"
-  putStrLn (view (compiled x))
+  putStrLn (view compiled)
 
   putStrLn ""
   putStrLn "Optimized Program"
-  putStrLn (view (optimized x))
+  putStrLn (view optimized)
 
   putStrLn ""
   putStrLn "Cbpv Program"
-  putStrLn (AsViewCbpv.view (cbpv x))
+  putStrLn (AsViewCbpv.view cbpv)
 
   putStrLn ""
   putStrLn "Cbpv Optimized"
-  putStrLn (AsViewCbpv.view (optCbpv x))
+  putStrLn (AsViewCbpv.view optCbpv)
 
   putStrLn ""
   putStrLn "Result"
-  putStrLn (show (result x))
+  putStrLn (show result)
 
 type TYPE = U64
 
@@ -57,20 +52,17 @@ program =
   u64 3 `letBe` \z ->
     add <*> z <*> z
 
-bound :: Bound t => Id.Stream -> t Unit TYPE
-bound str = bindPoints str program
+compiled :: Lambda k => k Lambda.Type.Unit (Lambda.Type.AsObject TYPE)
+compiled = AsLambda.pointFree program
 
-compiled :: Lambda k => Id.Stream -> k Lambda.Type.Unit (Lambda.Type.AsObject TYPE)
-compiled str = AsLambda.pointFree (bound str)
+optimized :: Lambda k => k Lambda.Type.Unit (Lambda.Type.AsObject TYPE)
+optimized = opt compiled
 
-optimized :: Lambda k => Id.Stream -> k Lambda.Type.Unit (Lambda.Type.AsObject TYPE)
-optimized str = opt (compiled str)
+cbpv :: Cbpv c d => d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Lambda.Type.AsObject TYPE))))
+cbpv = toCbpv optimized
 
-cbpv :: Cbpv c d => Id.Stream -> d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Lambda.Type.AsObject TYPE))))
-cbpv str = toCbpv (optimized str)
+optCbpv :: Cbpv c d => d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Lambda.Type.AsObject TYPE))))
+optCbpv = AsOpt.opt cbpv
 
-optCbpv :: Cbpv c d => Id.Stream -> d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Lambda.Type.AsObject TYPE))))
-optCbpv str = AsOpt.opt (cbpv str)
-
-result :: Id.Stream -> Word64
-result str = AsEval.reify (cbpv str)
+result :: Word64
+result = AsEval.reify cbpv

@@ -11,9 +11,8 @@ module AsLambda (PointFree, pointFree) where
 import Control.Category
 import Data.Maybe
 import Data.Typeable ((:~:) (..))
-import qualified Hoas.Bound as Bound
+import qualified Hoas as Hoas
 import qualified Hoas.Type as Type
-import Id (Id)
 import Lambda
 import Lambda.HasExp
 import Lambda.HasLet
@@ -31,15 +30,15 @@ instance Lambda k => Category (PointFree k) where
   id = PointFree id
   PointFree f . PointFree g = PointFree (f . g)
 
-instance Lambda k => Bound.Bound (PointFree k) where
+instance Lambda k => Hoas.Hoas (PointFree k) where
   PointFree f <*> PointFree x = PointFree (f <*> x)
 
-  lam n t f = PointFree (curry me)
+  lam t f = PointFree (curry me)
     where
       me = be (asObject t) $ \x' -> case f (PointFree x') of
         PointFree y -> y
 
-  be n (PointFree x) t f = PointFree (me . (x &&& id))
+  be (PointFree x) t f = PointFree (me . (x &&& id))
     where
       me = be (asObject t) $ \x' -> case f (PointFree x') of
         PointFree y -> y
@@ -52,7 +51,7 @@ instance (HasProduct k, HasLet k) => HasLet (Pf k) where
     where
       me =
         V
-          { out = be t $ \x' -> out (f (V x' undefined))
+          { out = be t $ \x' -> out (f (V x'))
           }
 
 instance HasProduct k => Category (Pf k) where
@@ -61,12 +60,7 @@ instance HasProduct k => Category (Pf k) where
     where
       me =
         V
-          { out = out f . out g,
-            removeVar = \v -> case (removeVar f v, removeVar g v) of
-              (Just f', Just g') -> Just $ f' . (first &&& g')
-              (_, Just g') -> Just $ f . g'
-              (Just f', _) -> Just $ f' . (first &&& (g . second))
-              _ -> Nothing
+          { out = out f . out g
           }
 
 instance (HasExp k, HasSum k) => HasSum (Pf k) where
@@ -77,12 +71,7 @@ instance (HasExp k, HasSum k) => HasSum (Pf k) where
     where
       me =
         V
-          { out = out f ||| out g,
-            removeVar = \v -> case (removeVar f v, removeVar g v) of
-              (Just f', Just g') -> Just $ uncurry (curry f' ||| curry g')
-              (_, Just g') -> Just $ uncurry (curry (f . second) ||| curry g')
-              (Just f', _) -> Just $ uncurry (curry f' ||| curry (g . second))
-              _ -> Nothing
+          { out = out f ||| out g
           }
 
 instance HasProduct k => HasProduct (Pf k) where
@@ -93,12 +82,7 @@ instance HasProduct k => HasProduct (Pf k) where
     where
       me =
         V
-          { out = out f &&& out g,
-            removeVar = \v -> case (removeVar f v, removeVar g v) of
-              (Just f', Just g') -> Just $ f' &&& g'
-              (_, Just g') -> Just $ (f . second) &&& g'
-              (Just f', _) -> Just $ f' &&& (g . second)
-              _ -> Nothing
+          { out = out f &&& out g
           }
 
 instance (HasProduct k, HasExp k) => HasExp (Pf k) where
@@ -106,19 +90,13 @@ instance (HasProduct k, HasExp k) => HasExp (Pf k) where
     where
       me =
         V
-          { out = curry (out f),
-            removeVar = \v -> case removeVar f v of
-              Just f' -> Just $ curry (f' . shuffle)
-              _ -> Nothing
+          { out = curry (out f)
           }
   uncurry f = me
     where
       me =
         V
-          { out = uncurry (out f),
-            removeVar = \v -> case removeVar f v of
-              Just f' -> Just $ uncurry f' . shuffle
-              _ -> Nothing
+          { out = uncurry (out f)
           }
 
 shuffle :: HasProduct k => k (v * (a * env)) (a * (v * env))
@@ -129,33 +107,13 @@ instance Lambda k => Lambda (Pf k) where
   constant t pkg name = lift0 (constant t pkg name)
 
 data Pf k (env :: T) (b :: T) = V
-  { out :: k env b,
-    removeVar :: forall v. Var v -> Maybe (Pf k ((AsObject v) * env) b)
+  { out :: k env b
   }
-
-data Var a = Var (Type.ST a) Id
-
-eqVar :: Var a -> Var b -> Maybe (a :~: b)
-eqVar (Var t m) (Var t' n)
-  | m == n = Type.eqT t t'
-  | otherwise = Nothing
 
 lift0 :: k a b -> Pf k a b
 lift0 x = me
   where
     me =
       V
-        { out = x,
-          removeVar = const Nothing
-        }
-
-mkVar :: Lambda k => Var a -> Pf k x (AsObject a)
-mkVar v@(Var _ n) = me
-  where
-    me =
-      V
-        { out = error ("free variable " ++ show n),
-          removeVar = \maybeV -> case eqVar v maybeV of
-            Nothing -> Nothing
-            Just Refl -> Just first
+        { out = x
         }
