@@ -6,55 +6,66 @@ module Cbpv.AsView (Stack, view) where
 
 import Cbpv
 import Control.Category
+import Control.Monad.State
 import Cbpv.Sort
 import Prelude hiding ((.), id)
 
-newtype Stack (a :: Algebra) (b :: Algebra) = K String
+newtype Stack (a :: Algebra) (b :: Algebra) = K (State Int String)
 
-newtype Code (a :: Set) (b :: Set) = C String
+newtype Code (a :: Set) (b :: Set) = C (State Int String)
 
 view :: Code a b -> String
-view (C v) = v
+view (C v) = evalState v 0
 
 instance Category Stack where
-  id = K "id"
-  K f . K g = K (f ++ " ∘ " ++ g)
+  id = K $ pure "id"
+  K f . K g = K $ pure (\f' g' -> f' ++ " ∘ " ++ g') <*> f <*> g
 
 instance Category Code where
-  id = C "id"
-  C f . C g = C (f ++ " ∘ " ++ g)
+  id = C $ pure "id"
+  C f . C g = C $ pure (\f' g' -> f' ++ " ∘ " ++ g') <*> f <*> g
 
 instance Cbpv Stack Code where
-  return (C f) = K ("(return " ++ f ++ ")")
+  return (C f) = K $ pure (\f' -> "(return " ++ f' ++ ")") <*> f
 
-  thunk (K f) = C ("(thunk " ++ f ++ ")")
-  force (C f) = K ("(force " ++ f ++ ")")
+  thunk (K f) = C $ pure (\f' -> "(thunk " ++ f' ++ ")") <*> f
+  force (C f) = K $ pure (\f' -> "(force " ++ f' ++ ")") <*> f
 
-  unit = C "unit"
-  C f &&& C x = C ("⟨" ++ f ++ " , " ++ x ++ "⟩")
-  first = C "π₁"
-  second = C "π₂"
+  unit = C $ pure "unit"
+  C f &&& C g = C $ pure (\f' g' -> "⟨" ++ f' ++ ", " ++ g' ++ "⟩") <*> f <*> g
+  first = C $ pure "π₁"
+  second = C $ pure "π₂"
 
-  absurd = C "absurd"
-  C f ||| C x = C ("[" ++ f ++ " , " ++ x ++ "]")
-  left = C "i₁"
-  right = C "i₂"
+  absurd = C $ pure "absurd"
+  C f ||| C g = C $ pure (\f' g' -> "[" ++ f' ++ " , " ++ g' ++ "]") <*> f <*> g
+  left = C $ pure "i₁"
+  right = C $ pure "i₂"
 
-  pop = K "pop"
-  push = K "push"
+  pop = K $ pure "pop"
+  push = K $ pure "push"
 
-  curry (K f) = K ("(λ " ++ f ++ ")")
-  uncurry (K f) = K ("(! " ++ f ++ ")")
+  curry (K f) = K $ pure (\f' -> "(λ " ++ f' ++ ")") <*> f
+  uncurry (K f) = K $ pure (\f' -> "(! " ++ f' ++ ")") <*> f
 
-  be (C x) f = C ("(" ++ x ++ " be " ++ v ++ ".\n" ++ body ++ ")") where
-    v = "v?"
-    C body = f (C v)
+  be (C x) f = C $ do
+    v <- fresh
+    let C body = f (C $ pure v)
+    body' <- body
+    pure (\x' body' -> "(" ++ x' ++ " be " ++ v ++ ".\n" ++ body' ++ ")") <*> x <*> body
 
-  letTo (K x) f = K ("(" ++ x ++ " to " ++ v ++ ".\n" ++ body ++ ")") where
-    v = "v?"
-    K body = f (C v)
+  letTo (K x) f = K $ do
+    v <- fresh
+    let K body = f (C $ pure v)
+    body' <- body
+    pure (\x' body' -> "(" ++ x' ++ " to " ++ v ++ ".\n" ++ body' ++ ")") <*> x <*> body
 
-  u64 x = C (show x)
-  constant _ pkg name = K (pkg ++ "/" ++ name)
-  lambdaConstant _ pkg name = K ("#" ++ pkg ++ "/" ++ name)
-  cbpvConstant _ pkg name = K ("$" ++ pkg ++ "/" ++ name)
+  u64 x = C $ pure (show x)
+  constant _ pkg name = K $ pure (pkg ++ "/" ++ name)
+  lambdaConstant _ pkg name = K $ pure ("#" ++ pkg ++ "/" ++ name)
+  cbpvConstant _ pkg name = K $ pure ("$" ++ pkg ++ "/" ++ name)
+
+fresh :: State Int String
+fresh = do
+  n <- get
+  put (n + 1)
+  pure ("v" ++ show n)
