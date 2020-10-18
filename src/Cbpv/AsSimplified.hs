@@ -8,49 +8,49 @@
 -- | Simplify various identites such as:
 -- force/thunk as inverses
 -- id
-module Cbpv.AsSimplified (Stack, Code, simplify) where
+module Cbpv.AsSimplified (Stk, Cde, simplify) where
 
 import Cbpv
 import Control.Category
 import Cbpv.Sort
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), Either (..))
 
-simplify :: Code f g a b -> g a b
+simplify :: Cde f g a b -> g a b
 simplify x = outC (simpC x)
 
-data Stack f g (a :: Algebra) (b :: Algebra) where
-  K :: f a b -> Stack f g a b
+data Stk f g (a :: Algebra) (b :: Algebra) where
+  K :: f a b -> Stk f g a b
 
-  IdK :: Category f => Stack f g a a
-  ComposeK ::  Category f => Stack f g b c -> Stack f g a b -> Stack f g a c
+  IdK :: Category f => Stk f g a a
+  ComposeK ::  Category f => Stk f g b c -> Stk f g a b -> Stk f g a c
 
-  Force :: Cbpv f g => Code f g a (U b) -> Stack f g (F a) b
+  Force :: Cbpv f g => Cde f g a (U b) -> Stk f g (F a) b
 
-  Return :: Cbpv f g => Code f g a b -> Stack f g (F a) (F b)
+  Return :: Cbpv f g => Cde f g a b -> Stk f g (F a) (F b)
 
-  Push :: Cbpv f g => Stack f g ((a * b) & c) (a & (b & c))
-  Pop :: Cbpv f g => Stack f g (a & (b & c)) ((a * b) & c)
+  Push :: Stack f => Stk f g ((a * b) & c) (a & (b & c))
+  Pop :: Stack f => Stk f g (a & (b & c)) ((a * b) & c)
 
-  Curry :: Cbpv f g => Stack f g (a & env) b -> Stack f g env (a ~> b)
-  Uncurry :: Cbpv f g => Stack f g env (a ~> b) -> Stack f g (a & env) b
+  Curry :: Stack f => Stk f g (a & env) b -> Stk f g env (a ~> b)
+  Uncurry :: Stack f => Stk f g env (a ~> b) -> Stk f g (a & env) b
 
-data Code f g (a :: Set) (b :: Set) where
-  C :: g a b -> Code f g a b
-  IdC :: Category g => Code f g a a
-  ComposeC ::  Category g => Code f g b c -> Code f g a b -> Code f g a c
-  Thunk :: Cbpv f g => Stack f g (F a) b -> Code f g a (U b)
+data Cde f g (a :: Set) (b :: Set) where
+  C :: g a b -> Cde f g a b
+  IdC :: Category g => Cde f g a a
+  ComposeC ::  Category g => Cde f g b c -> Cde f g a b -> Cde f g a c
+  Thunk :: Cbpv f g => Stk f g (F a) b -> Cde f g a (U b)
 
-  Unit :: Cbpv f g => Code f g a Unit
-  First :: Cbpv f g => Code f g (a * b) a
-  Second :: Cbpv f g => Code f g (a * b) b
-  Fanout :: Cbpv f g => Code f g c a -> Code f g c b -> Code f g c (a * b)
+  Unit :: Code g => Cde f g a Unit
+  First :: Code g => Cde f g (a * b) a
+  Second :: Code g => Cde f g (a * b) b
+  Fanout :: Code g => Cde f g c a -> Cde f g c b -> Cde f g c (a * b)
 
-  Absurd :: Cbpv f g => Code f g Void a
-  Left :: Cbpv f g => Code f g a (a + b)
-  Right :: Cbpv f g => Code f g b (a + b)
-  Fanin :: Cbpv f g => Code f g a c -> Code f g b c -> Code f g (a + b) c
+  Absurd :: Code g => Cde f g Void a
+  Left :: Code g => Cde f g a (a + b)
+  Right :: Code g => Cde f g b (a + b)
+  Fanin :: Code g => Cde f g a c -> Cde f g b c -> Cde f g (a + b) c
 
-outC :: Code f g a b -> g a b
+outC :: Cde f g a b -> g a b
 outC expr = case expr of
   C x -> x
   IdC -> id
@@ -68,7 +68,7 @@ outC expr = case expr of
   Right -> right
   Fanin f g -> outC f ||| outC g
 
-outK :: Stack f g a b -> f a b
+outK :: Stk f g a b -> f a b
 outK expr = case expr of
   K x -> x
   IdK -> id
@@ -80,7 +80,7 @@ outK expr = case expr of
   Return x -> return (outC x)
   Force y -> force (outC y)
 
-recurseC :: Code f g a b -> Code f g a b
+recurseC :: Cde f g a b -> Cde f g a b
 recurseC expr = case expr of
   C x -> C x
   IdC -> id
@@ -98,7 +98,7 @@ recurseC expr = case expr of
   Right -> right
   Fanin f g -> simpC f ||| simpC g
 
-recurseK :: Stack f g a b -> Stack f g a b
+recurseK :: Stk f g a b -> Stk f g a b
 recurseK expr = case expr of
   K x -> K x
   IdK -> id
@@ -110,7 +110,7 @@ recurseK expr = case expr of
   Return x -> return (simpC x)
   Force y -> force (simpC y)
 
-optC :: Code f g a b -> Maybe (Code f g a b)
+optC :: Cde f g a b -> Maybe (Cde f g a b)
 optC expr = case expr of
   ComposeC IdC f -> Just f
   ComposeC (Fanin f _) Left -> Just f
@@ -136,7 +136,7 @@ optC expr = case expr of
 
   _ -> Nothing
 
-optK :: Stack f g a b -> Maybe (Stack f g a b)
+optK :: Stk f g a b -> Maybe (Stk f g a b)
 optK expr = case expr of
   ComposeK IdK f -> Just f
   ComposeK f IdK -> Just f
@@ -159,30 +159,32 @@ optK expr = case expr of
 
   _ -> Nothing
 
-simpC :: Code f g a b -> Code f g a b
+simpC :: Cde f g a b -> Cde f g a b
 simpC expr = case optC expr of
   Just x -> simpC x
   Nothing -> recurseC expr
 
-simpK :: Stack f g a b -> Stack f g a b
+simpK :: Stk f g a b -> Stk f g a b
 simpK expr = case optK expr of
   Just x -> simpK x
   Nothing -> recurseK expr
 
-instance Category f => Category (Stack f g) where
+instance Category f => Category (Stk f g) where
   id = IdK
   (.) = ComposeK
 
-instance Category g => Category (Code f g) where
+instance Category g => Category (Cde f g) where
   id = IdC
   (.) = ComposeC
 
-instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
-  return = Return
+instance Stack f => Stack (Stk f g) where
+  pop = Pop
+  push = Push
 
-  thunk = Thunk
-  force = Force
+  curry = Curry
+  uncurry = Uncurry
 
+instance Code g => Code (Cde f g) where
   unit = Unit
   (&&&) = Fanout
   first = First
@@ -193,11 +195,11 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   left = Left
   right = Right
 
-  pop = Pop
-  push = Push
+instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
+  return = Return
 
-  curry = Curry
-  uncurry = Uncurry
+  thunk = Thunk
+  force = Force
 
   be x f = C $ be (outC x) $ \x' -> outC (f (C x'))
   letTo x f = K $ letTo (outK x) $ \x' -> outK (f (C x'))

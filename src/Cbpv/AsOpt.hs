@@ -4,7 +4,7 @@
 {-# LANGUAGE GADTs #-}
 
 -- | Remove duplicate force/thunk pairs
-module Cbpv.AsOpt (Stack, Code, opt) where
+module Cbpv.AsOpt (Stk, Cde, opt) where
 
 import Cbpv
 import qualified Cbpv.AsRepeat as AsRepeat
@@ -14,26 +14,21 @@ import qualified Lambda.Type as Lambda
 import qualified Lambda as Lambda
 import Prelude hiding ((.), id, curry, uncurry, Monad (..))
 
-newtype Stack f g a b = K (AsRepeat.Stack f g a b)
-newtype Code f g a b = C (AsRepeat.Code f g a b)
+newtype Stk f g a b = K (AsRepeat.Stk f g a b)
+newtype Cde f g a b = C (AsRepeat.Cde f g a b)
 
-opt :: Code f g a b -> g a b
-opt (C x) = AsRepeat.repeat 20 x
+opt :: Cde f g a b -> g a b
+opt (C x) = AsRepeat.repeat 100 x
 
-instance (Category f, Category g) => Category (Stack f g) where
+instance (Category f, Category g) => Category (Stk f g) where
   id = K id
   K f . K g = K (f . g)
 
-instance (Category f, Category g) => Category (Code f g) where
+instance (Category f, Category g) => Category (Cde f g) where
   id = C id
   C f . C g = C (f . g)
 
-instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
-  thunk (K f) = C (thunk f)
-  force (C f) = K (force f)
-
-  return (C f) = K (return f)
-
+instance Cbpv f g => Code (Cde f g) where
   unit = C unit
   C f &&& C g = C (f &&& g)
   first = C first
@@ -44,11 +39,18 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   left = C left
   right = C right
 
+instance Cbpv f g => Stack (Stk f g) where
   pop = K pop
   push = K push
 
   uncurry (K f) = K (uncurry f)
   curry (K f) = K (curry f)
+
+instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
+  thunk (K f) = C (thunk f)
+  force (C f) = K (force f)
+
+  return (C f) = K (return f)
 
   be (C x) f = C $ be x $ \x' -> case f (C x') of
     C y -> y

@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Cbpv.AsRepeat (Stack, Code, repeat) where
+module Cbpv.AsRepeat (Stk, Cde, repeat) where
 
 import Cbpv
 import qualified Cbpv.AsSimplified as AsSimplified
@@ -8,30 +8,30 @@ import Control.Category
 import Cbpv.Sort
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), repeat)
 
-data Stack f g a b = K {
+data Stk f g a b = K {
   outK :: f a b,
-  stepK :: Stack (AsSimplified.Stack f g) (AsSimplified.Code f g) a b
+  stepK :: Stk (AsSimplified.Stk f g) (AsSimplified.Cde f g) a b
   }
-data Code f g a b = C {
+data Cde f g a b = C {
   outC :: g a b,
-  stepC :: Code (AsSimplified.Stack f g) (AsSimplified.Code f g) a b
+  stepC :: Cde (AsSimplified.Stk f g) (AsSimplified.Cde f g) a b
   }
 
-repeat :: Int -> Code f g a b -> g a b
+repeat :: Int -> Cde f g a b -> g a b
 repeat = loop
 
-loop :: Int -> Code f g a b -> g a b
+loop :: Int -> Cde f g a b -> g a b
 loop n x | n == 0 = outC x
          | otherwise = AsSimplified.simplify (loop (n - 1) (stepC x))
 
-instance (Category f, Category g) => Category (Stack f g) where
+instance (Category f, Category g) => Category (Stk f g) where
   id = K id id
   f . g = me where
     me = K {
       outK = outK f . outK g,
       stepK = stepK f . stepK g
       }
-instance (Category f, Category g) => Category (Code f g) where
+instance (Category f, Category g) => Category (Cde f g) where
   id = C id id
   f . g = me where
     me = C {
@@ -39,24 +39,7 @@ instance (Category f, Category g) => Category (Code f g) where
       stepC = stepC f . stepC g
       }
 
-instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
-  thunk f = me where
-    me = C {
-      outC = thunk (outK f),
-      stepC = thunk (stepK f)
-      }
-  force f = me where
-    me = K {
-      outK = force (outC f),
-      stepK = force (stepC f)
-      }
-
-  return f = me where
-    me = K {
-      outK = return (outC f),
-      stepK = return (stepC f)
-      }
-
+instance Cbpv f g => Code (Cde f g) where
   unit = C unit unit
   f &&& g = me where
     me = C {
@@ -75,6 +58,7 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
   left = C left left
   right = C right right
 
+instance Cbpv f g => Stack (Stk f g) where
   pop = K pop pop
   push = K push push
 
@@ -87,6 +71,24 @@ instance Cbpv f g => Cbpv (Stack f g) (Code f g) where
     me = K {
       outK = curry (outK f),
       stepK = curry (stepK f)
+      }
+
+instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
+  thunk f = me where
+    me = C {
+      outC = thunk (outK f),
+      stepC = thunk (stepK f)
+      }
+  force f = me where
+    me = K {
+      outK = force (outC f),
+      stepK = force (stepC f)
+      }
+
+  return f = me where
+    me = K {
+      outK = return (outC f),
+      stepK = return (stepC f)
       }
 
   be x f = C (be (outC x) outF) (be (stepC x) stepF) where

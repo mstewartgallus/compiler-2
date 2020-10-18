@@ -10,29 +10,24 @@ import Control.Monad.State
 import Cbpv.Sort
 import Prelude hiding ((.), id)
 
-newtype Stack (a :: Algebra) (b :: Algebra) = K (State Int String)
+newtype Stk (a :: Algebra) (b :: Algebra) = K (State Int String)
 
-newtype Code (a :: Set) (b :: Set) = C (State Int String)
+newtype Cde (a :: Set) (b :: Set) = C (State Int String)
 
-view :: Code a b -> String
+view :: Cde a b -> String
 view (C v) = evalState v 0
 
-instance Category Stack where
+instance Category Stk where
   id = K $ pure "pass"
   K f . K g = K $ pure (\f' g' -> g' ++ ";\n" ++ f') <*> f <*> g
 
-instance Category Code where
+instance Category Cde where
   id = C $ pure "id"
   C f . C g = C $ pure (\f' g' -> f' ++ " ∘ " ++ g') <*> f <*> g
 
 indent = unlines . map ("\t" ++) . lines
 
-instance Cbpv Stack Code where
-  return (C f) = K $ pure (\f' -> "return " ++ f' ++ "") <*> f
-
-  thunk (K f) = C $ pure (\f' -> "thunk {" ++ indent ("\n" ++ f')  ++ "}") <*> f
-  force (C f) = K $ pure (\f' -> "force " ++ f' ++ "") <*> f
-
+instance Code Cde where
   unit = C $ pure "unit"
   C f &&& C g = C $ pure (\f' g' -> "⟨" ++ f' ++ ", " ++ g' ++ "⟩") <*> f <*> g
   first = C $ pure "π₁"
@@ -43,11 +38,18 @@ instance Cbpv Stack Code where
   left = C $ pure "i₁"
   right = C $ pure "i₂"
 
+instance Stack Stk where
   pop = K $ pure "pop"
   push = K $ pure "push"
 
   curry (K f) = K $ pure (\f' -> "λ\n" ++ f' ++ "") <*> f
   uncurry (K f) = K $ pure (\f' -> "!\n" ++ f' ++ "") <*> f
+
+instance Cbpv Stk Cde where
+  return (C f) = K $ pure (\f' -> "return " ++ f' ++ "") <*> f
+
+  thunk (K f) = C $ pure (\f' -> "thunk {" ++ indent ("\n" ++ f')  ++ "}") <*> f
+  force (C f) = K $ pure (\f' -> "force " ++ f' ++ "") <*> f
 
   be (C x) f = C $ do
     v <- fresh
