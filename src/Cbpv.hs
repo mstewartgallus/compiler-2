@@ -38,13 +38,12 @@ class Category code => Code code where
   right :: code b (a + b)
 
 class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack where
-  return :: code env a -> stack (F env) (F a)
+  -- | fixme.. deprecate
+  return :: code env a -> stack (env & x) (a & x)
+  return x = pop undefined (\env -> push (x . env))
 
   thunk :: stack (F x) y -> code x (U y)
   force :: code x (U y) -> stack (F x) y
-
-  letTo :: stack x (F a) -> (code Unit a -> stack x c) -> stack x c
-  be :: code x a -> (code Unit a -> code x c) -> code x c
 
   pop :: SSet a -> (code Unit a -> stack b c) -> stack (a & b) c
   push :: code Unit a -> stack b (a & b)

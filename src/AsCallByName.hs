@@ -14,7 +14,6 @@ import Cbpv.Sort
 import Control.Category
 import qualified Lambda
 import qualified Lambda.HasExp as Exp
-import qualified Lambda.HasLet as Let
 import qualified Lambda.HasProduct as Product
 import qualified Lambda.HasSum as Sum
 import qualified Lambda.HasUnit as Lambda
@@ -66,13 +65,6 @@ instance Cbpv c d => Exp.HasExp (Expr d) where
       zeta (SU (asAlgebra t)) $ \x -> case f (E (x . unit)) of
         E y -> force y
   pass (E x) = E $ thunk (pass (x . thunk (return unit)) . force id)
-
-instance Cbpv c d => Let.HasLet (Expr d) where
-  be t (E x) f =
-    E $
-      ( x `be` \x' -> case f (E (x' . unit)) of
-          E y -> y
-      )
 
 instance Cbpv c d => Lambda.Lambda (Expr d) where
   u64 x = E (thunk (return (u64 x) . force id))

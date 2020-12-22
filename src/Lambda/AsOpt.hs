@@ -9,7 +9,6 @@ module Lambda.AsOpt (Expr, opt) where
 import Lambda
 import Control.Category
 import Lambda.HasExp
-import Lambda.HasLet
 import Lambda.HasUnit
 import Lambda.HasProduct
 import Lambda.HasSum
@@ -45,10 +44,6 @@ instance HasSum f => HasSum (Expr f) where
   E f ||| E g = E (f ||| g)
   left = E left
   right = E right
-
-instance HasLet f => HasLet (Expr f) where
-  be t (E x) f = E $ be t x $ \x' -> case f (E x') of
-    E y -> y
 
 instance Lambda f => Lambda (Expr f) where
   u64 x = E (u64 x)

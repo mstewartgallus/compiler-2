@@ -12,7 +12,6 @@ module Lambda.AsSimplified (Expr, simplify) where
 import Lambda
 import Control.Category
 import Lambda.HasExp
-import Lambda.HasLet
 import Lambda.HasProduct
 import Lambda.HasUnit
 import Lambda.HasSum
@@ -111,9 +110,6 @@ instance HasSum f => HasSum (Expr f) where
   (|||) = Fanin
   left = Left
   right = Right
-
-instance HasLet f => HasLet (Expr f) where
-  be t (E x) f = E $ be t x $ \x' -> out (f (E x'))
 
 instance Lambda f => Lambda (Expr f) where
   u64 x = E (u64 x)

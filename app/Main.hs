@@ -26,7 +26,7 @@ main = do
   putStrLn (AsHoasView.view program)
 
   putStrLn ""
-  putStrLn "With Products"
+  putStrLn "Kappa/Zeta Decomposition"
   putStrLn (view compiled)
 
   putStrLn ""

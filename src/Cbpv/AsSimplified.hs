@@ -61,7 +61,6 @@ outK expr = case expr of
   K x -> x
   IdK -> id
   ComposeK f g -> outK f . outK g
-  Return x -> return (outC x)
   Force y -> force (outC y)
 
 recurseC :: Cde f g a b -> Cde f g a b
@@ -84,7 +83,6 @@ recurseK expr = case expr of
   K x -> K x
   IdK -> id
   ComposeK f g -> simpK f . simpK g
-  Return x -> return (simpC x)
   Force y -> force (simpC y)
 
 optC :: Cde f g a b -> Maybe (Cde f g a b)
@@ -115,8 +113,6 @@ optK expr = case expr of
   ComposeK f IdK -> Just f
 
   ComposeK (Force f) (Return g) -> Just $ force (f . g)
-
-  ComposeK (Return f) (Return g)  -> Just $ return (f . g)
 
   ComposeK (ComposeK f g) h  -> Just $ f . (g . h)
 
@@ -158,18 +154,15 @@ instance Code g => Code (Cde f g) where
   kappa t f = C $ kappa t $ \x' -> outC (f (C x'))
 
 instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
-  return = Return
-
   thunk = Thunk
   force = Force
 
   push x = K $ push (outC x)
-  pass x = K $ pass (outC x)
-
-  be x f = C $ be (outC x) $ \x' -> outC (f (C x'))
-  letTo x f = K $ letTo (outK x) $ \x' -> outK (f (C x'))
-  zeta t f = K $ zeta t $ \x' -> outK (f (C x'))
   pop t f = K $ pop t $ \x' -> outK (f (C x'))
+
+  pass x = K $ pass (outC x)
+  zeta t f = K $ zeta t $ \x' -> outK (f (C x'))
+
   u64 x = C (u64 x)
   constant t pkg name = K (constant t pkg name)
   lambdaIntrinsic x = C (lambdaIntrinsic x)

@@ -44,8 +44,6 @@ instance Code Cde where
 instance Stack Stk where
 
 instance Cbpv Stk Cde where
-  return (C f) = K $ pure (\f' -> "return " ++ f' ++ "") <*> f
-
   thunk (K f) = C $ pure (\f' -> "thunk {" ++ indent ("\n" ++ f')  ++ "}") <*> f
   force (C f) = K $ pure (\f' -> "force " ++ f' ++ "") <*> f
 
@@ -62,18 +60,6 @@ instance Cbpv Stk Cde where
     let K body = f (C $ pure v)
     body' <- body
     pure (\body' -> "(κ" ++ v ++ ".\n" ++ body' ++ ")") <*> body
-
-  be (C x) f = C $ do
-    v <- fresh
-    let C body = f (C $ pure v)
-    body' <- body
-    pure (\x' body' -> "" ++ x' ++ " be " ++ v ++ ".\n" ++ body' ++ "") <*> x <*> body
-
-  letTo (K x) f = K $ do
-    v <- fresh
-    let K body = f (C $ pure v)
-    body' <- body
-    pure (\x' body' -> "" ++ x' ++ " to " ++ v ++ ".\n" ++ body' ++ "") <*> x <*> body
 
   u64 x = C $ pure (show x)
   constant _ pkg name = K $ pure (pkg ++ "/" ++ name)

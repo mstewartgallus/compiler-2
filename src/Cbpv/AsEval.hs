@@ -65,27 +65,17 @@ instance Code Cde where
 instance Stack Stk where
 
 instance Cbpv Stk Cde where
-  push (C f) = S $ \x -> f Unit :& x
-  return (C f) = S $ \(x :& w) -> f x :& w
-
   thunk (S f) = C $ \x -> Thunk $ \w -> f (x :& Effect w)
   force (C f) = S $ \(x :& Effect w) -> case f x of
     Thunk t -> t w
 
-  be (C x) f = C $ \env -> case f (C $ const (x env)) of
-    C y -> y env
-
   pass (C x) = S $ \(Lam f) -> f (x Unit)
   zeta _ f = S $ \env -> Lam $ \x -> case f (C $ const x) of
     S y -> y env
+
+  push (C f) = S $ \x -> f Unit :& x
   pop _ f = S $ \(h :& t) -> case f (C $ const h) of
     S y -> y t
-
-  -- | fixme... not quite right..
-  letTo (S x) f = S $ \env -> case x env of
-    x' :& env' -> case f (C $ const x') of
-          S y -> y env
-
 
   u64 x = C $ const (U64 x)
   constant t pkg name = case (t, pkg, name) of

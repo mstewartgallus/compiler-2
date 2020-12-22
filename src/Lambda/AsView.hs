@@ -10,7 +10,6 @@ import Lambda
 import Lambda.HasUnit
 import Lambda.HasProduct
 import Lambda.HasSum
-import Lambda.HasLet
 import Lambda.Type
 import Control.Monad.State
 
@@ -46,12 +45,6 @@ instance HasSum View where
   V f ||| V g = V $ pure (\f' g' -> "[" ++ f' ++ " , " ++ g' ++ "]") <*> f <*> g
   left = V $ pure "i₁"
   right = V $ pure "i₂"
-
-instance HasLet View where
-  be t (V x) f = V $ do
-    v <- fresh
-    let V body = f (V $ pure v)
-    pure (\x' body' -> "(" ++ x' ++ " be " ++ v ++ ": " ++ "?" ++ ".\n" ++ body' ++ ")") <*> x <*> body
 
 instance Lambda View where
   u64 x = V $ pure (show x)

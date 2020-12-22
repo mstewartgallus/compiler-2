@@ -75,33 +75,12 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
       stepK = force (stepC f)
       }
 
-  return f = me where
-    me = K {
-      outK = return (outC f),
-      stepK = return (stepC f)
-      }
-  pass f = me where
-    me = K {
-      outK = pass (outC f),
-      stepK = pass (stepC f)
-      }
-  push f = me where
-    me = K {
-      outK = push (outC f),
-      stepK = push (stepC f)
-      }
-
-  be x f = C (be (outC x) outF) (be (stepC x) stepF) where
-    outF x' = outC (f (C x' undefined))
-    stepF x' = stepC (f (C undefined x'))
-
-  letTo x f = K (letTo (outK x) outF) (letTo (stepK x) stepF) where
-    outF x' = outK (f (C x' undefined))
-    stepF x' = stepK (f (C undefined x'))
-
+  pass f = K (pass (outC f)) (pass (stepC f))
   zeta t f = K (zeta t outF) (zeta t stepF) where
     outF x' = outK (f (C x' undefined))
     stepF x' = stepK (f (C undefined x'))
+
+  push f = K (push (outC f)) (push (stepC f))
   pop t f = K (pop t outF) (pop t stepF) where
     outF x' = outK (f (C x' undefined))
     stepF x' = stepK (f (C undefined x'))

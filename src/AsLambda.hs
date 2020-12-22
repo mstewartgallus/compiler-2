@@ -15,7 +15,6 @@ import qualified Hoas as Hoas
 import qualified Hoas.Type as Type
 import Lambda
 import Lambda.HasExp
-import Lambda.HasLet
 import Lambda.HasProduct
 import Lambda.HasSum
 import Lambda.HasUnit
