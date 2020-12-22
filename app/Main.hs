@@ -47,7 +47,7 @@ main = do
 
 type TYPE = U64
 
-program :: Hoas t => t Unit TYPE
+program :: Hoas t => t TYPE
 program =
   u64 3 `letBe` \z ->
     add <*> z <*> z

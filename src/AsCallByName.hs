@@ -33,7 +33,13 @@ instance Cbpv c d => Product.HasProduct (Expr d) where
   unit = E (thunk (return unit))
 
   lift (E x) = E $ thunk (dolift (x . thunk (return unit)))
-  kappa _ f = E $ thunk $ pop undefined $ \x -> undefined
+  kappa t f =
+    E $
+      thunk $
+        ( pop (SU (asAlgebra t)) $ \x -> case f (E (x . unit)) of
+            E y -> force y
+        )
+          . force id
 
 dolift ::
   Cbpv c d =>
@@ -44,9 +50,6 @@ dolift ::
 dolift a = pop undefined $ \b ->
   push b
     >>> push a
-
--- (thunk (force (kappa undefined (\x -> case f (E (x . unit)) of
---         E y -> y)) . force id))
 
 instance Cbpv c d => Sum.HasSum (Expr d) where
   absurd = E (thunk (force absurd . force id))

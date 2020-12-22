@@ -9,14 +9,10 @@ import Hoas.Type
 import Control.Category
 import Control.Monad.State
 
-newtype View (a :: T) (b :: T) = V (State Int String)
+newtype View (a :: T) = V (State Int String)
 
-view :: View a b -> String
+view :: View a -> String
 view (V v) = evalState v 0
-
-instance Category View where
-  id = V $ pure "id"
-  V f . V g = V $ pure (\f' g' -> f' ++ " . " ++ g') <*> f <*> g
 
 instance Hoas View where
   be (V x) t f = V $ do

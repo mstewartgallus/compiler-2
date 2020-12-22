@@ -19,40 +19,29 @@ import Lambda.HasLet
 import Lambda.HasProduct
 import Lambda.HasSum
 import Lambda.Type
-import Prelude hiding (curry, id, uncurry, (.), (<*>))
+import Prelude hiding (curry, fst, id, snd, uncurry, (.), (<*>))
 
-pointFree :: PointFree k a b -> k (AsObject a) (AsObject b)
+pointFree :: PointFree k a -> k Unit (AsObject a)
 pointFree (Pf x) = x
 
-newtype PointFree k a b = Pf (k (AsObject a) (AsObject b))
-
-instance Lambda k => Category (PointFree k) where
-  id = Pf id
-  Pf f . Pf g = Pf (f . g)
+newtype PointFree k a = Pf (k Unit (AsObject a))
 
 instance Lambda k => Hoas.Hoas (PointFree k) where
-  Pf f <*> Pf x = Pf (apply f x)
+  Pf f <*> Pf x = Pf (pass x . f)
 
   lam t f = Pf $
     zeta (asObject t) $ \x -> case f (Pf x) of
       Pf y -> y
 
-  be (Pf x) t f = Pf me
-    where
-      me = be (asObject t) x $ \x' -> case f (Pf x') of
-        Pf y -> y
+  be (Pf x) t f =
+    Pf $
+      lift x
+        >>> ( kappa (asObject t) $ \x' -> case f (Pf x') of
+                Pf y -> y
+            )
 
   u64 x = Pf (u64 x)
   constant t pkg name = Pf (constant t pkg name)
-
--- fixme... figure out ST..
-apply :: Lambda k => k x (a ~> b) -> k x a -> k x b
-apply f x =
-  be undefined x $ \x' ->
-    be undefined f $ \f' ->
-      unit
-        >>> f'
-        >>> pass x'
 
 fst :: Lambda k => k (x * y) x
 fst = kappa undefined $ \x -> x . unit
