@@ -31,13 +31,18 @@ instance Category f => Category (Expr f) where
       }
 instance HasProduct f => HasProduct (Expr f) where
   unit = E unit unit
-  f &&& g = me where
+  lift f = me where
     me = E {
-      out = out f &&& out g,
-      step = step f &&& step g
+      out = lift (out f),
+      step = lift (step f)
       }
-  first = E first first
-  second = E second second
+
+  kappa t f = me where
+    me = E {
+      out = kappa t $ \x -> out (f (E x undefined)),
+      step = kappa t $ \x -> step (f (E undefined x))
+           }
+
 instance HasSum f => HasSum (Expr f) where
   absurd = E absurd absurd
   f ||| g = me where
@@ -48,16 +53,16 @@ instance HasSum f => HasSum (Expr f) where
   left = E left left
   right = E right right
 instance HasExp f => HasExp (Expr f) where
-  uncurry f = me where
+  zeta t f =  me where
     me = E {
-      out = uncurry (out f),
-      step = uncurry (step f)
-      }
-  curry f = me where
+      out = zeta t $ \x -> out (f (E x undefined)),
+      step = zeta t $ \x -> step (f (E undefined x))
+           }
+  pass x = me where
     me = E {
-      out = curry (out f),
-      step = curry (step f)
-      }
+      out = pass (out x),
+      step = pass (step x)
+           }
 instance HasLet f => HasLet (Expr f) where
   be t x f = me where
     me = E {

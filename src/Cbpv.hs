@@ -25,17 +25,12 @@ import Prelude hiding (curry, id, return, uncurry, (.), (<*>))
 --
 -- Paul Blain Levy. "Call-by-Push-Value: A Subsuming Paradigm".
 class Category stack => Stack stack where
-  pop :: stack (a & (b & c)) ((a * b) & c)
-  push :: stack ((a * b) & c) (a & (b & c))
-
-  curry :: stack (a & env) b -> stack env (a ~> b)
-  uncurry :: stack env (a ~> b) -> stack (a & env) b
+  foo :: stack (a & env) b -> stack env (a ~> b)
 
 class Category code => Code code where
   unit :: code x Unit
-  (&&&) :: code env a -> code env b -> code env (a * b)
-  first :: code (a * b) a
-  second :: code (a * b) b
+  kappa :: SSet a -> (code Unit a -> code b c) -> code (a * b) c
+  lift :: code Unit a -> code b (a * b)
 
   absurd :: code Void x
   (|||) :: code a c -> code b c -> code (a + b) c
@@ -50,6 +45,12 @@ class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack
 
   letTo :: stack x (F a) -> (code Unit a -> stack x c) -> stack x c
   be :: code x a -> (code Unit a -> code x c) -> code x c
+
+  pop :: SSet a -> (code Unit a -> stack b c) -> stack (a & b) c
+  push :: code Unit a -> stack b (a & b)
+
+  zeta :: SSet a -> (code Unit a -> stack b c) -> stack b (a ~> c)
+  pass :: code Unit a -> stack (a ~> b) b
 
   u64 :: Word64 -> code Unit U64
 
@@ -66,7 +67,5 @@ data Intrinsic a b where
 instance Show (Intrinsic a b) where
   show x = case x of
     AddIntrinsic -> "$add"
-
-infixl 9 &&&
 
 infixl 9 |||

@@ -25,9 +25,12 @@ instance Category View where
 instance HasProduct View where
   unit = V $ pure "unit"
 
-  V f &&& V g = V $ pure (\f' g' -> "⟨" ++ f' ++ " , " ++ g' ++ "⟩") <*> f <*> g
-  first = V $ pure "π₁"
-  second = V $ pure "π₂"
+  lift (V f) = V $ pure (\f' -> "(lift " ++ f' ++ ")") <*> f
+
+  kappa t f =  V $ do
+    v <- fresh
+    let V body = f (V $ pure v)
+    pure (\body' -> "(kappa " ++ v ++ ": -" ++ ".\n" ++ body' ++ ")") <*> body
 
 instance HasSum View where
   absurd = V $ pure "absurd"
@@ -37,14 +40,17 @@ instance HasSum View where
   right = V $ pure "i₂"
 
 instance HasExp View where
-  curry (V f) = V $ pure (\f' -> "(λ " ++ f' ++ ")") <*> f
-  uncurry (V f) = V $ pure (\f' -> "(! " ++ f' ++ ")") <*> f
+  pass (V x) = V $ pure (\x' -> "(pass " ++ x') <*> x
+  zeta t f = V $ do
+    v <- fresh
+    let V body = f (V $ pure v)
+    pure (\body' -> "(zeta " ++ v ++ ": " ++ "-" ++ ".\n" ++ body' ++ ")") <*> body
 
 instance HasLet View where
   be t (V x) f = V $ do
     v <- fresh
     let V body = f (V $ pure v)
-    pure (\x' body' -> "(" ++ x' ++ " be " ++ v ++ ": " ++ show t ++ ".\n" ++ body' ++ ")") <*> x <*> body
+    pure (\x' body' -> "(" ++ x' ++ " be " ++ v ++ ": " ++ "?" ++ ".\n" ++ body' ++ ")") <*> x <*> body
 
 instance Lambda View where
   u64 x = V $ pure (show x)

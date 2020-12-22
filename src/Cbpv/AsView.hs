@@ -29,9 +29,12 @@ indent = unlines . map ("\t" ++) . lines
 
 instance Code Cde where
   unit = C $ pure "unit"
-  C f &&& C g = C $ pure (\f' g' -> "⟨" ++ f' ++ ", " ++ g' ++ "⟩") <*> f <*> g
-  first = C $ pure "π₁"
-  second = C $ pure "π₂"
+
+  lift (C f) = C $ pure (\f' -> "(lift " ++ f' ++ ")") <*> f
+  kappa _ f = C $ do
+    v <- fresh
+    let C body = f (C $ pure v)
+    pure (\body' -> "kappa " ++ v ++ ".\n" ++ body' ++ "") <*> body
 
   absurd = C $ pure "absurd"
   C f ||| C g = C $ pure (\f' g' -> "[" ++ f' ++ " , " ++ g' ++ "]") <*> f <*> g
@@ -39,17 +42,26 @@ instance Code Cde where
   right = C $ pure "i₂"
 
 instance Stack Stk where
-  pop = K $ pure "pop"
-  push = K $ pure "push"
-
-  curry (K f) = K $ pure (\f' -> "λ\n" ++ f' ++ "") <*> f
-  uncurry (K f) = K $ pure (\f' -> "!\n" ++ f' ++ "") <*> f
 
 instance Cbpv Stk Cde where
   return (C f) = K $ pure (\f' -> "return " ++ f' ++ "") <*> f
 
   thunk (K f) = C $ pure (\f' -> "thunk {" ++ indent ("\n" ++ f')  ++ "}") <*> f
   force (C f) = K $ pure (\f' -> "force " ++ f' ++ "") <*> f
+
+  pass (C f) = K $ pure (\f' -> "(pass " ++ f' ++ ")") <*> f
+  push (C f) = K $ pure (\f' -> "(push " ++ f' ++ ")") <*> f
+
+  zeta t f = K $ do
+    v <- fresh
+    let K body = f (C $ pure v)
+    body' <- body
+    pure (\body' -> "(ζ" ++ v ++ ": " ++ "-" ++ ".\n" ++ body' ++ ")") <*> body
+  pop t f = K $ do
+    v <- fresh
+    let K body = f (C $ pure v)
+    body' <- body
+    pure (\body' -> "(κ" ++ v ++ ".\n" ++ body' ++ ")") <*> body
 
   be (C x) f = C $ do
     v <- fresh

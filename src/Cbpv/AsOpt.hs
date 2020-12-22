@@ -30,32 +30,35 @@ instance (Category f, Category g) => Category (Cde f g) where
 
 instance Cbpv f g => Code (Cde f g) where
   unit = C unit
-  C f &&& C g = C (f &&& g)
-  first = C first
-  second = C second
 
   absurd = C absurd
   C f ||| C g = C (f ||| g)
   left = C left
   right = C right
 
-instance Cbpv f g => Stack (Stk f g) where
-  pop = K pop
-  push = K push
+  lift (C f) = C (lift f)
+  kappa t f = C $ kappa t $ \x -> case f (C x) of
+    C y -> y
 
-  uncurry (K f) = K (uncurry f)
-  curry (K f) = K (curry f)
+instance Cbpv f g => Stack (Stk f g) where
 
 instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
   thunk (K f) = C (thunk f)
   force (C f) = K (force f)
 
   return (C f) = K (return f)
+  pass (C f) = K (pass f)
+  push (C f) = K (push f)
 
   be (C x) f = C $ be x $ \x' -> case f (C x') of
     C y -> y
 
   letTo (K x) f = K $ letTo x $ \x' -> case f (C x') of
+    K y -> y
+
+  zeta t f = K $ zeta t $ \x -> case f (C x) of
+    K y -> y
+  pop t f = K $ pop t $ \x -> case f (C x) of
     K y -> y
 
   u64 x = C (u64 x)
@@ -71,5 +74,17 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
 addIntrinsic :: Cbpv stack code => code (U (AsAlgebra (Lambda.U64 Lambda.* Lambda.U64))) (U (AsAlgebra Lambda.U64))
 addIntrinsic = thunk (doAdd . force id)
 
-doAdd :: Cbpv stack code => stack (F (U (F U64) * U (F U64))) (F U64)
-doAdd = uncurry (curry (uncurry (curry (return add . pop) . force id) . push . return (second &&& first) . pop) . force id) . push
+doAdd :: Cbpv stack code => stack (U (F U64) & F (U (F U64))) (F U64)
+doAdd =
+  pop inferSet $ \x ->
+  pop inferSet $ \y ->
+  push unit >>>
+  force x >>> (
+  pop inferSet $ \x' ->
+  push unit >>>
+  force y >>> (
+  pop inferSet $ \y' ->
+  push (addi . lift x' . y')))
+
+addi :: Cbpv stack code => code (U64 * U64) U64
+addi = cbpvIntrinsic AddIntrinsic

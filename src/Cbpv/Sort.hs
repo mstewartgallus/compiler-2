@@ -21,7 +21,9 @@ module Cbpv.Sort
     type (&),
     type (~>),
 AsAlgebra,
-asAlgebra
+asAlgebra,
+KnownSet (..),
+KnownAlgebra (..)
   )
 where
 import qualified Lambda.Type as Type
@@ -79,15 +81,44 @@ type family AsAlgebra a where
   AsAlgebra (a Type.~> b) = U (AsAlgebra a) ~> AsAlgebra b
   AsAlgebra Type.Unit = F Unit
   AsAlgebra Type.Void = F Void
-  AsAlgebra (a Type.* b) = F (U (AsAlgebra a) * U (AsAlgebra b))
+  AsAlgebra (a Type.* b) = U (AsAlgebra a) & U (AsAlgebra b) & Empty
   AsAlgebra (a Type.+ b) = F (U (AsAlgebra a) + U (AsAlgebra b))
   AsAlgebra Type.U64 = F U64
 
 asAlgebra :: Type.ST a -> SAlgebra (AsAlgebra a)
 asAlgebra t = case t of
   a Type.:-> b -> SU (asAlgebra a) :-> asAlgebra b
-  a Type.:*: b -> (SU (asAlgebra a) :*: SU (asAlgebra b)) :&: SEmpty
+  a Type.:*: b -> SU (asAlgebra a) :&: (SU (asAlgebra b) :&: SEmpty)
   a Type.:+: b -> (SU (asAlgebra a) :+: SU (asAlgebra b)) :&: SEmpty
   Type.SU64 -> SU64 :&: SEmpty
   Type.SUnit -> SUnit :&: SEmpty
   Type.SVoid -> SVoid :&: SEmpty
+
+
+class KnownSet t where
+  inferSet :: SSet t
+class KnownAlgebra t where
+  inferAlgebra :: SAlgebra t
+
+instance KnownSet 'Unit where
+  inferSet = SUnit
+
+instance KnownSet 'Void where
+  inferSet = SVoid
+
+instance KnownSet 'U64 where
+  inferSet = SU64
+
+instance (KnownSet a, KnownSet b) => KnownSet ('Product a b) where
+  inferSet = inferSet :*: inferSet
+
+instance KnownAlgebra a => KnownSet ('U a) where
+  inferSet = SU inferAlgebra
+
+instance KnownAlgebra 'Empty where
+  inferAlgebra = SEmpty
+
+instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Asym a b) where
+  inferAlgebra = inferSet :&: inferAlgebra
+instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Exp a b) where
+  inferAlgebra = inferSet :-> inferAlgebra

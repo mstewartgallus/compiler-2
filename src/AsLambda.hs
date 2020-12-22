@@ -31,12 +31,11 @@ instance Lambda k => Category (PointFree k) where
   Pf f . Pf g = Pf (f . g)
 
 instance Lambda k => Hoas.Hoas (PointFree k) where
-  Pf f <*> Pf x = Pf (f <*> x)
+  Pf f <*> Pf x = Pf (apply f x)
 
-  lam t f = Pf (curry me)
-    where
-      me = be (asObject t) first $ \x' -> case f (Pf x') of
-        Pf y -> y . second
+  lam t f = Pf $
+    zeta (asObject t) $ \x -> case f (Pf x) of
+      Pf y -> y
 
   be (Pf x) t f = Pf me
     where
@@ -45,3 +44,18 @@ instance Lambda k => Hoas.Hoas (PointFree k) where
 
   u64 x = Pf (u64 x)
   constant t pkg name = Pf (constant t pkg name)
+
+-- fixme... figure out ST..
+apply :: Lambda k => k x (a ~> b) -> k x a -> k x b
+apply f x =
+  be undefined x $ \x' ->
+    be undefined f $ \f' ->
+      unit
+        >>> f'
+        >>> pass x'
+
+fst :: Lambda k => k (x * y) x
+fst = kappa undefined $ \x -> x . unit
+
+snd :: Lambda k => k (x * y) y
+snd = kappa undefined $ \x -> id

@@ -32,9 +32,21 @@ instance Cbpv c d => Category (Expr d) where
 instance Cbpv c d => Product.HasProduct (Expr d) where
   unit = E (thunk (return unit))
 
-  first = E (thunk (force first . force id))
-  second = E (thunk (force second . force id))
-  E f &&& E g = E (thunk (return (f &&& g)))
+  lift (E x) = E $ thunk (dolift (x . thunk (return unit)))
+  kappa _ f = E $ thunk $ pop undefined $ \x -> undefined
+
+dolift ::
+  Cbpv c d =>
+  d Unit (U a) ->
+  c
+    (F (U b))
+    (U a & (U b & Empty))
+dolift a = pop undefined $ \b ->
+  push b
+    >>> push a
+
+-- (thunk (force (kappa undefined (\x -> case f (E (x . unit)) of
+--         E y -> y)) . force id))
 
 instance Cbpv c d => Sum.HasSum (Expr d) where
   absurd = E (thunk (force absurd . force id))
@@ -44,8 +56,11 @@ instance Cbpv c d => Sum.HasSum (Expr d) where
   E f ||| E g = E (thunk (force (f ||| g) . force id))
 
 instance Cbpv c d => Exp.HasExp (Expr d) where
-  curry (E f) = E (thunk (curry (force f . return (thunk id) . pop)))
-  uncurry (E f) = E (thunk (uncurry (force f) . push . force id))
+  zeta t f = E $
+    thunk $
+      zeta (SU (asAlgebra t)) $ \x -> case f (E (x . unit)) of
+        E y -> force y
+  pass (E x) = E $ thunk (pass (x . thunk (return unit)) . force id)
 
 instance Cbpv c d => Let.HasLet (Expr d) where
   be t (E x) f =

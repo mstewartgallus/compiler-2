@@ -28,12 +28,6 @@ data Stk f g (a :: Algebra) (b :: Algebra) where
 
   Return :: Cbpv f g => Cde f g a b -> Stk f g (F a) (F b)
 
-  Push :: Stack f => Stk f g ((a * b) & c) (a & (b & c))
-  Pop :: Stack f => Stk f g (a & (b & c)) ((a * b) & c)
-
-  Curry :: Stack f => Stk f g (a & env) b -> Stk f g env (a ~> b)
-  Uncurry :: Stack f => Stk f g env (a ~> b) -> Stk f g (a & env) b
-
 data Cde f g (a :: Set) (b :: Set) where
   C :: g a b -> Cde f g a b
   IdC :: Category g => Cde f g a a
@@ -41,9 +35,6 @@ data Cde f g (a :: Set) (b :: Set) where
   Thunk :: Cbpv f g => Stk f g (F a) b -> Cde f g a (U b)
 
   Unit :: Code g => Cde f g a Unit
-  First :: Code g => Cde f g (a * b) a
-  Second :: Code g => Cde f g (a * b) b
-  Fanout :: Code g => Cde f g c a -> Cde f g c b -> Cde f g c (a * b)
 
   Absurd :: Code g => Cde f g Void a
   Left :: Code g => Cde f g a (a + b)
@@ -59,9 +50,6 @@ outC expr = case expr of
   Thunk y -> thunk (outK y)
 
   Unit -> unit
-  First -> first
-  Second -> second
-  Fanout f g -> outC f &&& outC g
 
   Absurd -> absurd
   Left -> left
@@ -73,10 +61,6 @@ outK expr = case expr of
   K x -> x
   IdK -> id
   ComposeK f g -> outK f . outK g
-  Push -> push
-  Pop -> pop
-  Curry f -> curry (outK f)
-  Uncurry f -> uncurry (outK f)
   Return x -> return (outC x)
   Force y -> force (outC y)
 
@@ -89,9 +73,6 @@ recurseC expr = case expr of
   Thunk y -> thunk (simpK y)
 
   Unit -> unit
-  First -> first
-  Second -> second
-  Fanout f g -> simpC f &&& simpC g
 
   Absurd -> absurd
   Left -> left
@@ -103,10 +84,6 @@ recurseK expr = case expr of
   K x -> K x
   IdK -> id
   ComposeK f g -> simpK f . simpK g
-  Push -> push
-  Pop -> pop
-  Curry f -> curry (simpK f)
-  Uncurry f -> uncurry (simpK f)
   Return x -> return (simpC x)
   Force y -> force (simpC y)
 
@@ -117,10 +94,7 @@ optC expr = case expr of
   ComposeC (Fanin _ f) Right -> Just f
 
   ComposeC Unit _ -> Just unit
-  ComposeC First (Fanout f _) -> Just f
-  ComposeC Second (Fanout _ f) -> Just f
 
-  ComposeC (Fanout f g) x -> Just $ (f . x) &&& (g . x)
   ComposeC (Thunk f) g -> Just $ thunk (f . return g)
 
   ComposeC (ComposeC f g) h  -> Just $ f . (g . h)
@@ -131,7 +105,6 @@ optC expr = case expr of
 
   Thunk (Force f) -> Just f
 
-  Fanout First Second -> Just id
   Fanin Left Right -> Just id
 
   _ -> Nothing
@@ -143,9 +116,6 @@ optK expr = case expr of
 
   ComposeK (Force f) (Return g) -> Just $ force (f . g)
 
-  ComposeK Pop Push -> Just id
-  ComposeK Push Pop -> Just id
-
   ComposeK (Return f) (Return g)  -> Just $ return (f . g)
 
   ComposeK (ComposeK f g) h  -> Just $ f . (g . h)
@@ -153,9 +123,6 @@ optK expr = case expr of
   Return IdC -> Just id
 
   Force (Thunk f) -> Just f
-
-  Curry (Uncurry f) -> Just f
-  Uncurry (Curry f) -> Just f
 
   _ -> Nothing
 
@@ -178,22 +145,17 @@ instance Category g => Category (Cde f g) where
   (.) = ComposeC
 
 instance Stack f => Stack (Stk f g) where
-  pop = Pop
-  push = Push
-
-  curry = Curry
-  uncurry = Uncurry
 
 instance Code g => Code (Cde f g) where
   unit = Unit
-  (&&&) = Fanout
-  first = First
-  second = Second
 
   absurd = Absurd
   (|||) = Fanin
   left = Left
   right = Right
+
+  lift x = C $ lift (outC x)
+  kappa t f = C $ kappa t $ \x' -> outC (f (C x'))
 
 instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
   return = Return
@@ -201,9 +163,13 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
   thunk = Thunk
   force = Force
 
+  push x = K $ push (outC x)
+  pass x = K $ pass (outC x)
+
   be x f = C $ be (outC x) $ \x' -> outC (f (C x'))
   letTo x f = K $ letTo (outK x) $ \x' -> outK (f (C x'))
-
+  zeta t f = K $ zeta t $ \x' -> outK (f (C x'))
+  pop t f = K $ pop t $ \x' -> outK (f (C x'))
   u64 x = C (u64 x)
   constant t pkg name = K (constant t pkg name)
   lambdaIntrinsic x = C (lambdaIntrinsic x)

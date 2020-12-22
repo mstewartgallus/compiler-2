@@ -28,9 +28,10 @@ instance Category f => Category (Expr f) where
 
 instance HasProduct f => HasProduct (Expr f) where
   unit = E unit
-  E f &&& E g = E (f &&& g)
-  first = E first
-  second = E second
+
+  lift (E f) = E (lift f)
+  kappa t f = E $ kappa t $ \x' -> case f (E x') of
+    E y -> y
 
 instance HasSum f => HasSum (Expr f) where
   absurd = E absurd
@@ -39,8 +40,9 @@ instance HasSum f => HasSum (Expr f) where
   right = E right
 
 instance HasExp f => HasExp (Expr f) where
-  curry (E f) = E (curry f)
-  uncurry (E f) = E (uncurry f)
+  zeta t f = E $ zeta t $ \x' -> case f (E x') of
+    E y -> y
+  pass (E x) = E (pass x)
 
 instance HasLet f => HasLet (Expr f) where
   be t (E x) f = E $ be t x $ \x' -> case f (E x') of
@@ -53,5 +55,6 @@ instance Lambda f => Lambda (Expr f) where
     _ -> constant t pkg name
 
 addIntrinsic :: Lambda f => f Unit (AsObject (Hoas.U64 Hoas.~> Hoas.U64 Hoas.~> Hoas.U64))
-addIntrinsic = curry $ curry $
-  add . (first &&& (first . second))
+addIntrinsic = zeta undefined $ \x ->
+               zeta undefined $ \y ->
+               add . lift x . y

@@ -41,13 +41,6 @@ instance (Category f, Category g) => Category (Cde f g) where
 
 instance Cbpv f g => Code (Cde f g) where
   unit = C unit unit
-  f &&& g = me where
-    me = C {
-      outC = outC f &&& outC g,
-      stepC = stepC f &&& stepC g
-      }
-  first = C first first
-  second = C second second
 
   absurd = C absurd absurd
   f ||| g = me where
@@ -58,20 +51,17 @@ instance Cbpv f g => Code (Cde f g) where
   left = C left left
   right = C right right
 
-instance Cbpv f g => Stack (Stk f g) where
-  pop = K pop pop
-  push = K push push
+  lift f = me where
+    me = C {
+      outC = lift (outC f),
+      stepC = lift (stepC f)
+      }
 
-  uncurry f = me where
-    me = K {
-      outK = uncurry (outK f),
-      stepK = uncurry (stepK f)
-      }
-  curry f = me where
-    me = K {
-      outK = curry (outK f),
-      stepK = curry (stepK f)
-      }
+  kappa t f = C (kappa t outF) (kappa t stepF) where
+    outF x' = outC (f (C x' undefined))
+    stepF x' = stepC (f (C undefined x'))
+
+instance Cbpv f g => Stack (Stk f g) where
 
 instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
   thunk f = me where
@@ -90,12 +80,29 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
       outK = return (outC f),
       stepK = return (stepC f)
       }
+  pass f = me where
+    me = K {
+      outK = pass (outC f),
+      stepK = pass (stepC f)
+      }
+  push f = me where
+    me = K {
+      outK = push (outC f),
+      stepK = push (stepC f)
+      }
 
   be x f = C (be (outC x) outF) (be (stepC x) stepF) where
     outF x' = outC (f (C x' undefined))
     stepF x' = stepC (f (C undefined x'))
 
   letTo x f = K (letTo (outK x) outF) (letTo (stepK x) stepF) where
+    outF x' = outK (f (C x' undefined))
+    stepF x' = stepK (f (C undefined x'))
+
+  zeta t f = K (zeta t outF) (zeta t stepF) where
+    outF x' = outK (f (C x' undefined))
+    stepF x' = stepK (f (C undefined x'))
+  pop t f = K (pop t outF) (pop t stepF) where
     outF x' = outK (f (C x' undefined))
     stepF x' = stepK (f (C undefined x'))
 

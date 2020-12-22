@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE Strict #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE EmptyCase #-}
@@ -61,19 +60,12 @@ instance Code Cde where
   right = C R
 
   unit = C $ const Unit
-  C x &&& C y = C $ \env -> Pair (x env) (y env)
-  first = C firstOf
-  second = C secondOf
+  lift (C x) = C $ \y -> Pair (x Unit) y
 
 instance Stack Stk where
-  curry (S f) = S $ \env -> Lam $ \x -> f (x :& env)
-  uncurry (S f) = S $ \(x :& env) -> case f env of
-     Lam y -> y x
-
-  pop = S $ \(a :& b :& c) -> Pair a b :& c
-  push = S $ \(Pair a b :& c) -> a :& b :& c
 
 instance Cbpv Stk Cde where
+  push (C f) = S $ \x -> f Unit :& x
   return (C f) = S $ \(x :& w) -> f x :& w
 
   thunk (S f) = C $ \x -> Thunk $ \w -> f (x :& Effect w)
@@ -83,10 +75,17 @@ instance Cbpv Stk Cde where
   be (C x) f = C $ \env -> case f (C $ const (x env)) of
     C y -> y env
 
+  pass (C x) = S $ \(Lam f) -> f (x Unit)
+  zeta _ f = S $ \env -> Lam $ \x -> case f (C $ const x) of
+    S y -> y env
+  pop _ f = S $ \(h :& t) -> case f (C $ const h) of
+    S y -> y t
+
   -- | fixme... not quite right..
   letTo (S x) f = S $ \env -> case x env of
     x' :& env' -> case f (C $ const x') of
           S y -> y env
+
 
   u64 x = C $ const (U64 x)
   constant t pkg name = case (t, pkg, name) of
@@ -103,10 +102,7 @@ addImpl = S $ \(Unit :& Effect w0) ->
                    U64 y' :& Effect w2 -> U64 (x' + y') :& Effect w2
 
 addLambdaImpl :: Cde (U (AsAlgebra (Lambda.U64 Lambda.* Lambda.U64))) (U (AsAlgebra Lambda.U64))
-addLambdaImpl = C $ \(Thunk input) -> Thunk $ \w0 -> case input w0 of
-  Pair (Thunk x) (Thunk y) :& Effect w1 -> case x w1 of
-    U64 x' :& Effect w2 -> case y w2 of
-      U64 y' :& Effect w3 -> U64 (x' + y') :& Effect w3
+addLambdaImpl = C $ \(Thunk input) -> undefined
 
 addCbpvImpl :: Cde (U64 * U64) U64
 addCbpvImpl = C $ \(Pair (U64 x) (U64 y)) -> U64 (x + y)

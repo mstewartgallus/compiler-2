@@ -37,8 +37,7 @@ data Expr f a b where
   Right :: HasSum f => Expr f b (a + b)
   Fanin :: HasSum f => Expr f a c -> Expr f b c -> Expr f (a + b) c
 
-  Curry :: HasExp f => Expr f (a * env) b -> Expr f env (a ~> b)
-  Uncurry :: HasExp f => Expr f env (a ~> b) -> Expr f (a * env) b
+  Pass :: HasExp f => Expr f Unit a -> Expr f (a ~> b) b
 
 simp :: Expr f a b -> Expr f a b
 simp expr = case opt expr of
@@ -50,12 +49,6 @@ opt expr  = case expr of
   Fanout First Second -> Just id
   Fanin Left Right -> Just id
 
-  Compose (Curry f) g -> Just $ curry (f . (first &&& (g . second)))
-  Uncurry (Compose f g) -> Just $ uncurry f . (first &&& (g . second))
-
-  Curry (Uncurry f) -> Just f
-  Uncurry (Curry f) -> Just f
-
   Compose Id f -> Just f
   Compose f Id -> Just f
 
@@ -64,12 +57,8 @@ opt expr  = case expr of
   Compose (Fanin _ f) Right -> Just f
 
   Compose Unit _ -> Just unit
-  Compose First (Fanout f _) -> Just f
-  Compose Second (Fanout _ f) -> Just f
 
   Compose x (Fanin f g) -> Just ((x . f) ||| (x . g))
-  Compose (Fanout f g) x -> Just ((f . x) &&& (g . x))
-
   Compose (Compose f g) h  -> Just (f . (g . h))
 
   _ -> Nothing
@@ -82,17 +71,13 @@ recurse expr = case expr of
   Compose f g -> simp f . simp g
 
   Unit -> unit
-  First -> first
-  Second -> second
-  Fanout f g -> simp f &&& simp g
 
   Absurd -> absurd
   Left -> left
   Right -> right
   Fanin f g -> simp f ||| simp g
 
-  Curry f -> curry (simp f)
-  Uncurry f -> uncurry (simp f)
+  Pass x -> pass (simp x)
 
 out :: Expr f a b -> f a b
 out expr = case expr of
@@ -101,17 +86,13 @@ out expr = case expr of
   Compose f g -> out f . out g
 
   Unit -> unit
-  First -> first
-  Second -> second
-  Fanout f g -> out f &&& out g
 
   Absurd -> absurd
   Left -> left
   Right -> right
   Fanin f g -> out f ||| out g
 
-  Curry f -> curry (out f)
-  Uncurry f -> uncurry (out f)
+  Pass x -> pass (out x)
 
 instance Category f => Category (Expr f) where
   id = Id
@@ -119,9 +100,8 @@ instance Category f => Category (Expr f) where
 
 instance HasProduct f => HasProduct (Expr f) where
   unit = Unit
-  (&&&) = Fanout
-  first = First
-  second = Second
+  lift x = E $ lift (out x)
+  kappa t f = E $ kappa t $ \x -> out (f (E x))
 
 instance HasSum f => HasSum (Expr f) where
   absurd = Absurd
@@ -130,8 +110,8 @@ instance HasSum f => HasSum (Expr f) where
   right = Right
 
 instance HasExp f => HasExp (Expr f) where
-  curry = Curry
-  uncurry = Uncurry
+  zeta t f = E $ zeta t $ \x -> out (f (E x))
+  pass = Pass
 
 instance HasLet f => HasLet (Expr f) where
   be t (E x) f = E $ be t x $ \x' -> out (f (E x'))
