@@ -17,6 +17,7 @@ import qualified Lambda.HasExp as Exp
 import qualified Lambda.HasLet as Let
 import qualified Lambda.HasProduct as Product
 import qualified Lambda.HasSum as Sum
+import qualified Lambda.HasUnit as Lambda
 import qualified Lambda.Type as Lambda
 import Prelude hiding (curry, id, return, uncurry, (.), (<*>))
 
@@ -29,9 +30,10 @@ instance Cbpv c d => Category (Expr d) where
   id = E id
   E f . E g = E (f . g)
 
-instance Cbpv c d => Product.HasProduct (Expr d) where
+instance Cbpv c d => Lambda.HasUnit (Expr d) where
   unit = E (thunk (return unit))
 
+instance Cbpv c d => Product.HasProduct (Expr d) where
   lift (E x) = E $ thunk (dolift (x . thunk (return unit)))
   kappa t f =
     E $

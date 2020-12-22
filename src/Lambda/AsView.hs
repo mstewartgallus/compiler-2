@@ -7,6 +7,7 @@ module Lambda.AsView (View, view) where
 import Control.Category
 import Lambda.HasExp hiding ((<*>))
 import Lambda
+import Lambda.HasUnit
 import Lambda.HasProduct
 import Lambda.HasSum
 import Lambda.HasLet
@@ -22,15 +23,22 @@ instance Category View where
   id = V $ pure "id"
   V f . V g = V $ pure (\f' g' -> f' ++ " ∘ " ++ g') <*> f <*> g
 
-instance HasProduct View where
+instance HasUnit View where
   unit = V $ pure "unit"
 
+instance HasProduct View where
   lift (V f) = V $ pure (\f' -> "(lift " ++ f' ++ ")") <*> f
-
   kappa t f =  V $ do
     v <- fresh
     let V body = f (V $ pure v)
-    pure (\body' -> "(kappa " ++ v ++ ": -" ++ ".\n" ++ body' ++ ")") <*> body
+    pure (\body' -> "(κ " ++ v ++ ": -" ++ ".\n" ++ body' ++ ")") <*> body
+
+instance HasExp View where
+  pass (V x) = V $ pure (\x' -> "(pass " ++ x') <*> x
+  zeta t f = V $ do
+    v <- fresh
+    let V body = f (V $ pure v)
+    pure (\body' -> "(ζ " ++ v ++ ": " ++ "-" ++ ".\n" ++ body' ++ ")") <*> body
 
 instance HasSum View where
   absurd = V $ pure "absurd"
@@ -38,13 +46,6 @@ instance HasSum View where
   V f ||| V g = V $ pure (\f' g' -> "[" ++ f' ++ " , " ++ g' ++ "]") <*> f <*> g
   left = V $ pure "i₁"
   right = V $ pure "i₂"
-
-instance HasExp View where
-  pass (V x) = V $ pure (\x' -> "(pass " ++ x') <*> x
-  zeta t f = V $ do
-    v <- fresh
-    let V body = f (V $ pure v)
-    pure (\body' -> "(zeta " ++ v ++ ": " ++ "-" ++ ".\n" ++ body' ++ ")") <*> body
 
 instance HasLet View where
   be t (V x) f = V $ do

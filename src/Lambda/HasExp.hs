@@ -4,11 +4,10 @@
 module Lambda.HasExp (HasExp (..)) where
 
 import Control.Category
-import Lambda.HasProduct
+import Lambda.HasUnit
 import Lambda.Type
-import Prelude hiding ((.), id, (<*>), uncurry)
+import Prelude hiding ((.), id)
 
--- | The categorical definition of an exponential (function type.)
-class HasProduct k => HasExp k where
+class HasUnit k => HasExp k where
   zeta :: ST a -> (k Unit a -> k b c) -> k b (a ~> c)
   pass :: k Unit a -> k (a ~> b) b

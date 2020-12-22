@@ -14,6 +14,7 @@ import Control.Category
 import Lambda.HasExp
 import Lambda.HasLet
 import Lambda.HasProduct
+import Lambda.HasUnit
 import Lambda.HasSum
 import Lambda.Type
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), Either (..))
@@ -27,17 +28,14 @@ data Expr f a b where
   Id :: Category f => Expr f a a
   Compose ::  Category f => Expr f b c -> Expr f a b -> Expr f a c
 
-  Unit :: HasProduct f => Expr f a Unit
-  First :: HasProduct f => Expr f (a * b) a
-  Second :: HasProduct f => Expr f (a * b) b
-  Fanout :: HasProduct f => Expr f c a -> Expr f c b -> Expr f c (a * b)
+  Unit :: HasUnit f => Expr f a Unit
+
+  Pass :: HasExp f => Expr f Unit a -> Expr f (a ~> b) b
 
   Absurd :: HasSum f => Expr f Void a
   Left :: HasSum f => Expr f a (a + b)
   Right :: HasSum f => Expr f b (a + b)
   Fanin :: HasSum f => Expr f a c -> Expr f b c -> Expr f (a + b) c
-
-  Pass :: HasExp f => Expr f Unit a -> Expr f (a ~> b) b
 
 simp :: Expr f a b -> Expr f a b
 simp expr = case opt expr of
@@ -46,7 +44,6 @@ simp expr = case opt expr of
 
 opt :: Expr f a b -> Maybe (Expr f a b)
 opt expr  = case expr of
-  Fanout First Second -> Just id
   Fanin Left Right -> Just id
 
   Compose Id f -> Just f
@@ -98,20 +95,22 @@ instance Category f => Category (Expr f) where
   id = Id
   (.) = Compose
 
-instance HasProduct f => HasProduct (Expr f) where
+instance HasUnit f => HasUnit (Expr f) where
   unit = Unit
+
+instance HasProduct f => HasProduct (Expr f) where
   lift x = E $ lift (out x)
   kappa t f = E $ kappa t $ \x -> out (f (E x))
+
+instance HasExp f => HasExp (Expr f) where
+  zeta t f = E $ zeta t $ \x -> out (f (E x))
+  pass = Pass
 
 instance HasSum f => HasSum (Expr f) where
   absurd = Absurd
   (|||) = Fanin
   left = Left
   right = Right
-
-instance HasExp f => HasExp (Expr f) where
-  zeta t f = E $ zeta t $ \x -> out (f (E x))
-  pass = Pass
 
 instance HasLet f => HasLet (Expr f) where
   be t (E x) f = E $ be t x $ \x' -> out (f (E x'))

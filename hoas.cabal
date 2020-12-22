@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 67872a46a86abb7876e27bd0518872e58de90af3e9c5ae576c5126cf18d2e420
+-- hash: 1c906038fa9a7874b0da03cc49044553379d44776a40471fb3524330e421e3e7
 
 name:           hoas
 version:        0.1.0.0
@@ -48,6 +48,7 @@ library
       Lambda.HasLet
       Lambda.HasProduct
       Lambda.HasSum
+      Lambda.HasUnit
       Lambda.Type
   other-modules:
       Paths_hoas

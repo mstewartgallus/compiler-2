@@ -18,6 +18,7 @@ import Lambda.HasExp
 import Lambda.HasLet
 import Lambda.HasProduct
 import Lambda.HasSum
+import Lambda.HasUnit
 import Lambda.Type
 import Prelude hiding (curry, fst, id, snd, uncurry, (.), (<*>))
 
@@ -42,9 +43,3 @@ instance Lambda k => Hoas.Hoas (PointFree k) where
 
   u64 x = Pf (u64 x)
   constant t pkg name = Pf (constant t pkg name)
-
-fst :: Lambda k => k (x * y) x
-fst = kappa undefined $ \x -> x . unit
-
-snd :: Lambda k => k (x * y) y
-snd = kappa undefined $ \x -> id

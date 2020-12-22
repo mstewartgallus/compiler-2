@@ -7,6 +7,7 @@ import Lambda.Type
 import Lambda.HasExp
 import Lambda.HasLet
 import Lambda.HasProduct
+import Lambda.HasUnit
 import Lambda.HasSum
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), repeat)
 
@@ -29,8 +30,11 @@ instance Category f => Category (Expr f) where
       out = out f . out g,
       step = step f . step g
       }
-instance HasProduct f => HasProduct (Expr f) where
+
+instance HasUnit f => HasUnit (Expr f) where
   unit = E unit unit
+
+instance HasProduct f => HasProduct (Expr f) where
   lift f = me where
     me = E {
       out = lift (out f),
@@ -43,15 +47,6 @@ instance HasProduct f => HasProduct (Expr f) where
       step = kappa t $ \x -> step (f (E undefined x))
            }
 
-instance HasSum f => HasSum (Expr f) where
-  absurd = E absurd absurd
-  f ||| g = me where
-    me = E {
-      out = out f ||| out g,
-      step = step f ||| step g
-      }
-  left = E left left
-  right = E right right
 instance HasExp f => HasExp (Expr f) where
   zeta t f =  me where
     me = E {
@@ -63,6 +58,17 @@ instance HasExp f => HasExp (Expr f) where
       out = pass (out x),
       step = pass (step x)
            }
+
+instance HasSum f => HasSum (Expr f) where
+  absurd = E absurd absurd
+  f ||| g = me where
+    me = E {
+      out = out f ||| out g,
+      step = step f ||| step g
+      }
+  left = E left left
+  right = E right right
+
 instance HasLet f => HasLet (Expr f) where
   be t x f = me where
     me = E {

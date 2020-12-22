@@ -10,6 +10,7 @@ import Lambda
 import Control.Category
 import Lambda.HasExp
 import Lambda.HasLet
+import Lambda.HasUnit
 import Lambda.HasProduct
 import Lambda.HasSum
 import Lambda.Type
@@ -26,11 +27,17 @@ instance Category f => Category (Expr f) where
   id = E id
   E f . E g = E (f . g)
 
-instance HasProduct f => HasProduct (Expr f) where
+instance HasUnit f => HasUnit (Expr f) where
   unit = E unit
 
+instance HasProduct f => HasProduct (Expr f) where
   lift (E f) = E (lift f)
   kappa t f = E $ kappa t $ \x' -> case f (E x') of
+    E y -> y
+
+instance HasExp f => HasExp (Expr f) where
+  pass (E x) = E (pass x)
+  zeta t f = E $ zeta t $ \x' -> case f (E x') of
     E y -> y
 
 instance HasSum f => HasSum (Expr f) where
@@ -38,11 +45,6 @@ instance HasSum f => HasSum (Expr f) where
   E f ||| E g = E (f ||| g)
   left = E left
   right = E right
-
-instance HasExp f => HasExp (Expr f) where
-  zeta t f = E $ zeta t $ \x' -> case f (E x') of
-    E y -> y
-  pass (E x) = E (pass x)
 
 instance HasLet f => HasLet (Expr f) where
   be t (E x) f = E $ be t x $ \x' -> case f (E x') of
