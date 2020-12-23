@@ -26,18 +26,11 @@ loop n x | n == 0 = outC x
 
 instance (Category f, Category g) => Category (Stk f g) where
   id = K id id
-  f . g = me where
-    me = K {
-      outK = outK f . outK g,
-      stepK = stepK f . stepK g
-      }
+  f . g = K (outK f . outK g) (stepK f . stepK g)
+
 instance (Category f, Category g) => Category (Cde f g) where
   id = C id id
-  f . g = me where
-    me = C {
-      outC = outC f . outC g,
-      stepC = stepC f . stepC g
-      }
+  f . g = C (outC f . outC g) (stepC f . stepC g)
 
 instance Cbpv f g => Code (Cde f g) where
   unit = C unit unit
@@ -51,12 +44,7 @@ instance Cbpv f g => Code (Cde f g) where
   left = C left left
   right = C right right
 
-  lift f = me where
-    me = C {
-      outC = lift (outC f),
-      stepC = lift (stepC f)
-      }
-
+  lift f = C (lift (outC f)) (lift (stepC f))
   kappa t f = C (kappa t outF) (kappa t stepF) where
     outF x' = outC (f (C x' undefined))
     stepF x' = stepC (f (C undefined x'))

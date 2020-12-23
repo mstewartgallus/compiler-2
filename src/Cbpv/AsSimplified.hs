@@ -26,12 +26,17 @@ data Stk f g (a :: Algebra) (b :: Algebra) where
 
   Force :: Cbpv f g => Cde f g a (U b) -> Stk f g (F a) b
 
-  Return :: Cbpv f g => Cde f g a b -> Stk f g (F a) (F b)
+  Pop :: Cbpv f g => SSet a -> (Cde f g Unit a -> Stk f g b c) -> Stk f g (a & b) c
+  Push :: Cbpv f g => Cde f g Unit a -> Stk f g b (a & b)
+
+  Zeta :: Cbpv f g => SSet a -> (Cde f g Unit a -> Stk f g b c) -> Stk f g b (a ~> c)
+  Pass :: Cbpv f g => Cde f g Unit a -> Stk f g (a ~> b) b
 
 data Cde f g (a :: Set) (b :: Set) where
   C :: g a b -> Cde f g a b
   IdC :: Category g => Cde f g a a
   ComposeC ::  Category g => Cde f g b c -> Cde f g a b -> Cde f g a c
+
   Thunk :: Cbpv f g => Stk f g (F a) b -> Cde f g a (U b)
 
   Unit :: Code g => Cde f g a Unit
@@ -61,7 +66,14 @@ outK expr = case expr of
   K x -> x
   IdK -> id
   ComposeK f g -> outK f . outK g
+
   Force y -> force (outC y)
+
+  Pop t f -> pop t (\x -> outK (f (C x)))
+  Push x -> push (outC x)
+
+  Zeta t f -> zeta t (\x -> outK (f (C x)))
+  Pass x -> pass (outC x)
 
 recurseC :: Cde f g a b -> Cde f g a b
 recurseC expr = case expr of
@@ -83,7 +95,14 @@ recurseK expr = case expr of
   K x -> K x
   IdK -> id
   ComposeK f g -> simpK f . simpK g
+
   Force y -> force (simpC y)
+
+  Pop t f -> pop t (\x -> simpK (f x))
+  Push x -> push (simpC x)
+
+  Zeta t f -> zeta t (\x -> simpK (f x))
+  Pass x -> pass (simpC x)
 
 optC :: Cde f g a b -> Maybe (Cde f g a b)
 optC expr = case expr of
@@ -112,11 +131,10 @@ optK expr = case expr of
   ComposeK IdK f -> Just f
   ComposeK f IdK -> Just f
 
-  ComposeK (Force f) (Return g) -> Just $ force (f . g)
+  ComposeK (Pop _ f) (Push x)  -> Just (f x)
+  ComposeK (Pass x) (Zeta _ f)  -> Just (f x)
 
   ComposeK (ComposeK f g) h  -> Just $ f . (g . h)
-
-  Return IdC -> Just id
 
   Force (Thunk f) -> Just f
 
@@ -157,11 +175,11 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
   thunk = Thunk
   force = Force
 
-  push x = K $ push (outC x)
-  pop t f = K $ pop t $ \x' -> outK (f (C x'))
+  push = Push
+  pop = Pop
 
-  pass x = K $ pass (outC x)
-  zeta t f = K $ zeta t $ \x' -> outK (f (C x'))
+  pass = Pass
+  zeta = Zeta
 
   u64 x = C (u64 x)
   constant t pkg name = K (constant t pkg name)

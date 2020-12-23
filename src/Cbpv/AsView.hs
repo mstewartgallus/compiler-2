@@ -19,7 +19,7 @@ view (C v) = evalState v 0
 
 instance Category Stk where
   id = K $ pure "pass"
-  K f . K g = K $ pure (\f' g' -> g' ++ ";\n" ++ f') <*> f <*> g
+  K f . K g = K $ pure (\f' g' -> g' ++ " ;\n" ++ f') <*> f <*> g
 
 instance Category Cde where
   id = C $ pure "id"
@@ -34,7 +34,7 @@ instance Code Cde where
   kappa _ f = C $ do
     v <- fresh
     let C body = f (C $ pure v)
-    pure (\body' -> "kappa " ++ v ++ ".\n" ++ body' ++ "") <*> body
+    pure (\body' -> "κ " ++ v ++ ".\n" ++ body' ++ "") <*> body
 
   absurd = C $ pure "absurd"
   C f ||| C g = C $ pure (\f' g' -> "[" ++ f' ++ " , " ++ g' ++ "]") <*> f <*> g
@@ -45,7 +45,7 @@ instance Stack Stk where
 
 instance Cbpv Stk Cde where
   thunk (K f) = C $ pure (\f' -> "thunk {" ++ indent ("\n" ++ f')  ++ "}") <*> f
-  force (C f) = K $ pure (\f' -> "force " ++ f' ++ "") <*> f
+  force (C f) = K $ pure (\f' -> "(force " ++ f' ++ ")") <*> f
 
   pass (C f) = K $ pure (\f' -> "(pass " ++ f' ++ ")") <*> f
   push (C f) = K $ pure (\f' -> "(push " ++ f' ++ ")") <*> f
@@ -54,12 +54,12 @@ instance Cbpv Stk Cde where
     v <- fresh
     let K body = f (C $ pure v)
     body' <- body
-    pure (\body' -> "(ζ" ++ v ++ ": " ++ "-" ++ ".\n" ++ body' ++ ")") <*> body
+    pure (\body' -> "(ζ " ++ v ++ ": " ++ "-" ++ ".\n" ++ body' ++ ")") <*> body
   pop t f = K $ do
     v <- fresh
     let K body = f (C $ pure v)
     body' <- body
-    pure (\body' -> "(κ" ++ v ++ ".\n" ++ body' ++ ")") <*> body
+    pure (\body' -> "(pop " ++ v ++ ".\n" ++ body' ++ ")") <*> body
 
   u64 x = C $ pure (show x)
   constant _ pkg name = K $ pure (pkg ++ "/" ++ name)

@@ -29,6 +29,10 @@ data Expr f a b where
 
   Unit :: HasUnit f => Expr f a Unit
 
+  Kappa :: HasProduct f => ST a -> (Expr f Unit a -> Expr f b c) -> Expr f (a * b) c
+  Lift :: HasProduct f => Expr f Unit a -> Expr f b (a * b)
+
+  Zeta :: HasExp f => ST a -> (Expr f Unit a -> Expr f b c) -> Expr f b (a ~> c)
   Pass :: HasExp f => Expr f Unit a -> Expr f (a ~> b) b
 
   Absurd :: HasSum f => Expr f Void a
@@ -48,11 +52,13 @@ opt expr  = case expr of
   Compose Id f -> Just f
   Compose f Id -> Just f
 
+  Compose Unit _ -> Just unit
+  Compose (Kappa _ f) (Lift x) -> Just (f x)
+  Compose (Pass x) (Zeta _ f) -> Just (f x)
+
   Compose _ Absurd -> Just absurd
   Compose (Fanin f _) Left -> Just f
   Compose (Fanin _ f) Right -> Just f
-
-  Compose Unit _ -> Just unit
 
   Compose x (Fanin f g) -> Just ((x . f) ||| (x . g))
   Compose (Compose f g) h  -> Just (f . (g . h))
@@ -73,7 +79,11 @@ recurse expr = case expr of
   Right -> right
   Fanin f g -> simp f ||| simp g
 
+  Zeta t f -> zeta t (\x -> simp (f x))
   Pass x -> pass (simp x)
+
+  Kappa t f -> kappa t (\x -> simp (f x))
+  Lift x -> lift (simp x)
 
 out :: Expr f a b -> f a b
 out expr = case expr of
@@ -88,7 +98,11 @@ out expr = case expr of
   Right -> right
   Fanin f g -> out f ||| out g
 
+  Zeta t f -> zeta t (\x -> out (f (E x)))
   Pass x -> pass (out x)
+
+  Kappa t f -> kappa t (\x -> out (f (E x)))
+  Lift x -> lift (out x)
 
 instance Category f => Category (Expr f) where
   id = Id
@@ -98,11 +112,11 @@ instance HasUnit f => HasUnit (Expr f) where
   unit = Unit
 
 instance HasProduct f => HasProduct (Expr f) where
-  lift x = E $ lift (out x)
-  kappa t f = E $ kappa t $ \x -> out (f (E x))
+  lift = Lift
+  kappa = Kappa
 
 instance HasExp f => HasExp (Expr f) where
-  zeta t f = E $ zeta t $ \x -> out (f (E x))
+  zeta = Zeta
   pass = Pass
 
 instance HasSum f => HasSum (Expr f) where
