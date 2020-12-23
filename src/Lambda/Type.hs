@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Lambda.Type (ST (..), T, Void, Unit, type (~>), type (*), type (+), type U64, AsObject, asObject) where
+module Lambda.Type (ST (..), T, Void, Unit, type (~>), type (*), type (+), type U64, AsObject, asObject, KnownT (..)) where
 import qualified Hoas.Type as Type
 
 type Void = 'Void
@@ -53,3 +53,20 @@ instance Show (ST a) where
     SUnit -> "unit"
     SU64 -> "u64"
     x :-> y -> "(" ++ show x ++ " → " ++ show y ++ ")"
+
+class KnownT t where
+  inferT :: ST t
+
+instance KnownT 'Unit where
+  inferT = SUnit
+
+instance KnownT 'Void where
+  inferT = SVoid
+
+instance KnownT 'U64 where
+  inferT = SU64
+
+instance (KnownT a, KnownT b) => KnownT ('Exp a b) where
+  inferT = inferT :-> inferT
+instance (KnownT a, KnownT b) => KnownT ('Product a b) where
+  inferT = inferT :*: inferT

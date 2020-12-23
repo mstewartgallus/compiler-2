@@ -30,17 +30,20 @@ instance Cbpv c d => Category (Expr d) where
   E f . E g = E (f . g)
 
 instance Cbpv c d => Lambda.HasUnit (Expr d) where
-  unit = E (thunk (return unit))
+  unit = E $ thunk $ pop undefined (\_ -> push unit)
+
+pip :: Cbpv c d => d Unit (U (F Unit))
+pip = thunk id
 
 instance Cbpv c d => Product.HasProduct (Expr d) where
-  lift (E x) = E $ thunk (dolift (x . thunk (return unit)))
+  lift (E x) = E $ thunk (dolift (x . pip))
   kappa t f =
     E $
       thunk $
-        ( pop (SU (asAlgebra t)) $ \x -> case f (E (x . unit)) of
-            E y -> force y
-        )
-          . force id
+        force id
+          >>> ( pop (SU (asAlgebra t)) $ \x -> case f (E (x . unit)) of
+                  E y -> force y
+              )
 
 dolift ::
   Cbpv c d =>
@@ -48,9 +51,10 @@ dolift ::
   c
     (F (U b))
     (U a & (U b & Empty))
-dolift a = pop undefined $ \b ->
-  push b
-    >>> push a
+dolift a =
+  pop undefined $ \b ->
+    push b
+      >>> push a
 
 instance Cbpv c d => Sum.HasSum (Expr d) where
   absurd = E (thunk (force absurd . force id))
@@ -64,7 +68,7 @@ instance Cbpv c d => Exp.HasExp (Expr d) where
     thunk $
       zeta (SU (asAlgebra t)) $ \x -> case f (E (x . unit)) of
         E y -> force y
-  pass (E x) = E $ thunk (pass (x . thunk (return unit)) . force id)
+  pass (E x) = E $ thunk (pass (x . pip) . force id)
 
 instance Cbpv c d => Lambda.Lambda (Expr d) where
   u64 x = E (thunk (return (u64 x) . force id))

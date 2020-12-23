@@ -52,6 +52,6 @@ instance Lambda f => Lambda (Expr f) where
     _ -> constant t pkg name
 
 addIntrinsic :: Lambda f => f Unit (AsObject (Hoas.U64 Hoas.~> Hoas.U64 Hoas.~> Hoas.U64))
-addIntrinsic = zeta undefined $ \x ->
-               zeta undefined $ \y ->
+addIntrinsic = zeta inferT $ \x ->
+               zeta inferT $ \y ->
                add . lift x . y

@@ -20,7 +20,7 @@ view (V v) = evalState v 0
 
 instance Category View where
   id = V $ pure "id"
-  V f . V g = V $ pure (\f' g' -> f' ++ " ∘ " ++ g') <*> f <*> g
+  V f . V g = V $ pure (\f' g' -> "(" ++ f' ++ " ∘ " ++ g' ++ ")") <*> f <*> g
 
 instance HasUnit View where
   unit = V $ pure "unit"
@@ -30,14 +30,14 @@ instance HasProduct View where
   kappa t f =  V $ do
     v <- fresh
     let V body = f (V $ pure v)
-    pure (\body' -> "(κ " ++ v ++ ": -" ++ ".\n" ++ body' ++ ")") <*> body
+    pure (\body' -> "(κ " ++ v ++ ": " ++ show t ++ ". " ++ body' ++ ")") <*> body
 
 instance HasExp View where
   pass (V x) = V $ pure (\x' -> "(pass " ++ x') <*> x
   zeta t f = V $ do
     v <- fresh
     let V body = f (V $ pure v)
-    pure (\body' -> "(ζ " ++ v ++ ": " ++ "-" ++ ".\n" ++ body' ++ ")") <*> body
+    pure (\body' -> "(ζ " ++ v ++ ": " ++ show t ++ ". " ++ body' ++ ")") <*> body
 
 instance HasSum View where
   absurd = V $ pure "absurd"

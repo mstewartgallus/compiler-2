@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
@@ -9,6 +10,7 @@ module Cbpv (Stack (..), Code (..), Cbpv (..), Intrinsic (..)) where
 
 import Cbpv.Sort
 import Control.Category
+import Data.Kind
 import Data.Word (Word64)
 import qualified Hoas.Type as Hoas
 import qualified Lambda as Lambda
@@ -24,11 +26,11 @@ import Prelude hiding (curry, id, return, uncurry, (.), (<*>))
 -- difficult to work with.
 --
 -- Paul Blain Levy. "Call-by-Push-Value: A Subsuming Paradigm".
-class Category stack => Stack stack where
-  foo :: stack (a & env) b -> stack env (a ~> b)
+class Category stack => Stack (stack :: Algebra -> Algebra -> Type)
 
 class Category code => Code code where
   unit :: code x Unit
+
   kappa :: SSet a -> (code Unit a -> code b c) -> code (a * b) c
   lift :: code Unit a -> code b (a * b)
 
