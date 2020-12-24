@@ -15,7 +15,7 @@ import Control.Category
 import Data.Kind
 import Data.Word (Word64)
 import qualified Lam.Type as Lam
-import Prelude hiding (curry, id, return, uncurry, (.), (<*>))
+import Prelude hiding (id, (.))
 
 -- |
 -- As opposed to the usual monadic interface call by push value is based
@@ -35,10 +35,6 @@ class Category code => Code code where
   lift :: code Unit a -> code b (a * b)
 
 class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack where
-  -- | fixme.. deprecate
-  return :: code env a -> stack (env & x) (a & x)
-  return x = pop undefined (\env -> push (x . env))
-
   thunk :: stack (F x) y -> code x (U y)
   force :: code x (U y) -> stack (F x) y
 

@@ -17,7 +17,7 @@ import qualified Ccc.HasProduct as Product
 import qualified Ccc.HasUnit as Ccc
 import qualified Ccc.Type as Ccc
 import Control.Category
-import Prelude hiding (curry, id, return, uncurry, (.), (<*>))
+import Prelude hiding (id, (.))
 
 newtype Expr c a b = E {unE :: c (U (AsAlgebra a)) (U (AsAlgebra b))}
 
