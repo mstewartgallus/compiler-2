@@ -95,8 +95,6 @@ optC expr = case expr of
 
   ComposeC Unit _ -> Just unit
 
-  ComposeC (Thunk f) g -> Just $ thunk (f . return g)
-
   ComposeC (ComposeC f g) h  -> Just $ f . (g . h)
 
   ComposeC f IdC -> Just f

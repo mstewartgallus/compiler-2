@@ -19,7 +19,7 @@ import qualified Ccc.Type as Ccc
 import Control.Category
 import Prelude hiding (curry, id, return, uncurry, (.), (<*>))
 
-newtype Expr c a b = E (c (U (AsAlgebra a)) (U (AsAlgebra b)))
+newtype Expr c a b = E {unE :: c (U (AsAlgebra a)) (U (AsAlgebra b))}
 
 toCbpv :: Cbpv c d => Expr d Ccc.Unit a -> d (U (F Unit)) (U (AsAlgebra a))
 toCbpv (E x) = x
@@ -29,40 +29,65 @@ instance Cbpv c d => Category (Expr d) where
   E f . E g = E (f . g)
 
 instance Cbpv c d => Ccc.HasUnit (Expr d) where
-  unit = E $ thunk $ pop undefined (\_ -> push unit)
+  unit = E $ (pip . unit)
 
 pip :: Cbpv c d => d Unit (U (F Unit))
 pip = thunk id
 
 instance Cbpv c d => Product.HasProduct (Expr d) where
-  lift (E x) = E $ thunk (dolift (x . pip))
+  lift (E x) =
+    E $
+      thunk
+        ( pop undefined $ \b ->
+            push b
+              >>> push
+                ( pip
+                    >>> x
+                )
+        )
+
   kappa t f =
     E $
       thunk $
         force id
-          >>> ( pop (SU (asAlgebra t)) $ \x -> case f (E (x . unit)) of
-                  E y -> force y
+          >>> ( pop (SU (asAlgebra t)) $ \x ->
+                  force $
+                    unE $
+                      f $
+                        E
+                          ( unit
+                              >>> x
+                          )
               )
 
-dolift ::
-  Cbpv c d =>
-  d Unit (U a) ->
-  c
-    (F (U b))
-    (U a & (U b & Empty))
-dolift a =
-  pop undefined $ \b ->
-    push b
-      >>> push a
-
 instance Cbpv c d => Exp.HasExp (Expr d) where
+  pass (E x) =
+    E $
+      thunk $
+        force id
+          >>> pass
+            ( pip
+                >>> x
+            )
+
   zeta t f = E $
     thunk $
-      zeta (SU (asAlgebra t)) $ \x -> case f (E (x . unit)) of
-        E y -> force y
-  pass (E x) = E $ thunk (pass (x . pip) . force id)
+      zeta (SU (asAlgebra t)) $ \x ->
+        force $
+          unE $
+            f $
+              E
+                ( unit
+                    >>> x
+                )
 
 instance Cbpv c d => Ccc.Ccc (Expr d) where
-  u64 x = E (thunk (return (u64 x) . force id))
+  u64 x =
+    E $
+      thunk $
+        force id
+          >>> ( pop undefined $ \env ->
+                  push (u64 x . env)
+              )
   constant t pkg name = E (thunk (constant t pkg name . force id))
   cccIntrinsic x = E (cccIntrinsic x)
