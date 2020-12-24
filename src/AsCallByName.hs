@@ -62,6 +62,6 @@ instance Cbpv c d => Ccc.HasExp (Expr d) where
                 )
 
 instance Cbpv c d => Ccc.Ccc (Expr d) where
-  u64 x = E $ thunk (pop inferSet $ \_ -> push (u64 x))
+  u64 x = E $ thunk (pop inferSort $ \_ -> push (u64 x))
   constant t pkg name = E (thunk (force id >>> constant t pkg name))
   cccIntrinsic x = E (cccIntrinsic x)

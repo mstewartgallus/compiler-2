@@ -21,10 +21,9 @@ module Cbpv.Sort
     Empty,
     type (&),
     type (~>),
-AsAlgebra,
-asAlgebra,
-KnownSet (..),
-KnownAlgebra (..)
+    AsAlgebra,
+    asAlgebra,
+    KnownSort (..)
   )
 where
 import qualified Ccc.Type as Type
@@ -90,33 +89,6 @@ asAlgebra t = case t of
   a Type.:-> b -> SU (asAlgebra a) :-> asAlgebra b
   Type.SU64 -> SU64 :&: SEmpty
   Type.SUnit -> SUnit :&: SEmpty
-
-class KnownSet t where
-  inferSet :: SSet t
-
-class KnownAlgebra t where
-  inferAlgebra :: SAlgebra t
-
-instance KnownSet 'Unit where
-  inferSet = SUnit
-
-instance KnownSet 'U64 where
-  inferSet = SU64
-
-instance (KnownSet a, KnownSet b) => KnownSet ('Product a b) where
-  inferSet = inferSet :*: inferSet
-
-instance KnownAlgebra a => KnownSet ('U a) where
-  inferSet = SU inferAlgebra
-
-instance KnownAlgebra 'Empty where
-  inferAlgebra = SEmpty
-
-instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Asym a b) where
-  inferAlgebra = inferSet :&: inferAlgebra
-instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Exp a b) where
-  inferAlgebra = inferSet :-> inferAlgebra
-
 
 class KnownSort (a :: Sort t) where
   inferSort :: SSort t a

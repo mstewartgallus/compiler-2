@@ -64,11 +64,11 @@ addIntrinsic = thunk (doAdd . force id)
 
 doAdd :: Cbpv stack code => stack (F (U (F U64) * U (F U64))) (F U64)
 doAdd =
-  pop inferSet $ \tuple ->
+  pop inferSort $ \tuple ->
   push unit >>>
-  force (tuple >>> fst) >>> (pop inferSet $ \x ->
+  force (tuple >>> fst) >>> (pop inferSort $ \x ->
   push unit >>>
-  force (tuple >>> snd) >>> (pop inferSet $ \y ->
+  force (tuple >>> snd) >>> (pop inferSort $ \y ->
   push (addi . lift x . y)))
 
 addi :: Cbpv stack code => code (U64 * U64) U64
