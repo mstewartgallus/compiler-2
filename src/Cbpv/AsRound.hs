@@ -7,17 +7,19 @@ module Cbpv.AsRound (Stk, Cde, round) where
 
 import Cbpv
 import qualified Cbpv.AsSimplified as AsSimplified
+import qualified Cbpv.AsLeft as AsLeft
+import qualified Cbpv.AsRight as AsRight
 import Control.Category
 import Cbpv.Sort
 import qualified Ccc.Type as Ccc
 import qualified Ccc as Ccc
 import Prelude hiding ((.), id, round)
 
-newtype Stk f g a b = K (AsSimplified.Stk f g a b)
-newtype Cde f g a b = C (AsSimplified.Cde f g a b)
+newtype Stk f g a b = K (AsLeft.Stk (AsSimplified.Stk f g) (AsSimplified.Cde f g) a b)
+newtype Cde f g a b = C (AsLeft.Cde (AsSimplified.Stk f g) (AsSimplified.Cde f g) a b)
 
 round :: Cde f g a b -> g a b
-round (C x) = AsSimplified.simplify x
+round (C x) = AsSimplified.simplify (AsLeft.asLeft x)
 
 instance (Category f, Category g) => Category (Stk f g) where
   id = K id

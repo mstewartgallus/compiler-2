@@ -6,7 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 -- | Reorder (f . (g . h)) to ((f . g) . h)
-module Cbpv.AsLeft (Stk, Cde, simplify) where
+module Cbpv.AsLeft (Stk, Cde, asLeft) where
 
 import Cbpv
 import Control.Category
@@ -14,8 +14,8 @@ import Cbpv.Sort
 import Data.Kind
 import Prelude hiding ((.), id)
 
-simplify :: Cde f g a b -> g a b
-simplify x = outC (simpC x)
+asLeft :: Cde f g a b -> g a b
+asLeft x = outC (simpC x)
 
 data Stk f (g :: Set -> Set -> Type) (a :: Algebra) (b :: Algebra) where
   K :: f a b -> Stk f g a b
