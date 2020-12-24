@@ -14,7 +14,6 @@ import Cbpv.Sort
 import qualified Ccc
 import qualified Ccc.HasExp as Exp
 import qualified Ccc.HasProduct as Product
-import qualified Ccc.HasSum as Sum
 import qualified Ccc.HasUnit as Ccc
 import qualified Ccc.Type as Ccc
 import Control.Category
@@ -55,13 +54,6 @@ dolift a =
   pop undefined $ \b ->
     push b
       >>> push a
-
-instance Cbpv c d => Sum.HasSum (Expr d) where
-  absurd = E (thunk (force absurd . force id))
-
-  left = E (thunk (return left))
-  right = E (thunk (return right))
-  E f ||| E g = E (thunk (force (f ||| g) . force id))
 
 instance Cbpv c d => Exp.HasExp (Expr d) where
   zeta t f = E $

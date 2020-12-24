@@ -31,9 +31,7 @@ data family Data (a :: Set)
 data instance Data (U a) = Thunk (Int -> Action a)
 
 data instance Data Unit = Unit
-data instance Data Void
 data instance Data (a * b) = Pair { firstOf :: (Data a), secondOf :: (Data b) }
-data instance Data (a + b) = L (Data a) | R (Data b)
 newtype instance Data U64 = U64 Word64
 
 -- | Actions are CBPVs computations but we use a different name for brevity
@@ -52,13 +50,6 @@ instance Category Stk where
   S f . S g = S (f . g)
 
 instance Code Cde where
-  absurd = C $ \x -> case x of {}
-  C x ||| C y = C $ \env -> case env of
-    L l -> x l
-    R r -> y r
-  left = C L
-  right = C R
-
   unit = C $ const Unit
   lift (C x) = C $ \y -> Pair (x Unit) y
 

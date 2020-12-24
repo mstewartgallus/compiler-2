@@ -36,11 +36,6 @@ instance Code Cde where
     let C body = f (C $ pure v)
     pure (\body' -> "κ " ++ v ++ ".\n" ++ body' ++ "") <*> body
 
-  absurd = C $ pure "absurd"
-  C f ||| C g = C $ pure (\f' g' -> "[" ++ f' ++ " , " ++ g' ++ "]") <*> f <*> g
-  left = C $ pure "i₁"
-  right = C $ pure "i₂"
-
 instance Stack Stk where
 
 instance Cbpv Stk Cde where

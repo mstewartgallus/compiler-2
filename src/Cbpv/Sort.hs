@@ -11,9 +11,7 @@ module Cbpv.Sort
     Set,
     U,
     Unit,
-    Void,
     type (*),
-    type (+),
     U64,
     Algebra,
     F,
@@ -32,15 +30,9 @@ type Set = SetImpl
 
 type Unit = 'Unit
 
-type Void = 'Void
-
 type (*) = 'Product
 
 infixl 0 *
-
-type (+) = 'Sum
-
-infixl 0 +
 
 type U64 = 'U64
 
@@ -59,16 +51,14 @@ type U x = 'U x
 
 type F x = x & Empty
 
-data SetImpl = U Algebra | Unit | Void | Sum Set Set | Product Set Set | U64
+data SetImpl = U Algebra | Unit | Product Set Set | U64
 
 data AlgebraImpl = Empty | Exp Set Algebra | Asym Set Algebra
 
 data SSet a where
   SU64 :: SSet U64
-  SVoid :: SSet Void
   SUnit :: SSet Unit
   SU :: SAlgebra a -> SSet (U a)
-  (:+:) :: SSet a -> SSet b -> SSet (a + b)
   (:*:) :: SSet a -> SSet b -> SSet (a * b)
 
 data SAlgebra a where
@@ -78,33 +68,27 @@ data SAlgebra a where
 
 
 type family AsAlgebra a where
-  AsAlgebra (a Type.~> b) = U (AsAlgebra a) ~> AsAlgebra b
   AsAlgebra Type.Unit = F Unit
-  AsAlgebra Type.Void = F Void
   AsAlgebra (a Type.* b) = U (AsAlgebra a) & U (AsAlgebra b) & Empty
-  AsAlgebra (a Type.+ b) = F (U (AsAlgebra a) + U (AsAlgebra b))
+  AsAlgebra (a Type.~> b) = U (AsAlgebra a) ~> AsAlgebra b
   AsAlgebra Type.U64 = F U64
 
 asAlgebra :: Type.ST a -> SAlgebra (AsAlgebra a)
 asAlgebra t = case t of
-  a Type.:-> b -> SU (asAlgebra a) :-> asAlgebra b
   a Type.:*: b -> SU (asAlgebra a) :&: (SU (asAlgebra b) :&: SEmpty)
-  a Type.:+: b -> (SU (asAlgebra a) :+: SU (asAlgebra b)) :&: SEmpty
+  a Type.:-> b -> SU (asAlgebra a) :-> asAlgebra b
   Type.SU64 -> SU64 :&: SEmpty
   Type.SUnit -> SUnit :&: SEmpty
-  Type.SVoid -> SVoid :&: SEmpty
 
 
 class KnownSet t where
   inferSet :: SSet t
+
 class KnownAlgebra t where
   inferAlgebra :: SAlgebra t
 
 instance KnownSet 'Unit where
   inferSet = SUnit
-
-instance KnownSet 'Void where
-  inferSet = SVoid
 
 instance KnownSet 'U64 where
   inferSet = SU64

@@ -35,15 +35,6 @@ instance (Category f, Category g) => Category (Cde f g) where
 instance Cbpv f g => Code (Cde f g) where
   unit = C unit unit
 
-  absurd = C absurd absurd
-  f ||| g = me where
-    me = C {
-      outC = outC f ||| outC g,
-      stepC = stepC f ||| stepC g
-      }
-  left = C left left
-  right = C right right
-
   lift f = C (lift (outC f)) (lift (stepC f))
   kappa t f = C (kappa t outF) (kappa t stepF) where
     outF x' = outC (f (C x' undefined))

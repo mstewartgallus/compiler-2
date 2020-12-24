@@ -41,11 +41,6 @@ data Cde f g (a :: Set) (b :: Set) where
 
   Unit :: Code g => Cde f g a Unit
 
-  Absurd :: Code g => Cde f g Void a
-  Left :: Code g => Cde f g a (a + b)
-  Right :: Code g => Cde f g b (a + b)
-  Fanin :: Code g => Cde f g a c -> Cde f g b c -> Cde f g (a + b) c
-
 outC :: Cde f g a b -> g a b
 outC expr = case expr of
   C x -> x
@@ -55,11 +50,6 @@ outC expr = case expr of
   Thunk y -> thunk (outK y)
 
   Unit -> unit
-
-  Absurd -> absurd
-  Left -> left
-  Right -> right
-  Fanin f g -> outC f ||| outC g
 
 outK :: Stk f g a b -> f a b
 outK expr = case expr of
@@ -85,11 +75,6 @@ recurseC expr = case expr of
 
   Unit -> unit
 
-  Absurd -> absurd
-  Left -> left
-  Right -> right
-  Fanin f g -> simpC f ||| simpC g
-
 recurseK :: Stk f g a b -> Stk f g a b
 recurseK expr = case expr of
   K x -> K x
@@ -107,8 +92,6 @@ recurseK expr = case expr of
 optC :: Cde f g a b -> Maybe (Cde f g a b)
 optC expr = case expr of
   ComposeC IdC f -> Just f
-  ComposeC (Fanin f _) Left -> Just f
-  ComposeC (Fanin _ f) Right -> Just f
 
   ComposeC Unit _ -> Just unit
 
@@ -117,12 +100,8 @@ optC expr = case expr of
   ComposeC (ComposeC f g) h  -> Just $ f . (g . h)
 
   ComposeC f IdC -> Just f
-  ComposeC _ Absurd -> Just absurd
-  ComposeC x (Fanin f g) -> Just $ (x . f) ||| (x . g)
 
   Thunk (Force f) -> Just f
-
-  Fanin Left Right -> Just id
 
   _ -> Nothing
 
@@ -162,11 +141,6 @@ instance Stack f => Stack (Stk f g) where
 
 instance Code g => Code (Cde f g) where
   unit = Unit
-
-  absurd = Absurd
-  (|||) = Fanin
-  left = Left
-  right = Right
 
   lift x = C $ lift (outC x)
   kappa t f = C $ kappa t $ \x' -> outC (f (C x'))

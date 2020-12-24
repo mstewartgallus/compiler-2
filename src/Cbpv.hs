@@ -34,11 +34,6 @@ class Category code => Code code where
   kappa :: SSet a -> (code Unit a -> code b c) -> code (a * b) c
   lift :: code Unit a -> code b (a * b)
 
-  absurd :: code Void x
-  (|||) :: code a c -> code b c -> code (a + b) c
-  left :: code a (a + b)
-  right :: code b (a + b)
-
 class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack where
   -- | fixme.. deprecate
   return :: code env a -> stack (env & x) (a & x)
@@ -68,5 +63,3 @@ data Intrinsic a b where
 instance Show (Intrinsic a b) where
   show x = case x of
     AddIntrinsic -> "$add"
-
-infixl 9 |||

@@ -5,10 +5,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Ccc.Type (ST (..), T, Void, Unit, type (~>), type (*), type (+), type U64, AsObject, asObject, KnownT (..)) where
+module Ccc.Type (ST (..), T, Unit, type (~>), type (*), type U64, AsObject, asObject, KnownT (..)) where
 import qualified Lam.Type as Type
-
-type Void = 'Void
 
 type Unit = 'Unit
 
@@ -16,23 +14,17 @@ type (~>) = 'Exp
 
 type (*) = 'Product
 
-type (+) = 'Sum
-
 type U64 = 'U64
 
 infixr 9 ~>
 
 infixl 0 *
 
-infixl 0 +
-
-data T = U64 | Void | Unit | Sum T T | Product T T | Exp T T
+data T = U64 | Unit | Product T T | Exp T T
 
 data ST a where
   SU64 :: ST U64
-  SVoid :: ST Void
   SUnit :: ST Unit
-  (:+:) :: ST a -> ST b -> ST (a + b)
   (:*:) :: ST a -> ST b -> ST (a * b)
   (:->) :: ST a -> ST b -> ST (a ~> b)
 
@@ -52,6 +44,7 @@ instance Show (ST a) where
   show expr = case expr of
     SUnit -> "unit"
     SU64 -> "u64"
+    x :*: y -> "(" ++ show x ++ " × " ++ show y ++ ")"
     x :-> y -> "(" ++ show x ++ " → " ++ show y ++ ")"
 
 class KnownT t where
@@ -60,13 +53,11 @@ class KnownT t where
 instance KnownT 'Unit where
   inferT = SUnit
 
-instance KnownT 'Void where
-  inferT = SVoid
-
 instance KnownT 'U64 where
   inferT = SU64
 
-instance (KnownT a, KnownT b) => KnownT ('Exp a b) where
-  inferT = inferT :-> inferT
 instance (KnownT a, KnownT b) => KnownT ('Product a b) where
   inferT = inferT :*: inferT
+
+instance (KnownT a, KnownT b) => KnownT ('Exp a b) where
+  inferT = inferT :-> inferT

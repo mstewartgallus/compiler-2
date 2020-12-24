@@ -9,7 +9,6 @@ import Ccc.HasExp hiding ((<*>))
 import Ccc
 import Ccc.HasUnit
 import Ccc.HasProduct
-import Ccc.HasSum
 import Ccc.Type
 import Control.Monad.State
 
@@ -38,13 +37,6 @@ instance HasExp View where
     v <- fresh
     let V body = f (V $ pure v)
     pure (\body' -> "(ζ " ++ v ++ ": " ++ show t ++ ". " ++ body' ++ ")") <*> body
-
-instance HasSum View where
-  absurd = V $ pure "absurd"
-
-  V f ||| V g = V $ pure (\f' g' -> "[" ++ f' ++ " , " ++ g' ++ "]") <*> f <*> g
-  left = V $ pure "i₁"
-  right = V $ pure "i₂"
 
 instance Ccc View where
   u64 x = V $ pure (show x)

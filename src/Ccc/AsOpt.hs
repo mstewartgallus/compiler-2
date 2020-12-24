@@ -11,7 +11,6 @@ import Control.Category
 import Ccc.HasExp
 import Ccc.HasUnit
 import Ccc.HasProduct
-import Ccc.HasSum
 import Ccc.Type
 import qualified Lam.Type as Lam
 import qualified Ccc.AsRepeat as AsRepeat
@@ -38,12 +37,6 @@ instance HasExp f => HasExp (Expr f) where
   pass (E x) = E (pass x)
   zeta t f = E $ zeta t $ \x' -> case f (E x') of
     E y -> y
-
-instance HasSum f => HasSum (Expr f) where
-  absurd = E absurd
-  E f ||| E g = E (f ||| g)
-  left = E left
-  right = E right
 
 instance Ccc f => Ccc (Expr f) where
   u64 x = E (u64 x)

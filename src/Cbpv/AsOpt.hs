@@ -31,11 +31,6 @@ instance (Category f, Category g) => Category (Cde f g) where
 instance Cbpv f g => Code (Cde f g) where
   unit = C unit
 
-  absurd = C absurd
-  C f ||| C g = C (f ||| g)
-  left = C left
-  right = C right
-
   lift (C f) = C (lift f)
   kappa t f = C $ kappa t $ \x -> case f (C x) of
     C y -> y

@@ -7,8 +7,7 @@ import Ccc.Type
 import Ccc.HasExp
 import Ccc.HasProduct
 import Ccc.HasUnit
-import Ccc.HasSum
-import Prelude hiding ((.), id, curry, uncurry, Monad (..), repeat)
+import Prelude hiding ((.), id, repeat)
 
 data Expr f a b = E {
   out :: f a b,
@@ -44,12 +43,6 @@ instance HasExp f => HasExp (Expr f) where
       out = zeta t $ \x -> out (f (E x undefined)),
       step = zeta t $ \x -> step (f (E undefined x))
            }
-
-instance HasSum f => HasSum (Expr f) where
-  absurd = E absurd absurd
-  f ||| g = E (out f ||| out g) (step f ||| step g)
-  left = E left left
-  right = E right right
 
 instance Ccc f => Ccc (Expr f) where
   u64 x = E (u64 x) (u64 x)
