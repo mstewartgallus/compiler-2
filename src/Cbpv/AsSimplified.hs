@@ -107,8 +107,6 @@ optC expr = case expr of
 
   ComposeC (Kappa _ f) (Lift x)  -> Just (f x)
 
-  ComposeC (ComposeC f g) h  -> Just $ f . (g . h)
-
   Thunk (Force f) -> Just f
 
   _ -> Nothing
@@ -120,8 +118,6 @@ optK expr = case expr of
 
   ComposeK (Pop _ f) (Push x)  -> Just (f x)
   ComposeK (Pass x) (Zeta _ f)  -> Just (f x)
-
-  ComposeK (ComposeK f g) h  -> Just $ f . (g . h)
 
   Force (Thunk f) -> Just f
 

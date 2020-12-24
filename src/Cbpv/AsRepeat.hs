@@ -3,18 +3,18 @@
 module Cbpv.AsRepeat (Stk, Cde, repeat) where
 
 import Cbpv
-import qualified Cbpv.AsSimplified as AsSimplified
+import qualified Cbpv.AsRound as AsRound
 import Control.Category
 import Cbpv.Sort
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), repeat)
 
 data Stk f g a b = K {
   outK :: f a b,
-  stepK :: Stk (AsSimplified.Stk f g) (AsSimplified.Cde f g) a b
+  stepK :: Stk (AsRound.Stk f g) (AsRound.Cde f g) a b
   }
 data Cde f g a b = C {
   outC :: g a b,
-  stepC :: Cde (AsSimplified.Stk f g) (AsSimplified.Cde f g) a b
+  stepC :: Cde (AsRound.Stk f g) (AsRound.Cde f g) a b
   }
 
 repeat :: Int -> Cde f g a b -> g a b
@@ -22,7 +22,7 @@ repeat = loop
 
 loop :: Int -> Cde f g a b -> g a b
 loop n x | n == 0 = outC x
-         | otherwise = AsSimplified.simplify (loop (n - 1) (stepC x))
+         | otherwise = AsRound.round (loop (n - 1) (stepC x))
 
 instance (Category f, Category g) => Category (Stk f g) where
   id = K id id
