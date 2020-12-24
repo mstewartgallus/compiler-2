@@ -37,6 +37,9 @@ data Cde f g (a :: Set) (b :: Set) where
   IdC :: Category g => Cde f g a a
   ComposeC ::  Category g => Cde f g b c -> Cde f g a b -> Cde f g a c
 
+  Kappa :: Code g => SSet a -> (Cde f g Unit a -> Cde f g b c) -> Cde f g (a * b) c
+  Lift :: Code g => Cde f g Unit a -> Cde f g b (a * b)
+
   Thunk :: Cbpv f g => Stk f g (F a) b -> Cde f g a (U b)
 
   Unit :: Code g => Cde f g a Unit
@@ -46,6 +49,9 @@ outC expr = case expr of
   C x -> x
   IdC -> id
   ComposeC f g -> outC f . outC g
+
+  Kappa t f -> kappa t (\x -> outC (f (C x)))
+  Lift x -> lift (outC x)
 
   Thunk y -> thunk (outK y)
 
@@ -73,6 +79,9 @@ recurseC expr = case expr of
 
   Thunk y -> thunk (simpK y)
 
+  Kappa t f -> kappa t (\x -> simpC (f x))
+  Lift x -> lift (simpC x)
+
   Unit -> unit
 
 recurseK :: Stk f g a b -> Stk f g a b
@@ -92,12 +101,13 @@ recurseK expr = case expr of
 optC :: Cde f g a b -> Maybe (Cde f g a b)
 optC expr = case expr of
   ComposeC IdC f -> Just f
+  ComposeC f IdC -> Just f
 
   ComposeC Unit _ -> Just unit
 
-  ComposeC (ComposeC f g) h  -> Just $ f . (g . h)
+  ComposeC (Kappa _ f) (Lift x)  -> Just (f x)
 
-  ComposeC f IdC -> Just f
+  ComposeC (ComposeC f g) h  -> Just $ f . (g . h)
 
   Thunk (Force f) -> Just f
 
@@ -140,8 +150,8 @@ instance Stack f => Stack (Stk f g) where
 instance Code g => Code (Cde f g) where
   unit = Unit
 
-  lift x = C $ lift (outC x)
-  kappa t f = C $ kappa t $ \x' -> outC (f (C x'))
+  lift = Lift
+  kappa = Kappa
 
 instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
   thunk = Thunk

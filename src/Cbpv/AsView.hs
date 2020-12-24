@@ -23,7 +23,7 @@ instance Category Stk where
 
 instance Category Cde where
   id = C $ pure "id"
-  C f . C g = C $ pure (\f' g' -> f' ++ " ∘ " ++ g') <*> f <*> g
+  C f . C g = C $ pure (\f' g' -> "(" ++ f' ++ " ∘ " ++ g' ++ ")") <*> f <*> g
 
 indent = unlines . map ("\t" ++) . lines
 
