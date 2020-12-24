@@ -1,32 +1,19 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeFamilyDependencies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE NoStarIsType #-}
-
-module AsLambda (PointFree, pointFree) where
+module AsLambda (AsLambda, asLambda) where
 
 import Control.Category
-import Data.Maybe
-import Data.Typeable ((:~:) (..))
 import qualified Hoas as Hoas
-import qualified Hoas.Type as Type
 import Lambda
 import Lambda.HasExp
 import Lambda.HasProduct
-import Lambda.HasSum
-import Lambda.HasUnit
 import Lambda.Type
-import Prelude hiding (curry, fst, id, snd, uncurry, (.), (<*>))
+import Prelude hiding (id, (.))
 
-pointFree :: PointFree k a -> k Unit (AsObject a)
-pointFree (Pf x) = x
+asLambda :: AsLambda k a -> k Unit (AsObject a)
+asLambda (Pf x) = x
 
-newtype PointFree k a = Pf (k Unit (AsObject a))
+newtype AsLambda k a = Pf (k Unit (AsObject a))
 
-instance Lambda k => Hoas.Hoas (PointFree k) where
+instance Lambda k => Hoas.Hoas (AsLambda k) where
   Pf f <*> Pf x = Pf (pass x . f)
 
   lam t f = Pf $

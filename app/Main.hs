@@ -53,7 +53,7 @@ program =
     add <*> z <*> z
 
 compiled :: Lambda k => k Lambda.Type.Unit (Lambda.Type.AsObject TYPE)
-compiled = AsLambda.pointFree program
+compiled = AsLambda.asLambda program
 
 optimized :: Lambda k => k Lambda.Type.Unit (Lambda.Type.AsObject TYPE)
 optimized = opt compiled
