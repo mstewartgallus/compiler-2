@@ -69,13 +69,13 @@ data SAlgebra a where
 
 type family AsAlgebra a where
   AsAlgebra Type.Unit = F Unit
-  AsAlgebra (a Type.* b) = U (AsAlgebra a) & U (AsAlgebra b) & Empty
+  AsAlgebra (a Type.* b) = F (U (AsAlgebra a) * U (AsAlgebra b))
   AsAlgebra (a Type.~> b) = U (AsAlgebra a) ~> AsAlgebra b
   AsAlgebra Type.U64 = F U64
 
 asAlgebra :: Type.ST a -> SAlgebra (AsAlgebra a)
 asAlgebra t = case t of
-  a Type.:*: b -> SU (asAlgebra a) :&: (SU (asAlgebra b) :&: SEmpty)
+  a Type.:*: b -> (SU (asAlgebra a) :*: SU (asAlgebra b)) :&: SEmpty
   a Type.:-> b -> SU (asAlgebra a) :-> asAlgebra b
   Type.SU64 -> SU64 :&: SEmpty
   Type.SUnit -> SUnit :&: SEmpty

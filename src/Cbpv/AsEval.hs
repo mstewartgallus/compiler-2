@@ -52,6 +52,8 @@ instance Category Stk where
 instance Code Cde where
   unit = C $ const Unit
   lift (C x) = C $ \y -> Pair (x Unit) y
+  kappa _ f = C $ \(Pair h t) -> case f (C $ \Unit -> h) of
+        C y -> y t
 
 instance Stack Stk where
 

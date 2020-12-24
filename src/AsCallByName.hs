@@ -35,30 +35,24 @@ pip :: Cbpv c d => d Unit (U (F Unit))
 pip = thunk id
 
 instance Cbpv c d => Product.HasProduct (Expr d) where
-  lift (E x) =
-    E $
-      thunk
-        ( pop undefined $ \b ->
-            push b
-              >>> push
-                ( pip
-                    >>> x
-                )
-        )
+  lift (E a) = E $
+    thunk $
+      pop undefined $ \b ->
+        push (lift (a . pip) . b)
 
-  kappa t f =
-    E $
-      thunk $
-        force id
-          >>> ( pop (SU (asAlgebra t)) $ \x ->
-                  force $
-                    unE $
-                      f $
-                        E
-                          ( unit
-                              >>> x
-                          )
-              )
+-- kappa t f =
+--   E $
+--     thunk $
+--       force id
+--         >>> ( pop (SU (asAlgebra t)) $ \x ->
+--                 force $
+--                   unE $
+--                     f $
+--                       E
+--                         ( unit
+--                             >>> x
+--                         )
+--             )
 
 instance Cbpv c d => Exp.HasExp (Expr d) where
   pass (E x) =
@@ -83,5 +77,5 @@ instance Cbpv c d => Exp.HasExp (Expr d) where
 
 instance Cbpv c d => Ccc.Ccc (Expr d) where
   u64 x = E $ thunk (pop inferSet $ \_ -> push (u64 x))
-  constant t pkg name = E (thunk (constant t pkg name . force id))
+  constant t pkg name = E (thunk (force id >>> constant t pkg name))
   cccIntrinsic x = E (cccIntrinsic x)

@@ -34,7 +34,7 @@ instance Code Cde where
   kappa _ f = C $ do
     v <- fresh
     let C body = f (C $ pure v)
-    pure (\body' -> "κ " ++ v ++ ".\n" ++ body' ++ "") <*> body
+    pure (\body' -> "(κ " ++ v ++ ". " ++ body' ++ ")") <*> body
 
 instance Stack Stk where
 

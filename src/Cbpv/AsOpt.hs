@@ -12,7 +12,7 @@ import Control.Category
 import Cbpv.Sort
 import qualified Ccc.Type as Ccc
 import qualified Ccc as Ccc
-import Prelude hiding ((.), id, curry, uncurry, Monad (..))
+import Prelude hiding ((.), id, fst, snd, Monad (..))
 
 newtype Stk f g a b = K (AsRepeat.Stk f g a b)
 newtype Cde f g a b = C (AsRepeat.Cde f g a b)
@@ -62,17 +62,20 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
 addIntrinsic :: Cbpv stack code => code (U (AsAlgebra (Ccc.U64 Ccc.* Ccc.U64))) (U (AsAlgebra Ccc.U64))
 addIntrinsic = thunk (doAdd . force id)
 
-doAdd :: Cbpv stack code => stack (U (F U64) & F (U (F U64))) (F U64)
+doAdd :: Cbpv stack code => stack (F (U (F U64) * U (F U64))) (F U64)
 doAdd =
-  pop inferSet $ \x ->
-  pop inferSet $ \y ->
+  pop inferSet $ \tuple ->
   push unit >>>
-  force x >>> (
-  pop inferSet $ \x' ->
+  force (tuple >>> fst) >>> (pop inferSet $ \x ->
   push unit >>>
-  force y >>> (
-  pop inferSet $ \y' ->
-  push (addi . lift x' . y')))
+  force (tuple >>> snd) >>> (pop inferSet $ \y ->
+  push (addi . lift x . y)))
 
 addi :: Cbpv stack code => code (U64 * U64) U64
 addi = cbpvIntrinsic AddIntrinsic
+
+fst :: Cbpv stack code => code (a * b) a
+fst = kappa undefined (\x -> x . unit)
+
+snd :: Cbpv stack code => code (a * b) b
+snd = kappa undefined (\_ -> id)
