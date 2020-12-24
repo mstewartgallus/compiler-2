@@ -10,6 +10,7 @@ module Cbpv.Sort
   (SSet,
    SAlgebra,
    SSort (..),
+   Tag (..),
    Sort,
     Set,
     U,
