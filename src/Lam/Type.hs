@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Hoas.Type (KnownT, inferT, eqT, ST (..), T, type (~>), type Unit, type U64) where
+module Lam.Type (KnownT, inferT, eqT, ST (..), T, type (~>), type Unit, type U64) where
 
 import Data.Typeable ((:~:) (..))
 

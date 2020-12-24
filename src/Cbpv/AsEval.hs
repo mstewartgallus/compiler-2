@@ -12,9 +12,9 @@ import Cbpv
 import Control.Category
 import Data.Word
 import Cbpv.Sort
-import qualified Lambda.Type as Lambda
-import qualified Lambda as Lambda
-import qualified Hoas.Type as Hoas
+import qualified Ccc.Type as Ccc
+import qualified Ccc as Ccc
+import qualified Lam.Type as Lam
 import Prelude hiding ((.), id)
 
 reify :: Cde (U (F Unit)) (U (F U64)) -> Word64
@@ -79,20 +79,20 @@ instance Cbpv Stk Cde where
 
   u64 x = C $ const (U64 x)
   constant t pkg name = case (t, pkg, name) of
-     (Hoas.SU64 Hoas.:-> (Hoas.SU64 Hoas.:-> Hoas.SU64), "core", "add") -> addImpl
-  lambdaIntrinsic x = case x of
-     Lambda.AddIntrinsic -> addLambdaImpl
+     (Lam.SU64 Lam.:-> (Lam.SU64 Lam.:-> Lam.SU64), "core", "add") -> addImpl
+  cccIntrinsic x = case x of
+     Ccc.AddIntrinsic -> addCccImpl
   cbpvIntrinsic x = case x of
      AddIntrinsic -> addCbpvImpl
 
-addImpl :: Stk (F Unit) (AsAlgebra (Lambda.AsObject (Hoas.U64 Hoas.~> Hoas.U64 Hoas.~> Hoas.U64)))
+addImpl :: Stk (F Unit) (AsAlgebra (Ccc.AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64)))
 addImpl = S $ \(Unit :& Effect w0) ->
               Lam $ \(Thunk x) -> Lam $ \(Thunk y) -> case x w0 of
                  U64 x' :& Effect w1 -> case y w1 of
                    U64 y' :& Effect w2 -> U64 (x' + y') :& Effect w2
 
-addLambdaImpl :: Cde (U (AsAlgebra (Lambda.U64 Lambda.* Lambda.U64))) (U (AsAlgebra Lambda.U64))
-addLambdaImpl = C $ \(Thunk input) -> undefined
+addCccImpl :: Cde (U (AsAlgebra (Ccc.U64 Ccc.* Ccc.U64))) (U (AsAlgebra Ccc.U64))
+addCccImpl = C $ \(Thunk input) -> undefined
 
 addCbpvImpl :: Cde (U64 * U64) U64
 addCbpvImpl = C $ \(Pair (U64 x) (U64 y)) -> U64 (x + y)

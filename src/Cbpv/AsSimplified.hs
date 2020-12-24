@@ -183,5 +183,5 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
 
   u64 x = C (u64 x)
   constant t pkg name = K (constant t pkg name)
-  lambdaIntrinsic x = C (lambdaIntrinsic x)
+  cccIntrinsic x = C (cccIntrinsic x)
   cbpvIntrinsic x = C (cbpvIntrinsic x)

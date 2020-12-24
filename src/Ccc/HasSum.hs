@@ -1,9 +1,9 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Lambda.HasSum (HasSum (..)) where
+module Ccc.HasSum (HasSum (..)) where
 
 import Control.Category
-import Lambda.Type
+import Ccc.Type
 
 class Category k => HasSum k where
   absurd :: k Void x

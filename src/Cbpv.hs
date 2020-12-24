@@ -9,12 +9,12 @@
 module Cbpv (Stack (..), Code (..), Cbpv (..), Intrinsic (..)) where
 
 import Cbpv.Sort
+import qualified Ccc as Ccc
+import qualified Ccc.Type as Ccc
 import Control.Category
 import Data.Kind
 import Data.Word (Word64)
-import qualified Hoas.Type as Hoas
-import qualified Lambda as Lambda
-import qualified Lambda.Type as Lambda
+import qualified Lam.Type as Lam
 import Prelude hiding (curry, id, return, uncurry, (.), (<*>))
 
 -- |
@@ -55,8 +55,8 @@ class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack
 
   u64 :: Word64 -> code Unit U64
 
-  constant :: Hoas.ST a -> String -> String -> stack (F Unit) (AsAlgebra (Lambda.AsObject a))
-  lambdaIntrinsic :: Lambda.Intrinsic a b -> code (U (AsAlgebra a)) (U (AsAlgebra b))
+  constant :: Lam.ST a -> String -> String -> stack (F Unit) (AsAlgebra (Ccc.AsObject a))
+  cccIntrinsic :: Ccc.Intrinsic a b -> code (U (AsAlgebra a)) (U (AsAlgebra b))
   cbpvIntrinsic :: Intrinsic a b -> code a b
 
   add :: code (U64 * U64) U64

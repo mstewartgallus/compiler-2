@@ -3,27 +3,27 @@
 module Main where
 
 import AsCallByName
-import qualified AsLambda
+import qualified AsCcc
 import Cbpv (Cbpv)
 import qualified Cbpv.AsEval as AsEval
 import qualified Cbpv.AsOpt as AsOpt
 import qualified Cbpv.AsView as AsViewCbpv
 import Cbpv.Sort (AsAlgebra)
 import qualified Cbpv.Sort
+import Ccc (Ccc)
+import Ccc.AsOpt
+import Ccc.AsView
+import qualified Ccc.Type
 import Data.Word
-import Hoas
-import qualified Hoas.AsView as AsHoasView
-import Hoas.Type
-import Lambda (Lambda)
-import Lambda.AsOpt
-import Lambda.AsView
-import qualified Lambda.Type
+import Lam
+import qualified Lam.AsView as AsLamView
+import Lam.Type
 import Prelude hiding ((<*>))
 
 main :: IO ()
 main = do
   putStrLn "The Program"
-  putStrLn (AsHoasView.view program)
+  putStrLn (AsLamView.view program)
 
   putStrLn ""
   putStrLn "Kappa/Zeta Decomposition"
@@ -47,21 +47,21 @@ main = do
 
 type TYPE = U64
 
-program :: Hoas t => t TYPE
+program :: Lam t => t TYPE
 program =
   u64 3 `letBe` \z ->
     add <*> z <*> z
 
-compiled :: Lambda k => k Lambda.Type.Unit (Lambda.Type.AsObject TYPE)
-compiled = AsLambda.asLambda program
+compiled :: Ccc k => k Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
+compiled = AsCcc.asCcc program
 
-optimized :: Lambda k => k Lambda.Type.Unit (Lambda.Type.AsObject TYPE)
+optimized :: Ccc k => k Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
 optimized = opt compiled
 
-cbpv :: Cbpv c d => d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Lambda.Type.AsObject TYPE))))
+cbpv :: Cbpv c d => d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
 cbpv = toCbpv optimized
 
-optCbpv :: Cbpv c d => d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Lambda.Type.AsObject TYPE))))
+optCbpv :: Cbpv c d => d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
 optCbpv = AsOpt.opt cbpv
 
 result :: Word64

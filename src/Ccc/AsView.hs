@@ -2,15 +2,15 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GADTs #-}
 
-module Lambda.AsView (View, view) where
+module Ccc.AsView (View, view) where
 
 import Control.Category
-import Lambda.HasExp hiding ((<*>))
-import Lambda
-import Lambda.HasUnit
-import Lambda.HasProduct
-import Lambda.HasSum
-import Lambda.Type
+import Ccc.HasExp hiding ((<*>))
+import Ccc
+import Ccc.HasUnit
+import Ccc.HasProduct
+import Ccc.HasSum
+import Ccc.Type
 import Control.Monad.State
 
 newtype View (a :: T) (b :: T) = V (State Int String)
@@ -46,10 +46,10 @@ instance HasSum View where
   left = V $ pure "i₁"
   right = V $ pure "i₂"
 
-instance Lambda View where
+instance Ccc View where
   u64 x = V $ pure (show x)
   constant _ pkg name = V $ pure (pkg ++ "/" ++ name)
-  lambdaIntrinsic x = V $ pure (show x)
+  cccIntrinsic x = V $ pure (show x)
 
 fresh :: State Int String
 fresh = do

@@ -1,11 +1,11 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 
-module Hoas.AsView (View, view) where
+module Lam.AsView (View, view) where
 
-import Hoas hiding ((<*>))
-import qualified Hoas as H ((<*>))
-import Hoas.Type
+import Lam hiding ((<*>))
+import qualified Lam as H ((<*>))
+import Lam.Type
 import Control.Category
 import Control.Monad.State
 
@@ -14,7 +14,7 @@ newtype View (a :: T) = V (State Int String)
 view :: View a -> String
 view (V v) = evalState v 0
 
-instance Hoas View where
+instance Lam View where
   be (V x) t f = V $ do
     v <- fresh
     let V body = f (V $ pure v)

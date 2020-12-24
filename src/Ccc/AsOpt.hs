@@ -4,17 +4,17 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Lambda.AsOpt (Expr, opt) where
+module Ccc.AsOpt (Expr, opt) where
 
-import Lambda
+import Ccc
 import Control.Category
-import Lambda.HasExp
-import Lambda.HasUnit
-import Lambda.HasProduct
-import Lambda.HasSum
-import Lambda.Type
-import qualified Hoas.Type as Hoas
-import qualified Lambda.AsRepeat as AsRepeat
+import Ccc.HasExp
+import Ccc.HasUnit
+import Ccc.HasProduct
+import Ccc.HasSum
+import Ccc.Type
+import qualified Lam.Type as Lam
+import qualified Ccc.AsRepeat as AsRepeat
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), Either (..))
 
 opt :: Expr f a b -> f a b
@@ -45,13 +45,13 @@ instance HasSum f => HasSum (Expr f) where
   left = E left
   right = E right
 
-instance Lambda f => Lambda (Expr f) where
+instance Ccc f => Ccc (Expr f) where
   u64 x = E (u64 x)
   constant t pkg name = E $ case (t, pkg, name) of
-    (Hoas.SU64 Hoas.:-> (Hoas.SU64 Hoas.:-> Hoas.SU64), "core", "add") -> addIntrinsic
+    (Lam.SU64 Lam.:-> (Lam.SU64 Lam.:-> Lam.SU64), "core", "add") -> addIntrinsic
     _ -> constant t pkg name
 
-addIntrinsic :: Lambda f => f Unit (AsObject (Hoas.U64 Hoas.~> Hoas.U64 Hoas.~> Hoas.U64))
+addIntrinsic :: Ccc f => f Unit (AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))
 addIntrinsic = zeta inferT $ \x ->
                zeta inferT $ \y ->
                add . lift x . y

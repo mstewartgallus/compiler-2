@@ -7,15 +7,15 @@
 -- | Simplify various identites such as:
 -- force/thunk as inverses
 -- id
-module Lambda.AsSimplified (Expr, simplify) where
+module Ccc.AsSimplified (Expr, simplify) where
 
-import Lambda
+import Ccc
 import Control.Category
-import Lambda.HasExp
-import Lambda.HasProduct
-import Lambda.HasUnit
-import Lambda.HasSum
-import Lambda.Type
+import Ccc.HasExp
+import Ccc.HasProduct
+import Ccc.HasUnit
+import Ccc.HasSum
+import Ccc.Type
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), Either (..))
 
 simplify :: Expr f a b -> f a b
@@ -125,7 +125,7 @@ instance HasSum f => HasSum (Expr f) where
   left = Left
   right = Right
 
-instance Lambda f => Lambda (Expr f) where
+instance Ccc f => Ccc (Expr f) where
   u64 x = E (u64 x)
   constant t pkg name = E $ constant t pkg name
-  lambdaIntrinsic x = E $ lambdaIntrinsic x
+  cccIntrinsic x = E $ cccIntrinsic x

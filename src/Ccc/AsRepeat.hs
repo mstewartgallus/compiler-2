@@ -1,13 +1,13 @@
-module Lambda.AsRepeat (Expr, repeat) where
+module Ccc.AsRepeat (Expr, repeat) where
 
-import Lambda
-import qualified Lambda.AsSimplified as AsSimplified
+import Ccc
+import qualified Ccc.AsSimplified as AsSimplified
 import Control.Category
-import Lambda.Type
-import Lambda.HasExp
-import Lambda.HasProduct
-import Lambda.HasUnit
-import Lambda.HasSum
+import Ccc.Type
+import Ccc.HasExp
+import Ccc.HasProduct
+import Ccc.HasUnit
+import Ccc.HasSum
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), repeat)
 
 data Expr f a b = E {
@@ -40,7 +40,7 @@ instance HasProduct f => HasProduct (Expr f) where
 instance HasExp f => HasExp (Expr f) where
   pass f = E (pass (out f)) (pass (step f))
 
-  zeta t f =  E {
+  zeta t f = E {
       out = zeta t $ \x -> out (f (E x undefined)),
       step = zeta t $ \x -> step (f (E undefined x))
            }
@@ -51,7 +51,7 @@ instance HasSum f => HasSum (Expr f) where
   left = E left left
   right = E right right
 
-instance Lambda f => Lambda (Expr f) where
+instance Ccc f => Ccc (Expr f) where
   u64 x = E (u64 x) (u64 x)
   constant t pkg name = E (constant t pkg name) (constant t pkg name)
-  lambdaIntrinsic x = E (lambdaIntrinsic x) (lambdaIntrinsic x)
+  cccIntrinsic x = E (cccIntrinsic x) (cccIntrinsic x)

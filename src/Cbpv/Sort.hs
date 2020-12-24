@@ -26,7 +26,7 @@ KnownSet (..),
 KnownAlgebra (..)
   )
 where
-import qualified Lambda.Type as Type
+import qualified Ccc.Type as Type
 
 type Set = SetImpl
 

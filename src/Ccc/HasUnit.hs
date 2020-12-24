@@ -1,7 +1,7 @@
-module Lambda.HasUnit (HasUnit (..)) where
+module Ccc.HasUnit (HasUnit (..)) where
 
 import Control.Category
-import Lambda.Type
+import Ccc.Type
 
 class Category k => HasUnit k where
   unit :: k x Unit

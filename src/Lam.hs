@@ -1,14 +1,13 @@
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE NoStarIsType #-}
 
-module Hoas (Hoas (..), letBe) where
+module Lam (Lam (..), letBe) where
 
 import Control.Category
 import Data.Word (Word64)
-import Hoas.Type
+import Lam.Type
 import Prelude hiding (id, uncurry, (.), (<*>))
 
-class Hoas t where
+class Lam t where
   be :: t a -> ST a -> (t a -> t b) -> t b
 
   lam :: ST a -> (t a -> t b) -> t (a ~> b)
@@ -20,5 +19,5 @@ class Hoas t where
 
   constant :: ST a -> String -> String -> t a
 
-letBe :: (KnownT a, Hoas t) => t a -> (t a -> t b) -> t b
+letBe :: (KnownT a, Lam t) => t a -> (t a -> t b) -> t b
 letBe x f = be x inferT f

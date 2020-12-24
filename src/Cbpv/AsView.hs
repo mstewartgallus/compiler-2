@@ -63,7 +63,7 @@ instance Cbpv Stk Cde where
 
   u64 x = C $ pure (show x)
   constant _ pkg name = K $ pure (pkg ++ "/" ++ name)
-  lambdaIntrinsic x = C $ pure (show x)
+  cccIntrinsic x = C $ pure (show x)
   cbpvIntrinsic x = C $ pure (show x)
 
 fresh :: State Int String

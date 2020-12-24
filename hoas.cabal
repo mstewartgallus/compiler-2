@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d6dda5ba838280dbf3a908b48c40e5e543ed508416ccd07cf3959fb16c0c979d
+-- hash: 2766b811b2a7cfdf26a594ceeed7519748c28b5c1ed0bd2ba7ef7e59e6af9ee8
 
 name:           hoas
 version:        0.1.0.0
@@ -28,7 +28,7 @@ source-repository head
 library
   exposed-modules:
       AsCallByName
-      AsLambda
+      AsCcc
       Cbpv
       Cbpv.AsEval
       Cbpv.AsOpt
@@ -36,19 +36,19 @@ library
       Cbpv.AsSimplified
       Cbpv.AsView
       Cbpv.Sort
-      Hoas
-      Hoas.AsView
-      Hoas.Type
-      Lambda
-      Lambda.AsOpt
-      Lambda.AsRepeat
-      Lambda.AsSimplified
-      Lambda.AsView
-      Lambda.HasExp
-      Lambda.HasProduct
-      Lambda.HasSum
-      Lambda.HasUnit
-      Lambda.Type
+      Ccc
+      Ccc.AsOpt
+      Ccc.AsRepeat
+      Ccc.AsSimplified
+      Ccc.AsView
+      Ccc.HasExp
+      Ccc.HasProduct
+      Ccc.HasSum
+      Ccc.HasUnit
+      Ccc.Type
+      Lam
+      Lam.AsView
+      Lam.Type
   other-modules:
       Paths_hoas
   hs-source-dirs:

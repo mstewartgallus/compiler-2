@@ -1,11 +1,11 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Lambda.HasExp (HasExp (..)) where
+module Ccc.HasExp (HasExp (..)) where
 
 import Control.Category
-import Lambda.HasUnit
-import Lambda.Type
+import Ccc.HasUnit
+import Ccc.Type
 import Prelude hiding ((.), id)
 
 class HasUnit k => HasExp k where

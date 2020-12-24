@@ -5,8 +5,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Lambda.Type (ST (..), T, Void, Unit, type (~>), type (*), type (+), type U64, AsObject, asObject, KnownT (..)) where
-import qualified Hoas.Type as Type
+module Ccc.Type (ST (..), T, Void, Unit, type (~>), type (*), type (+), type U64, AsObject, asObject, KnownT (..)) where
+import qualified Lam.Type as Type
 
 type Void = 'Void
 

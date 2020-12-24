@@ -11,25 +11,25 @@ module AsCallByName (Expr, toCbpv) where
 
 import Cbpv
 import Cbpv.Sort
+import qualified Ccc
+import qualified Ccc.HasExp as Exp
+import qualified Ccc.HasProduct as Product
+import qualified Ccc.HasSum as Sum
+import qualified Ccc.HasUnit as Ccc
+import qualified Ccc.Type as Ccc
 import Control.Category
-import qualified Lambda
-import qualified Lambda.HasExp as Exp
-import qualified Lambda.HasProduct as Product
-import qualified Lambda.HasSum as Sum
-import qualified Lambda.HasUnit as Lambda
-import qualified Lambda.Type as Lambda
 import Prelude hiding (curry, id, return, uncurry, (.), (<*>))
 
 newtype Expr c a b = E (c (U (AsAlgebra a)) (U (AsAlgebra b)))
 
-toCbpv :: Cbpv c d => Expr d Lambda.Unit a -> d (U (F Unit)) (U (AsAlgebra a))
+toCbpv :: Cbpv c d => Expr d Ccc.Unit a -> d (U (F Unit)) (U (AsAlgebra a))
 toCbpv (E x) = x
 
 instance Cbpv c d => Category (Expr d) where
   id = E id
   E f . E g = E (f . g)
 
-instance Cbpv c d => Lambda.HasUnit (Expr d) where
+instance Cbpv c d => Ccc.HasUnit (Expr d) where
   unit = E $ thunk $ pop undefined (\_ -> push unit)
 
 pip :: Cbpv c d => d Unit (U (F Unit))
@@ -70,7 +70,7 @@ instance Cbpv c d => Exp.HasExp (Expr d) where
         E y -> force y
   pass (E x) = E $ thunk (pass (x . pip) . force id)
 
-instance Cbpv c d => Lambda.Lambda (Expr d) where
+instance Cbpv c d => Ccc.Ccc (Expr d) where
   u64 x = E (thunk (return (u64 x) . force id))
   constant t pkg name = E (thunk (constant t pkg name . force id))
-  lambdaIntrinsic x = E (lambdaIntrinsic x)
+  cccIntrinsic x = E (cccIntrinsic x)

@@ -1,19 +1,19 @@
-module AsLambda (AsLambda, asLambda) where
+module AsCcc (AsCcc, asCcc) where
 
+import Ccc
+import Ccc.HasExp
+import Ccc.HasProduct
+import Ccc.Type
 import Control.Category
-import qualified Hoas as Hoas
-import Lambda
-import Lambda.HasExp
-import Lambda.HasProduct
-import Lambda.Type
+import qualified Lam as Lam
 import Prelude hiding (id, (.))
 
-asLambda :: AsLambda k a -> k Unit (AsObject a)
-asLambda (Pf x) = x
+asCcc :: AsCcc k a -> k Unit (AsObject a)
+asCcc (Pf x) = x
 
-newtype AsLambda k a = Pf (k Unit (AsObject a))
+newtype AsCcc k a = Pf (k Unit (AsObject a))
 
-instance Lambda k => Hoas.Hoas (AsLambda k) where
+instance Ccc k => Lam.Lam (AsCcc k) where
   Pf f <*> Pf x = Pf (pass x . f)
 
   lam t f = Pf $

@@ -10,8 +10,8 @@ import Cbpv
 import qualified Cbpv.AsRepeat as AsRepeat
 import Control.Category
 import Cbpv.Sort
-import qualified Lambda.Type as Lambda
-import qualified Lambda as Lambda
+import qualified Ccc.Type as Ccc
+import qualified Ccc as Ccc
 import Prelude hiding ((.), id, curry, uncurry, Monad (..))
 
 newtype Stk f g a b = K (AsRepeat.Stk f g a b)
@@ -58,13 +58,13 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
 
   constant t pkg name = K (constant t pkg name)
 
-  lambdaIntrinsic x = C $ case x of
-    Lambda.AddIntrinsic -> addIntrinsic
-    _ -> lambdaIntrinsic x
+  cccIntrinsic x = C $ case x of
+    Ccc.AddIntrinsic -> addIntrinsic
+    _ -> cccIntrinsic x
   cbpvIntrinsic x = C (cbpvIntrinsic x)
 
 -- | fixme.. cleanup this mess
-addIntrinsic :: Cbpv stack code => code (U (AsAlgebra (Lambda.U64 Lambda.* Lambda.U64))) (U (AsAlgebra Lambda.U64))
+addIntrinsic :: Cbpv stack code => code (U (AsAlgebra (Ccc.U64 Ccc.* Ccc.U64))) (U (AsAlgebra Ccc.U64))
 addIntrinsic = thunk (doAdd . force id)
 
 doAdd :: Cbpv stack code => stack (U (F U64) & F (U (F U64))) (F U64)
