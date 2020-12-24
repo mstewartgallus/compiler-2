@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE GADTs #-}
@@ -6,8 +7,10 @@
 {-# LANGUAGE NoStarIsType #-}
 
 module Cbpv.Sort
-  (SSet (..),
-   SAlgebra (..),
+  (SSet,
+   SAlgebra,
+   SSort (..),
+   Sort,
     Set,
     U,
     Unit,
@@ -26,8 +29,6 @@ KnownAlgebra (..)
 where
 import qualified Ccc.Type as Type
 
-type Set = SetImpl
-
 type Unit = 'Unit
 
 type (*) = 'Product
@@ -35,8 +36,6 @@ type (*) = 'Product
 infixl 0 *
 
 type U64 = 'U64
-
-type Algebra = AlgebraImpl
 
 type Empty = 'Empty
 
@@ -47,25 +46,37 @@ type (&) = 'Asym
 
 infixr 0 &
 
-type U x = 'U x
+type U = 'U
 
 type F x = x & Empty
 
-data SetImpl = U Algebra | Unit | Product Set Set | U64
+data Tag = SetTag | AlgebraTag
+type Set = Sort SetTag
+type Algebra = Sort AlgebraTag
 
-data AlgebraImpl = Empty | Exp Set Algebra | Asym Set Algebra
+data Sort a where
+  U :: Algebra -> Sort SetTag
+  Unit :: Sort SetTag
+  Product :: Set -> Set -> Sort SetTag
 
-data SSet a where
-  SU64 :: SSet U64
-  SUnit :: SSet Unit
-  SU :: SAlgebra a -> SSet (U a)
-  (:*:) :: SSet a -> SSet b -> SSet (a * b)
+  Empty :: Sort AlgebraTag
+  Exp :: Set -> Algebra -> Sort AlgebraTag
+  Asym :: Set -> Algebra -> Sort AlgebraTag
 
-data SAlgebra a where
-  SEmpty :: SAlgebra Empty
-  (:&:) :: SSet a -> SAlgebra b -> SAlgebra (a & b)
-  (:->) :: SSet a -> SAlgebra b -> SAlgebra (a ~> b)
+  U64 :: Sort SetTag
 
+data SSort t (a :: Sort t) where
+  SU64 :: SSort SetTag U64
+  SUnit :: SSort SetTag Unit
+  SU :: SSort AlgebraTag a -> SSort SetTag (U a)
+  (:*:) :: SSort SetTag a -> SSort SetTag b -> SSort SetTag (a * b)
+
+  SEmpty :: SSort AlgebraTag Empty
+  (:&:) :: SSort SetTag a -> SSort AlgebraTag b -> SSort AlgebraTag (a & b)
+  (:->) :: SSort SetTag a -> SSort AlgebraTag b -> SSort AlgebraTag (a ~> b)
+
+type SSet = SSort SetTag
+type SAlgebra = SSort AlgebraTag
 
 type family AsAlgebra a where
   AsAlgebra Type.Unit = F Unit
@@ -79,7 +90,6 @@ asAlgebra t = case t of
   a Type.:-> b -> SU (asAlgebra a) :-> asAlgebra b
   Type.SU64 -> SU64 :&: SEmpty
   Type.SUnit -> SUnit :&: SEmpty
-
 
 class KnownSet t where
   inferSet :: SSet t
@@ -106,3 +116,27 @@ instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Asym a b) where
   inferAlgebra = inferSet :&: inferAlgebra
 instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Exp a b) where
   inferAlgebra = inferSet :-> inferAlgebra
+
+
+class KnownSort (a :: Sort t) where
+  inferSort :: SSort t a
+
+instance KnownSort 'Unit where
+  inferSort = SUnit
+
+instance KnownSort 'U64 where
+  inferSort = SU64
+
+instance (KnownSort a, KnownSort b) => KnownSort ('Product a b) where
+  inferSort = inferSort :*: inferSort
+
+instance KnownSort a => KnownSort ('U a) where
+  inferSort = SU inferSort
+
+instance KnownSort 'Empty where
+  inferSort = SEmpty
+
+instance (KnownSort a, KnownSort b) => KnownSort ('Asym a b) where
+  inferSort = inferSort :&: inferSort
+instance (KnownSort a, KnownSort b) => KnownSort ('Exp a b) where
+  inferSort = inferSort :-> inferSort
