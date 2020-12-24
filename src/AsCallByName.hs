@@ -12,8 +12,8 @@ module AsCallByName (Expr, toCbpv) where
 import Cbpv
 import Cbpv.Sort
 import qualified Ccc
-import qualified Ccc.HasExp as Exp
-import qualified Ccc.HasProduct as Product
+import qualified Ccc.HasExp as Ccc
+import qualified Ccc.HasProduct as Ccc
 import qualified Ccc.HasUnit as Ccc
 import qualified Ccc.Type as Ccc
 import Control.Category
@@ -34,27 +34,13 @@ instance Cbpv c d => Ccc.HasUnit (Expr d) where
 pip :: Cbpv c d => d Unit (U (F Unit))
 pip = thunk id
 
-instance Cbpv c d => Product.HasProduct (Expr d) where
+instance Cbpv c d => Ccc.HasProduct (Expr d) where
   lift (E a) = E $
     thunk $
       pop undefined $ \b ->
         push (lift (a . pip) . b)
 
--- kappa t f =
---   E $
---     thunk $
---       force id
---         >>> ( pop (SU (asAlgebra t)) $ \x ->
---                 force $
---                   unE $
---                     f $
---                       E
---                         ( unit
---                             >>> x
---                         )
---             )
-
-instance Cbpv c d => Exp.HasExp (Expr d) where
+instance Cbpv c d => Ccc.HasExp (Expr d) where
   pass (E x) =
     E $
       thunk $
