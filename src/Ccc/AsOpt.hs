@@ -30,12 +30,12 @@ instance HasUnit f => HasUnit (Expr f) where
   unit = E unit
 
 instance HasProduct f => HasProduct (Expr f) where
-  lift (E f) = E (lift f)
+  whereIs (E f) (E x) = E (whereIs f x)
   kappa t f = E $ kappa t $ \x' -> case f (E x') of
     E y -> y
 
 instance HasExp f => HasExp (Expr f) where
-  pass (E x) = E (pass x)
+  app (E f) (E x) = E (app f x)
   zeta t f = E $ zeta t $ \x' -> case f (E x') of
     E y -> y
 

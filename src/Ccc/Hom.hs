@@ -10,10 +10,10 @@ module Ccc.Hom (fold, Closed (..), Hom) where
 import Control.Category
 import Data.Word
 import Ccc.HasExp hiding ((<*>))
-import Ccc
 import Ccc.HasUnit
 import Ccc.HasProduct
 import Ccc.Type
+import Ccc
 import Control.Monad.State hiding (lift)
 import Prelude hiding (id, (.))
 import qualified Lam.Type as Lam
@@ -28,10 +28,10 @@ data Hom x a b where
 
   UnitHom :: Hom x a Unit
 
-  Lift :: Hom x Unit a -> Hom x b (a * b)
+  WhereIs :: Hom x (a * b) c -> Hom x Unit a -> Hom x b c
   Kappa :: ST a -> (x Unit a -> Hom x b c) -> Hom x (a * b) c
 
-  Pass :: Hom x Unit a -> Hom x (a ~> b) b
+  App :: Hom x b (a ~> c) -> Hom x Unit a -> Hom x b c
   Zeta :: ST a -> (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
 
   U64 :: Word64 -> Hom x Unit U64
@@ -46,11 +46,11 @@ instance HasUnit (Hom x) where
   unit = UnitHom
 
 instance HasProduct (Hom x) where
-  lift = Lift
+  whereIs = WhereIs
   kappa t f = Kappa t (f . Var)
 
 instance HasExp (Hom x) where
-  pass = Pass
+  app = App
   zeta t f = Zeta t (f . Var)
 
 instance Ccc (Hom x) where
@@ -73,10 +73,10 @@ go x = case x of
 
   UnitHom -> unit
 
-  Lift x -> lift (go x)
+  WhereIs f x -> whereIs (go f) (go x)
   Kappa t f -> kappa t (\x -> go (f x))
 
-  Pass x -> pass (go x)
+  App f x -> app (go f) (go x)
   Zeta t f -> zeta t (\x -> go (f x))
 
   U64 n -> u64 n
@@ -95,14 +95,14 @@ instance HasUnit View where
   unit = V $ pure "unit"
 
 instance HasProduct View where
-  lift x = V $ pure (\x' -> "(lift " ++ x' ++ ")") <*> view x
+  whereIs f x = V $ pure (\f' x' -> "(" ++ f' ++ " " ++ x' ++ ")") <*> view f <*> view x
   kappa t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
     pure $ "(κ " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")"
 
 instance HasExp View where
-  pass x = V $ pure (\x' -> "(pass " ++ x' ++ ")") <*> view x
+  app f x = V $ pure (\f' x' -> "<" ++ f' ++ " " ++ x' ++ ">") <*> view f <*> view x
   zeta t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))

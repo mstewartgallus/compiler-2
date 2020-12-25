@@ -27,10 +27,10 @@ data Expr f a b where
   Unit :: HasUnit f => Expr f a Unit
 
   Kappa :: HasProduct f => ST a -> (Expr f Unit a -> Expr f b c) -> Expr f (a * b) c
-  Lift :: HasProduct f => Expr f Unit a -> Expr f b (a * b)
+  WhereIs :: HasProduct f => Expr f (a * b) c -> Expr f Unit a -> Expr f b c
 
   Zeta :: HasExp f => ST a -> (Expr f Unit a -> Expr f b c) -> Expr f b (a ~> c)
-  Pass :: HasExp f => Expr f Unit a -> Expr f (a ~> b) b
+  App :: HasExp f => Expr f b (a ~> c) -> Expr f Unit a -> Expr f b c
 
 simp :: Expr f a b -> Expr f a b
 simp expr = case opt expr of
@@ -43,8 +43,9 @@ opt expr  = case expr of
   Compose f Id -> Just f
 
   Compose Unit _ -> Just unit
-  Compose (Kappa _ f) (Lift x) -> Just (f x)
-  Compose (Pass x) (Zeta _ f) -> Just (f x)
+
+  App (Zeta _ f) x -> Just (f x)
+  WhereIs (Kappa _ f) x -> Just (f x)
 
   Compose (Compose f g) h  -> Just (f . (g . h))
 
@@ -60,10 +61,10 @@ recurse expr = case expr of
   Unit -> unit
 
   Zeta t f -> zeta t (\x -> simp (f x))
-  Pass x -> pass (simp x)
+  App f x -> app (simp f) (simp x)
 
   Kappa t f -> kappa t (\x -> simp (f x))
-  Lift x -> lift (simp x)
+  WhereIs f  x -> whereIs (simp f) (simp x)
 
 out :: Expr f a b -> f a b
 out expr = case expr of
@@ -74,10 +75,10 @@ out expr = case expr of
   Unit -> unit
 
   Zeta t f -> zeta t (\x -> out (f (E x)))
-  Pass x -> pass (out x)
+  App f x -> app (out f) (out x)
 
   Kappa t f -> kappa t (\x -> out (f (E x)))
-  Lift x -> lift (out x)
+  WhereIs f x -> whereIs (out f) (out x)
 
 instance Category f => Category (Expr f) where
   id = Id
@@ -87,12 +88,12 @@ instance HasUnit f => HasUnit (Expr f) where
   unit = Unit
 
 instance HasProduct f => HasProduct (Expr f) where
-  lift = Lift
+  whereIs = WhereIs
   kappa = Kappa
 
 instance HasExp f => HasExp (Expr f) where
   zeta = Zeta
-  pass = Pass
+  app = App
 
 instance Ccc f => Ccc (Expr f) where
   u64 x = E (u64 x)

@@ -29,7 +29,7 @@ instance HasUnit f => HasUnit (Expr f) where
   unit = E unit unit
 
 instance HasProduct f => HasProduct (Expr f) where
-  lift f = E (lift (out f)) (lift (step f))
+  whereIs f x = E (whereIs (out f) (out x)) (whereIs (step f) (step x))
 
   kappa t f = E {
       out = kappa t $ \x -> out (f (E x undefined)),
@@ -37,7 +37,7 @@ instance HasProduct f => HasProduct (Expr f) where
            }
 
 instance HasExp f => HasExp (Expr f) where
-  pass f = E (pass (out f)) (pass (step f))
+  app f x = E (app (out f) (out x)) (app (step f) (step x))
 
   zeta t f = E {
       out = zeta t $ \x -> out (f (E x undefined)),
