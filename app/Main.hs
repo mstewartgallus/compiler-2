@@ -16,14 +16,13 @@ import Ccc.AsView
 import qualified Ccc.Type
 import Data.Word
 import Lam
-import qualified Lam.AsView as AsLamView
 import Lam.Type
 import Prelude hiding ((<*>))
 
 main :: IO ()
 main = do
   putStrLn "The Program"
-  putStrLn (AsLamView.view program)
+  putStrLn (show program)
 
   putStrLn ""
   putStrLn "Kappa/Zeta Decomposition"
@@ -47,10 +46,11 @@ main = do
 
 type TYPE = U64
 
-program :: Lam t => t TYPE
+program :: Lam.Closed TYPE
 program =
-  u64 3 `letBe` \z ->
-    add <*> z <*> z
+  Lam.Closed $
+    u64 3 `letBe` \z ->
+      add <*> z <*> z
 
 compiled :: Ccc k => k Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
 compiled = AsCcc.asCcc program

@@ -1,4 +1,6 @@
-module AsCcc (AsCcc, asCcc) where
+{-# LANGUAGE GADTs #-}
+
+module AsCcc (asCcc) where
 
 import Ccc
 import Ccc.HasExp
@@ -8,24 +10,22 @@ import Control.Category
 import qualified Lam as Lam
 import Prelude hiding (id, (.))
 
-asCcc :: AsCcc k a -> k Unit (AsObject a)
-asCcc (Pf x) = x
+asCcc :: Ccc k => Lam.Closed a -> k Unit (AsObject a)
+asCcc (Lam.Closed x) = go x
 
-newtype AsCcc k a = Pf (k Unit (AsObject a))
+newtype V k a = V (k Unit (AsObject a))
 
-instance Ccc k => Lam.Lam (AsCcc k) where
-  Pf f <*> Pf x = Pf (pass x . f)
-
-  lam t f = Pf $
-    zeta (asObject t) $ \x -> case f (Pf x) of
-      Pf y -> y
-
-  be (Pf x) t f =
-    Pf $
-      lift x
-        >>> ( kappa (asObject t) $ \x' -> case f (Pf x') of
-                Pf y -> y
-            )
-
-  u64 x = Pf (u64 x)
-  constant t pkg name = Pf (constant t pkg name)
+go :: Ccc hom => Lam.Term (V hom) a -> hom Unit (AsObject a)
+go x = case x of
+  Lam.Var (V h) -> h
+  Lam.App f x -> pass (go x) . go f
+  Lam.Lam t f ->
+    zeta (asObject t) $ \x ->
+      go (f (V x))
+  Lam.Be x t f ->
+    lift (go x)
+      >>> ( kappa (asObject t) $ \x' ->
+              go (f (V x'))
+          )
+  Lam.U64 x -> u64 x
+  Lam.Constant t pkg name -> constant t pkg name

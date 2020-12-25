@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b50aa83f925435c574c57baf6dc000ce86b8c851f53bebddfe11f8c3e0efe641
+-- hash: d1adc5565b3946aca9d8c9ef6eb010280d1298245d097fe206a9dbcb9f55a36d
 
 name:           hoas
 version:        0.1.0.0
@@ -49,7 +49,6 @@ library
       Ccc.HasUnit
       Ccc.Type
       Lam
-      Lam.AsView
       Lam.Type
   other-modules:
       Paths_hoas
