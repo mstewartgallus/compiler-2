@@ -4,7 +4,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Lam.Term (fold, Term (..), Closed (..)) where
+module Lam.Term (fold, Term, Closed (..)) where
 
 import Lam
 import Lam.Type
@@ -23,7 +23,7 @@ data Term x a where
   U64 :: Word64 -> Term x U64
   Constant :: ST a -> String -> String -> Term x a
 
-newtype Closed a = Closed {interpret :: forall x. Term x a}
+newtype Closed a = Closed (forall x. Term x a)
 
 instance Lam (Term x) where
   lam t f = Lam t (f . Var)

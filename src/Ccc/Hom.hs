@@ -5,7 +5,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GADTs #-}
 
-module Ccc.Hom (fold, Closed (..), Hom (..)) where
+module Ccc.Hom (fold, Closed (..), Hom) where
 
 import Control.Category
 import Data.Word

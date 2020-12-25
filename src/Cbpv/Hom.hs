@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Cbpv.Hom (fold, Closed (..), Hom (..)) where
+module Cbpv.Hom (fold, Closed (..), Hom) where
 
 import Cbpv
 import qualified Lam.Type as Lam
@@ -112,50 +112,52 @@ instance Cbpv (Hom x) (Hom x) where
   cccIntrinsic = CccIntrinsic
   cbpvIntrinsic = CbpvIntrinsic
 
-instance Show (Closed a b) where
-  show (Closed x) = evalState (view x) 0
+-- shit!
+instance Show (Closed @SetTag a b) where
+  show x = evalState (view (fold x)) 0
 
-newtype View (a :: Sort t) (b :: Sort t) = V String
+newtype View (a :: Sort t) (b :: Sort t) = V { view :: State Int String }
 
-view :: Hom View a b -> State Int String
-view x = case x of
-  Var (V x) -> pure x
-
-  Id -> pure "id"
-  f :.: g -> do
+instance Category View where
+  id = V $ pure "id"
+  f . g = V $ do
     f' <- view f
     g' <- view g
     pure $ "(" ++ f' ++ " ∘ " ++ g' ++ ")"
 
-  Thunk x -> pure (\x' -> "(thunk " ++ x' ++ ")") <*> view x
-  Force x -> pure (\x' -> "(force " ++ x' ++ ")") <*> view x
+instance Code View where
 
-  UnitHom -> pure "unit"
+  unit = V $ pure "unit"
 
-  Lift x -> pure (\x' -> "(lift " ++ x' ++ ")") <*> view x
-  Kappa t f -> do
+  lift x = V $ pure (\x' -> "(lift " ++ x' ++ ")") <*> view x
+  kappa t f = V $ do
     v <- fresh
-    body <- view (f (V v))
+    body <- view (f (V $ pure v))
     pure $ "(κ " ++ v ++ ": " ++ "?" ++ ". " ++ body ++ ")"
 
-  Push x -> pure (\x' -> "(push " ++ x' ++ ")") <*> view x
-  Pop t f -> do
+instance Stack View where
+
+instance Cbpv View View where
+  thunk x = V $ pure (\x' -> "(thunk " ++ x' ++ ")") <*> view x
+  force x = V $ pure (\x' -> "(force " ++ x' ++ ")") <*> view x
+
+  push x = V $ pure (\x' -> "(push " ++ x' ++ ")") <*> view x
+  pop t f = V $ do
     v <- fresh
-    body <- view (f (V v))
+    body <- view (f (V $ pure v))
     pure $ "(pop " ++ v ++ ": " ++ "?" ++ ". " ++ body ++ ")"
 
-
-  Pass x -> pure (\x' -> "(pass " ++ x' ++ ")") <*> view x
-  Zeta t f -> do
+  pass x = V $ pure (\x' -> "(pass " ++ x' ++ ")") <*> view x
+  zeta t f = V $ do
     v <- fresh
-    body <- view (f (V v))
+    body <- view (f (V $ pure v))
     pure $ "(ζ " ++ v ++ ": " ++ "?" ++ ". " ++ body ++ ")"
 
-  U64 n -> pure (show n)
+  u64 n = V $ pure (show n)
 
-  Constant _ pkg name -> pure (pkg ++ "/" ++ name)
-  CccIntrinsic x -> pure (show x)
-  CbpvIntrinsic x -> pure (show x)
+  constant _ pkg name = V $ pure (pkg ++ "/" ++ name)
+  cccIntrinsic x = V $ pure (show x)
+  cbpvIntrinsic x = V $ pure (show x)
 
 fresh :: State Int String
 fresh = do
