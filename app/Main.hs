@@ -20,50 +20,43 @@ import qualified Lam.Term as Lam
 import Lam.Type
 import Prelude hiding ((<*>))
 
-main :: IO ()
-main = do
-  putStrLn "The Program"
-  putStrLn (show program)
-
-  putStrLn ""
-  putStrLn "Kappa/Zeta Decomposition"
-  putStrLn (show compiled)
-
-  putStrLn ""
-  putStrLn "Optimized Program"
-  putStrLn (show optimized)
-
-  putStrLn ""
-  putStrLn "Cbpv Program"
-  putStrLn (show cbpv)
-
-  putStrLn ""
-  putStrLn "Cbpv Optimized"
-  putStrLn (show optCbpv)
-
-  putStrLn ""
-  putStrLn "Result"
-  putStrLn (show result)
-
-type TYPE = U64
-
-program :: Lam.Closed TYPE
+program :: Lam.Closed U64
 program =
   Lam.Closed $
     u64 3 `letBe` \z ->
       add <*> z <*> z
 
-compiled :: Ccc.Closed Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
-compiled = AsCcc.asCcc program
+main :: IO ()
+main = do
+  putStrLn "The Program"
+  putStrLn (show program)
 
-optimized :: Ccc.Closed Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
-optimized = opt compiled
+  let compiled = AsCcc.asCcc program
 
-cbpv :: Cbpv.Closed (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
-cbpv = toCbpv optimized
+  putStrLn ""
+  putStrLn "Kappa/Zeta Decomposition"
+  putStrLn (show compiled)
 
-optCbpv :: Cbpv.Closed (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
-optCbpv = AsOpt.opt cbpv
+  let optimized = opt compiled
 
-result :: Word64
-result = AsEval.reify optCbpv
+  putStrLn ""
+  putStrLn "Optimized Program"
+  putStrLn (show optimized)
+
+  let cbpv = toCbpv optimized
+
+  putStrLn ""
+  putStrLn "Cbpv Program"
+  putStrLn (show cbpv)
+
+  let optCbpv = AsOpt.opt cbpv
+
+  putStrLn ""
+  putStrLn "Cbpv Optimized"
+  putStrLn (show optCbpv)
+
+  let result = AsEval.reify optCbpv
+
+  putStrLn ""
+  putStrLn "Result"
+  putStrLn (show result)
