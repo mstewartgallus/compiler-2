@@ -8,7 +8,6 @@ module Cbpv.AsRound (Stk, Cde, round) where
 import Cbpv
 import qualified Cbpv.AsSimplified as AsSimplified
 import qualified Cbpv.AsLeft as AsLeft
-import qualified Cbpv.AsRight as AsRight
 import Control.Category
 import Cbpv.Sort
 import qualified Ccc.Type as Ccc

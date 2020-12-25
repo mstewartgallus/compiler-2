@@ -32,9 +32,7 @@ class Category code => Code code where
   unit :: code x Unit
 
   kappa :: SSet a -> (code Unit a -> code b c) -> code (a * b) c
-  lift :: code Unit a -> code b (a * b)
   whereIsK :: code (a * b) c -> code Unit a -> code b c
-  whereIsK f x = f . lift x
 
 class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack where
   thunk :: stack (F x) y -> code x (U y)
