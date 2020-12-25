@@ -1,21 +1,21 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE GADTs #-}
 
 module Cbpv.AsOpt (opt) where
 
 import Cbpv
 import Cbpv.Hom
-import qualified Cbpv.AsRepeat as AsRepeat
-import qualified Cbpv.AsIntrinsified as AsIntrinsified
+import Cbpv.AsIntrinsified
+import Cbpv.AsSimplified
+import Cbpv.AsLeft
 import Control.Category
 import Cbpv.Sort
-import Prelude hiding ((.), id, fst, snd, Monad (..))
+import Prelude hiding ((.), id, round)
 
 opt :: Closed @SetTag a b -> Closed @SetTag a b
-opt = AsIntrinsified.intrinsify >>>
-      AsRepeat.repeat 100
+opt = intrinsify >>>
+      (\x -> iterate round x !! 100)
+
+round :: Closed @SetTag a b -> Closed @SetTag a b
+round = asLeft >>>
+        simplify
