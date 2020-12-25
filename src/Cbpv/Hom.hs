@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Cbpv.Hom (Closed (..), Hom (..)) where
+module Cbpv.Hom (abstract, Closed (..), Hom (..)) where
 
 import Cbpv
 import qualified Lam.Type as Lam
@@ -22,6 +22,42 @@ import Data.Kind
 import Prelude hiding ((.), id)
 
 newtype Closed a b = Closed (forall x. Hom x a b)
+
+abstract :: Cbpv c d => Closed a b -> d a b
+abstract (Closed x) = goC x
+
+goC :: Cbpv c d => Hom d a b -> d a b
+goC x = case x of
+  Var v -> v
+
+  Id -> id
+  f :.: g -> goC f . goC g
+
+  Thunk f -> thunk (goK f)
+
+  UnitHom -> unit
+
+  Lift x -> lift (goC x)
+  Kappa t f -> kappa t (\x -> goC (f x))
+
+  U64 n -> u64 n
+  CccIntrinsic x -> cccIntrinsic x
+  CbpvIntrinsic x -> cbpvIntrinsic x
+
+goK :: Cbpv c d => Hom d a b -> c a b
+goK x = case x of
+  Id -> id
+  f :.: g -> goK f . goK g
+
+  Force f -> force (goC f)
+
+  Push x -> push (goC x)
+  Pop t f -> pop t (\x -> goK (f x))
+
+  Pass x -> pass (goC x)
+  Zeta t f -> zeta t (\x -> goK (f x))
+
+  Constant t pkg name -> constant t pkg name
 
 data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   Var :: x a b -> Hom x a b

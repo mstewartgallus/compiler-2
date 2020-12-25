@@ -34,11 +34,11 @@ main = do
 
   putStrLn ""
   putStrLn "Cbpv Program"
-  putStrLn (show cbpvConcrete)
+  putStrLn (show cbpv)
 
   putStrLn ""
   putStrLn "Cbpv Optimized"
-  putStrLn (show optCbpvConcrete)
+  putStrLn (show optCbpv)
 
   putStrLn ""
   putStrLn "Result"
@@ -64,17 +64,11 @@ optConcrete = Ccc.Closed optimized
 optimized :: Ccc k => k Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
 optimized = opt compiled
 
-cbpv :: Cbpv c d => d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
-cbpv = toCbpv optConcrete
+cbpv :: Cbpv.Closed (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
+cbpv = Cbpv.Closed (toCbpv optConcrete)
 
-cbpvConcrete :: Cbpv.Closed (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
-cbpvConcrete = Cbpv.Closed cbpv
-
-optCbpv :: Cbpv c d => d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
-optCbpv = AsOpt.opt cbpv
-
-optCbpvConcrete :: Cbpv.Closed (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
-optCbpvConcrete = Cbpv.Closed optCbpv
+optCbpv :: Cbpv.Closed (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
+optCbpv = Cbpv.Closed (AsOpt.opt (Cbpv.abstract cbpv))
 
 result :: Word64
-result = AsEval.reify optCbpv
+result = AsEval.reify (Cbpv.abstract optCbpv)
