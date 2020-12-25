@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Cbpv.Hom (abstract, Closed (..), Hom (..)) where
+module Cbpv.Hom (fold, Closed (..), Hom (..)) where
 
 import Cbpv
 import qualified Lam.Type as Lam
@@ -23,8 +23,8 @@ import Prelude hiding ((.), id)
 
 newtype Closed (a :: Sort t) (b :: Sort t) = Closed (forall x. Hom x a b)
 
-abstract :: Cbpv c d => Closed a b -> d a b
-abstract (Closed x) = goC x
+fold :: Cbpv c d => Closed a b -> d a b
+fold (Closed x) = goC x
 
 goC :: Cbpv c d => Hom d a b -> d a b
 goC x = case x of

@@ -18,7 +18,7 @@ import qualified Ccc.AsRepeat as AsRepeat
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), Either (..))
 
 opt :: Closed a b -> Closed a b
-opt x = Closed (AsRepeat.repeat 20 (go (abstract x)))
+opt x = Closed (AsRepeat.repeat 20 (go (fold x)))
 
 newtype Expr f (a :: T) (b :: T) = E { go :: AsRepeat.Expr f a b }
 

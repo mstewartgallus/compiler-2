@@ -22,7 +22,7 @@ newtype Stk f g a b = K (AsRepeat.Stk f g a b)
 newtype Cde f g a b = C (AsRepeat.Cde f g a b)
 
 opt :: Closed @SetTag a b -> Closed @SetTag a b
-opt x = Closed $ case abstract x of
+opt x = Closed $ case fold x of
   C y -> AsRepeat.repeat 100 y
 
 instance (Category f, Category g) => Category (Stk f g) where

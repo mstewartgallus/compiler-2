@@ -15,28 +15,32 @@ import Control.Category
 import Prelude hiding (id, (.))
 
 toCbpv :: Ccc.Closed Ccc.Unit a -> Closed (U (F Unit)) (U (AsAlgebra a))
-toCbpv (Ccc.Closed x) = Closed (go x)
+toCbpv x = Closed (go (Ccc.fold x))
 
-go :: Cbpv c d => Ccc.Hom (V d) a b -> d (U (AsAlgebra a)) (U (AsAlgebra b))
-go x = case x of
-  Ccc.Var (V h) -> h
-  Ccc.Id -> id
-  f Ccc.:.: g -> go f . go g
-  Ccc.UnitHom -> pip . unit
-  Ccc.Lift x ->
-    let x' = go x
-     in thunk $ pop undefined $ \y -> push (lift (x' . pip) . y)
-  Ccc.Pass x ->
-    thunk $ force id >>> pass (pip >>> go x)
-  Ccc.Zeta t f -> thunk $
-    zeta (SU (asAlgebra t)) $ \x ->
-      force $
-        go $ f (V (unit >>> x))
-  Ccc.U64 n -> thunk (pop inferSort $ \_ -> push (u64 n))
-  Ccc.Constant t pkg name -> thunk (force id >>> constant t pkg name)
-  Ccc.CccIntrinsic x -> cccIntrinsic x
+newtype V k a b = V {go :: Hom k (U (AsAlgebra a)) (U (AsAlgebra b))}
 
-pip :: Cbpv c d => d Unit (U (F Unit))
+instance Category (V k) where
+  id = V id
+  V f . V g = V (f . g)
+
+instance Ccc.HasUnit (V k) where
+  unit = V (pip . unit)
+
+instance Ccc.HasProduct (V k) where
+  lift (V x) = V $ thunk $ pop undefined $ \y -> push (lift (x . pip) . y)
+
+instance Ccc.HasExp (V k) where
+  pass (V x) = V $ thunk (force id >>> pass (pip >>> x))
+  zeta t f = V $
+    thunk $
+      zeta (SU (asAlgebra t)) $ \x ->
+        force $
+          go $ f (V (unit >>> x))
+
+instance Ccc.Ccc (V k) where
+  u64 n = V $ thunk (pop inferSort $ \_ -> push (u64 n))
+  constant t pkg name = V $ thunk (force id >>> constant t pkg name)
+  cccIntrinsic x = V $ cccIntrinsic x
+
+pip :: Hom k Unit (U (F Unit))
 pip = thunk id
-
-newtype V d a b = V (d (U (AsAlgebra a)) (U (AsAlgebra b)))

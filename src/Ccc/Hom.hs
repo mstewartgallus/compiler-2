@@ -5,7 +5,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GADTs #-}
 
-module Ccc.Hom (abstract, Closed (..), Hom (..)) where
+module Ccc.Hom (fold, Closed (..), Hom (..)) where
 
 import Control.Category
 import Data.Word
@@ -61,8 +61,8 @@ instance Ccc (Hom x) where
 instance Show (Closed a b) where
   show (Closed x) = evalState (view x) 0
 
-abstract :: Ccc hom => Closed a b -> hom a b
-abstract (Closed x) = go x
+fold :: Ccc hom => Closed a b -> hom a b
+fold (Closed x) = go x
 
 go :: Ccc hom => Hom hom a b -> hom a b
 go x = case x of

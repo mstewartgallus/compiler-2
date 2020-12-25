@@ -21,7 +21,7 @@ import qualified Lam.Type as Lam
 import Prelude hiding ((.), id)
 
 reify :: Hom.Closed (U (F Unit)) (U (F U64)) -> Word64
-reify x = go (Hom.abstract x)
+reify x = go (Hom.fold x)
 
 go :: Prog (U (F Unit)) (U (F U64)) -> Word64
 go (C f) = case f (Thunk $ \w -> Unit :& Effect w) of
