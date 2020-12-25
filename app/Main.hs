@@ -65,7 +65,7 @@ optimized :: Ccc k => k Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
 optimized = opt compiled
 
 cbpv :: Cbpv c d => d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
-cbpv = toCbpv optimized
+cbpv = toCbpv optConcrete
 
 optCbpv :: Cbpv c d => d (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
 optCbpv = AsOpt.opt cbpv

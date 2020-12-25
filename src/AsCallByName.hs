@@ -1,13 +1,6 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeFamilyDependencies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE NoStarIsType #-}
 
-module AsCallByName (Expr, toCbpv) where
+module AsCallByName (toCbpv) where
 
 import Cbpv
 import Cbpv.Sort
@@ -15,53 +8,34 @@ import qualified Ccc
 import qualified Ccc.HasExp as Ccc
 import qualified Ccc.HasProduct as Ccc
 import qualified Ccc.HasUnit as Ccc
+import qualified Ccc.Hom as Ccc
 import qualified Ccc.Type as Ccc
 import Control.Category
 import Prelude hiding (id, (.))
 
-newtype Expr c a b = E {unE :: c (U (AsAlgebra a)) (U (AsAlgebra b))}
+toCbpv :: Cbpv c d => Ccc.Closed Ccc.Unit a -> d (U (F Unit)) (U (AsAlgebra a))
+toCbpv (Ccc.Closed x) = go x
 
-toCbpv :: Cbpv c d => Expr d Ccc.Unit a -> d (U (F Unit)) (U (AsAlgebra a))
-toCbpv (E x) = x
-
-instance Cbpv c d => Category (Expr d) where
-  id = E id
-  E f . E g = E (f . g)
-
-instance Cbpv c d => Ccc.HasUnit (Expr d) where
-  unit = E $ (pip . unit)
+go :: Cbpv c d => Ccc.Hom (V d) a b -> d (U (AsAlgebra a)) (U (AsAlgebra b))
+go x = case x of
+  Ccc.Var (V h) -> h
+  Ccc.Id -> id
+  f Ccc.:.: g -> go f . go g
+  Ccc.UnitHom -> pip . unit
+  Ccc.Lift x ->
+    let x' = go x
+     in thunk $ pop undefined $ \y -> push (lift (x' . pip) . y)
+  Ccc.Pass x ->
+    thunk $ force id >>> pass (pip >>> go x)
+  Ccc.Zeta t f -> thunk $
+    zeta (SU (asAlgebra t)) $ \x ->
+      force $
+        go $ f (V (unit >>> x))
+  Ccc.U64 n -> thunk (pop inferSort $ \_ -> push (u64 n))
+  Ccc.Constant t pkg name -> thunk (force id >>> constant t pkg name)
+  Ccc.CccIntrinsic x -> cccIntrinsic x
 
 pip :: Cbpv c d => d Unit (U (F Unit))
 pip = thunk id
 
-instance Cbpv c d => Ccc.HasProduct (Expr d) where
-  lift (E a) = E $
-    thunk $
-      pop undefined $ \b ->
-        push (lift (a . pip) . b)
-
-instance Cbpv c d => Ccc.HasExp (Expr d) where
-  pass (E x) =
-    E $
-      thunk $
-        force id
-          >>> pass
-            ( pip
-                >>> x
-            )
-
-  zeta t f = E $
-    thunk $
-      zeta (SU (asAlgebra t)) $ \x ->
-        force $
-          unE $
-            f $
-              E
-                ( unit
-                    >>> x
-                )
-
-instance Cbpv c d => Ccc.Ccc (Expr d) where
-  u64 x = E $ thunk (pop inferSort $ \_ -> push (u64 x))
-  constant t pkg name = E (thunk (force id >>> constant t pkg name))
-  cccIntrinsic x = E (cccIntrinsic x)
+newtype V d a b = V (d (U (AsAlgebra a)) (U (AsAlgebra b)))
