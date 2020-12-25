@@ -41,8 +41,8 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
   thunk (K f) = C (thunk f)
   force (C f) = K (force f)
 
-  pass (C f) = K (pass f)
-  push (C f) = K (push f)
+  app (K f) (C x) = K (app f x)
+  whereIs (K f) (C x) = K (whereIs f x)
 
   zeta t f = K $ zeta t $ \x -> case f (C x) of
     K y -> y

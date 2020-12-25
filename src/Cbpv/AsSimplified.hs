@@ -27,10 +27,10 @@ data Stk f g (a :: Algebra) (b :: Algebra) where
   Force :: Cbpv f g => Cde f g a (U b) -> Stk f g (F a) b
 
   Pop :: Cbpv f g => SSet a -> (Cde f g Unit a -> Stk f g b c) -> Stk f g (a & b) c
-  Push :: Cbpv f g => Cde f g Unit a -> Stk f g b (a & b)
+  WhereIs :: Cbpv f g => Stk f g (a & b) c -> Cde f g Unit a -> Stk f g b c
 
   Zeta :: Cbpv f g => SSet a -> (Cde f g Unit a -> Stk f g b c) -> Stk f g b (a ~> c)
-  Pass :: Cbpv f g => Cde f g Unit a -> Stk f g (a ~> b) b
+  App :: Cbpv f g => Stk f g b (a ~> c) -> Cde f g Unit a -> Stk f g b c
 
 data Cde f g (a :: Set) (b :: Set) where
   C :: g a b -> Cde f g a b
@@ -66,10 +66,10 @@ outK expr = case expr of
   Force y -> force (outC y)
 
   Pop t f -> pop t (\x -> outK (f (C x)))
-  Push x -> push (outC x)
+  WhereIs f x -> whereIs (outK f) (outC x)
 
   Zeta t f -> zeta t (\x -> outK (f (C x)))
-  Pass x -> pass (outC x)
+  App f x -> app (outK f) (outC x)
 
 recurseC :: Cde f g a b -> Cde f g a b
 recurseC expr = case expr of
@@ -93,10 +93,10 @@ recurseK expr = case expr of
   Force y -> force (simpC y)
 
   Pop t f -> pop t (\x -> simpK (f x))
-  Push x -> push (simpC x)
+  WhereIs f x -> whereIs (simpK f) (simpC x)
 
   Zeta t f -> zeta t (\x -> simpK (f x))
-  Pass x -> pass (simpC x)
+  App f x -> app (simpK f) (simpC x)
 
 optC :: Cde f g a b -> Maybe (Cde f g a b)
 optC expr = case expr of
@@ -116,8 +116,8 @@ optK expr = case expr of
   ComposeK IdK f -> Just f
   ComposeK f IdK -> Just f
 
-  ComposeK (Pop _ f) (Push x)  -> Just (f x)
-  ComposeK (Pass x) (Zeta _ f)  -> Just (f x)
+  WhereIs (Pop _ f) x  -> Just (f x)
+  App (Zeta _ f) x -> Just (f x)
 
   Force (Thunk f) -> Just f
 
@@ -153,10 +153,10 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
   thunk = Thunk
   force = Force
 
-  push = Push
+  whereIs = WhereIs
   pop = Pop
 
-  pass = Pass
+  app = App
   zeta = Zeta
 
   u64 x = C (u64 x)

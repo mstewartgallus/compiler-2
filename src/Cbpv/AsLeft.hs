@@ -103,11 +103,11 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
   thunk x = C (thunk (outK (simpK x)))
   force x = K (force (outC (simpC x)))
 
-  push x = K (push (outC (simpC x)))
+  whereIs f x = K (whereIs (outK (simpK f)) (outC (simpC x)))
   pop t f = K $ pop t $ \x ->
     outK (simpK (f (C x)))
 
-  pass x = K (pass (outC (simpC x)))
+  app f x = K (app (outK (simpK f)) (outC (simpC x)))
   zeta t f = K $ zeta t $ \x ->
     outK (simpK (f (C x)))
 

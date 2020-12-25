@@ -51,10 +51,10 @@ goK x = case x of
 
   Force f -> force (goC f)
 
-  Push x -> push (goC x)
+  WhereIs f x -> whereIs (goK f) (goC x)
   Pop t f -> pop t (\x -> goK (f x))
 
-  Pass x -> pass (goC x)
+  App f x -> app (goK f) (goC x)
   Zeta t f -> zeta t (\x -> goK (f x))
 
   Constant t pkg name -> constant t pkg name
@@ -73,10 +73,10 @@ data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   WhereIsK :: Hom x (a * b) c -> Hom x Unit a -> Hom x b c
   Kappa :: SSet a -> (x Unit a -> Hom x b c) -> Hom x (a * b) c
 
-  Push :: Hom x Unit a -> Hom x b (a & b)
+  WhereIs :: Hom x (a & b) c -> Hom x Unit a -> Hom x b c
   Pop :: SSet a -> (x Unit a -> Hom x b c) -> Hom x (a & b) c
 
-  Pass :: Hom x Unit a -> Hom x (a ~> b) b
+  App :: Hom x c (a ~> b) -> Hom x Unit a -> Hom x c b
   Zeta :: SSet a -> (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
 
   U64 :: Word64 -> Hom x Unit U64
@@ -101,10 +101,10 @@ instance Cbpv (Hom x) (Hom x) where
   thunk = Thunk
   force = Force
 
-  push = Push
+  whereIs = WhereIs
   pop t f = Pop t (f . Var)
 
-  pass = Pass
+  app = App
   zeta t f = Zeta t (f . Var)
 
   u64 = U64
@@ -141,13 +141,13 @@ instance Cbpv View View where
   thunk x = V $ pure (\x' -> "(thunk " ++ x' ++ ")") <*> view x
   force x = V $ pure (\x' -> "(force " ++ x' ++ ")") <*> view x
 
-  push x = V $ pure (\x' -> "(push " ++ x' ++ ")") <*> view x
+  whereIs f x = V $ pure (\f' x' -> "<" ++ f' ++ " " ++ x' ++ ">") <*> view f <*> view x
   pop t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
     pure $ "(pop " ++ v ++ ": " ++ "?" ++ ". " ++ body ++ ")"
 
-  pass x = V $ pure (\x' -> "(pass " ++ x' ++ ")") <*> view x
+  app f x = V $ pure (\f' x' -> "(" ++ f' ++ " " ++ x' ++ ")") <*> view f <*> view x
   zeta t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
