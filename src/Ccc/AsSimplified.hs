@@ -47,6 +47,8 @@ opt expr  = case expr of
   App (Zeta _ f) x -> Just (f x)
   WhereIs (Kappa _ f) x -> Just (f x)
 
+  WhereIs (Compose y f) x -> Just (y . whereIs f x)
+
   Compose (Compose f g) h  -> Just (f . (g . h))
 
   _ -> Nothing
