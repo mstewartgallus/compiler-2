@@ -26,31 +26,20 @@ instance Category (V k) where
   V f . V g = V (f . g)
 
 instance Ccc.HasUnit (V k) where
-  unit = V (pip . unit)
+  unit = V (thunk id . unit)
 
 instance Ccc.HasProduct (V k) where
-  whereIs (V f) (V x) = V $ ofob f (x . pip)
-
-ofob ::
-  Hom k (U (F (U a * U b))) (U c) ->
-  Hom k Unit (U a) ->
-  Hom k (U b) (U c)
-ofob f x = thunk $
-  pop undefined $ \b ->
-    force f `whereIs` thunk (whereIs id ((id `whereIsK` x) . b) . pop undefined (\_ -> id))
+  whereIs (V f) (V x) = V $ ((f . thunk id) `whereIsK` (x . thunk id))
 
 instance Ccc.HasExp (V k) where
-  app (V f) (V x) = V $ thunk (app (force f) (x . pip))
+  app (V f) (V x) = V $ thunk (app (force f) (x . thunk id))
   zeta t f = V $
     thunk $
       zeta (SU (asAlgebra t)) $ \x ->
         force $
-          go $ f (V (unit >>> x))
+          go $ f (V (x . unit))
 
 instance Ccc.Ccc (V k) where
-  u64 n = V $ thunk (pop inferSort $ \_ -> push (u64 n))
+  u64 n = V $ (thunk (pop inferSort $ \_ -> id `whereIs` u64 n) . unit)
   constant t pkg name = V $ thunk (force id >>> constant t pkg name)
   cccIntrinsic x = V $ cccIntrinsic x
-
-pip :: Hom k Unit (U (F Unit))
-pip = thunk id
