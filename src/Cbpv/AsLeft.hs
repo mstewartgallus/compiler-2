@@ -1,12 +1,14 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 -- | Reorder (f . (g . h)) to ((f . g) . h)
-module Cbpv.AsLeft (Stk, Cde, asLeft) where
+module Cbpv.AsLeft (asLeft) where
 
 import Cbpv
 import Control.Category
@@ -15,8 +17,8 @@ import Cbpv.Sort
 import Data.Kind
 import Prelude hiding ((.), id)
 
-asLeft :: Cde f g a b -> g a b
-asLeft x = outC (simpC x)
+asLeft :: Hom.Closed @SetTag a b -> Hom.Closed a b
+asLeft x = Hom.Closed (outC (simpC (Hom.fold x)))
 
 data Stk f (g :: Set -> Set -> Type) (a :: Algebra) (b :: Algebra) where
   K :: f a b -> Stk f g a b

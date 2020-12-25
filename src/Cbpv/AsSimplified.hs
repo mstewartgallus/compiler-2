@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
@@ -8,15 +9,16 @@
 -- | Simplify various identites such as:
 -- force/thunk as inverses
 -- id
-module Cbpv.AsSimplified (Stk, Cde, simplify) where
+module Cbpv.AsSimplified (simplify) where
 
 import Cbpv
 import Control.Category
 import Cbpv.Sort
+import qualified Cbpv.Hom as Hom
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), Either (..))
 
-simplify :: Cde f g a b -> g a b
-simplify x = outC (simpC x)
+simplify :: Hom.Closed @SetTag a b -> Hom.Closed a b
+simplify x = Hom.Closed (outC (simpC (Hom.fold x)))
 
 data Stk f g (a :: Algebra) (b :: Algebra) where
   K :: f a b -> Stk f g a b

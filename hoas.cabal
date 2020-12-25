@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 59d56137d69931b2b7fbc9b021afe1217998dcd5da6fac3727da48e0465e1b09
+-- hash: 626775d4704540b1955db362bb04de63cc3e57e4c20ab8834a73b2945525a840
 
 name:           hoas
 version:        0.1.0.0
@@ -31,6 +31,7 @@ library
       AsCcc
       Cbpv
       Cbpv.AsEval
+      Cbpv.AsIntrinsified
       Cbpv.AsLeft
       Cbpv.AsOpt
       Cbpv.AsRepeat
