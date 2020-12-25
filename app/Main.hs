@@ -12,7 +12,7 @@ import Cbpv.Sort (AsAlgebra)
 import qualified Cbpv.Sort
 import Ccc (Ccc)
 import Ccc.AsOpt
-import Ccc.AsView
+import qualified Ccc.Hom as Ccc
 import qualified Ccc.Type
 import Data.Word
 import Lam
@@ -26,11 +26,11 @@ main = do
 
   putStrLn ""
   putStrLn "Kappa/Zeta Decomposition"
-  putStrLn (view compiled)
+  putStrLn (show concrete)
 
   putStrLn ""
   putStrLn "Optimized Program"
-  putStrLn (view optimized)
+  putStrLn (show optConcrete)
 
   putStrLn ""
   putStrLn "Cbpv Program"
@@ -54,6 +54,12 @@ program =
 
 compiled :: Ccc k => k Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
 compiled = AsCcc.asCcc program
+
+concrete :: Ccc.Closed Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
+concrete = Ccc.Closed compiled
+
+optConcrete :: Ccc.Closed Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
+optConcrete = Ccc.Closed optimized
 
 optimized :: Ccc k => k Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
 optimized = opt compiled

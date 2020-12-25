@@ -5,7 +5,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GADTs #-}
 
-module Ccc.Hom (Hom (..)) where
+module Ccc.Hom (Closed (..), Hom (..)) where
 
 import Control.Category
 import Data.Word
@@ -57,3 +57,43 @@ instance Ccc (Hom x) where
   u64 = U64
   constant = Constant
   cccIntrinsic = CccIntrinsic
+
+instance Show (Closed a b) where
+  show (Closed x) = evalState (view x) 0
+
+newtype View (a :: T) (b :: T) = V String
+
+view :: Hom View a b -> State Int String
+view x = case x of
+  Var (V x) -> pure x
+
+  Id -> pure "id"
+  f :.: g -> do
+    f' <- view f
+    g' <- view g
+    pure $ "(" ++ f' ++ " ∘ " ++ g' ++ ")"
+
+  UnitHom -> pure "unit"
+
+  Lift x -> pure (\x' -> "(lift " ++ x' ++ ")") <*> view x
+  Kappa t f -> do
+    v <- fresh
+    body <- view (f (V v))
+    pure $ "(κ " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")"
+
+  Pass x -> pure (\x' -> "(pass " ++ x' ++ ")") <*> view x
+  Zeta t f -> do
+    v <- fresh
+    body <- view (f (V v))
+    pure $ "(ζ " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")"
+
+  U64 n -> pure (show n)
+
+  Constant _ pkg name -> pure (pkg ++ "/" ++ name)
+  CccIntrinsic x -> pure (show x)
+
+fresh :: State Int String
+fresh = do
+  n <- get
+  put (n + 1)
+  pure ("v" ++ show n)
