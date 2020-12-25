@@ -37,7 +37,7 @@ ofob ::
   Hom k (U b) (U c)
 ofob f x = thunk $
   pop undefined $ \b ->
-    force f `whereIs` thunk (push (lift x . b) . pop undefined (\_ -> id))
+    force f `whereIs` thunk (push ((id `whereIsK` x) . b) . pop undefined (\_ -> id))
 
 instance Ccc.HasExp (V k) where
   app (V f) (V x) = V $ thunk (app (force f) (x . pip))

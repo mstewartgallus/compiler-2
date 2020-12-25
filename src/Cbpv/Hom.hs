@@ -37,7 +37,7 @@ goC x = case x of
 
   UnitHom -> unit
 
-  Lift x -> lift (goC x)
+  WhereIsK f x -> whereIsK (goC f) (goC x)
   Kappa t f -> kappa t (\x -> goC (f x))
 
   U64 n -> u64 n
@@ -70,7 +70,7 @@ data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
 
   UnitHom :: Hom x a Unit
 
-  Lift :: Hom x Unit a -> Hom x b (a * b)
+  WhereIsK :: Hom x (a * b) c -> Hom x Unit a -> Hom x b c
   Kappa :: SSet a -> (x Unit a -> Hom x b c) -> Hom x (a * b) c
 
   Push :: Hom x Unit a -> Hom x b (a & b)
@@ -92,7 +92,7 @@ instance Category (Hom x) where
 instance Code (Hom x) where
   unit = UnitHom
 
-  lift = Lift
+  whereIsK = WhereIsK
   kappa t f = Kappa t (f . Var)
 
 instance Stack (Hom x) where
@@ -129,7 +129,7 @@ instance Code View where
 
   unit = V $ pure "unit"
 
-  lift x = V $ pure (\x' -> "(lift " ++ x' ++ ")") <*> view x
+  whereIsK f x = V $ pure (\f' x' -> "<" ++ f' ++ " " ++ x' ++ ")") <*> view f <*> view x
   kappa t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))

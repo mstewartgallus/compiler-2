@@ -95,7 +95,7 @@ instance Stack f => Stack (Stk f g) where
 instance Code g => Code (Cde f g) where
   unit = C unit
 
-  lift x = C (lift (outC (simpC x)))
+  whereIsK f x = C (whereIsK (outC (simpC f)) (outC (simpC x)))
   kappa t f = C $ kappa t $ \x ->
     outC (simpC (f (C x)))
 

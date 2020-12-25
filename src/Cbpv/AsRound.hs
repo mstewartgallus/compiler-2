@@ -32,7 +32,7 @@ instance (Category f, Category g) => Category (Cde f g) where
 instance Cbpv f g => Code (Cde f g) where
   unit = C unit
 
-  lift (C f) = C (lift f)
+  whereIsK (C f) (C x) = C (whereIsK f x)
   kappa t f = C $ kappa t $ \x -> case f (C x) of
     C y -> y
 

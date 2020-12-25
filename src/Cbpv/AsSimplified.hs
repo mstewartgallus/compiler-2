@@ -38,7 +38,7 @@ data Cde f g (a :: Set) (b :: Set) where
   ComposeC ::  Category g => Cde f g b c -> Cde f g a b -> Cde f g a c
 
   Kappa :: Code g => SSet a -> (Cde f g Unit a -> Cde f g b c) -> Cde f g (a * b) c
-  Lift :: Code g => Cde f g Unit a -> Cde f g b (a * b)
+  WhereIsK :: Code g => Cde f g (a * b) c -> Cde f g Unit a -> Cde f g b c
 
   Thunk :: Cbpv f g => Stk f g (F a) b -> Cde f g a (U b)
 
@@ -51,7 +51,7 @@ outC expr = case expr of
   ComposeC f g -> outC f . outC g
 
   Kappa t f -> kappa t (\x -> outC (f (C x)))
-  Lift x -> lift (outC x)
+  WhereIsK f x -> whereIsK (outC f) (outC x)
 
   Thunk y -> thunk (outK y)
 
@@ -80,7 +80,7 @@ recurseC expr = case expr of
   Thunk y -> thunk (simpK y)
 
   Kappa t f -> kappa t (\x -> simpC (f x))
-  Lift x -> lift (simpC x)
+  WhereIsK f x -> whereIsK (simpC f) (simpC x)
 
   Unit -> unit
 
@@ -105,7 +105,7 @@ optC expr = case expr of
 
   ComposeC Unit _ -> Just unit
 
-  ComposeC (Kappa _ f) (Lift x)  -> Just (f x)
+  WhereIsK (Kappa _ f) x  -> Just (f x)
 
   Thunk (Force f) -> Just f
 
@@ -146,7 +146,7 @@ instance Stack f => Stack (Stk f g) where
 instance Code g => Code (Cde f g) where
   unit = Unit
 
-  lift = Lift
+  whereIsK = WhereIsK
   kappa = Kappa
 
 instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where

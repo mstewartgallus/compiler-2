@@ -36,7 +36,7 @@ instance (Category f, Category g) => Category (Cde f g) where
 instance Cbpv f g => Code (Cde f g) where
   unit = C unit
 
-  lift (C f) = C (lift f)
+  whereIsK (C f) (C x) = C (whereIsK f x)
   kappa t f = C $ kappa t $ \x -> case f (C x) of
     C y -> y
 
@@ -74,7 +74,7 @@ doAdd =
   force (tuple >>> fst) >>> (pop inferSort $ \x ->
   push unit >>>
   force (tuple >>> snd) >>> (pop inferSort $ \y ->
-  push (addi . lift x . y)))
+  push (whereIsK addi x . y)))
 
 addi :: Cbpv stack code => code (U64 * U64) U64
 addi = cbpvIntrinsic AddIntrinsic

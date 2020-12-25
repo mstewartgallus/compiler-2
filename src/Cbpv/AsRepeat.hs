@@ -35,7 +35,7 @@ instance (Category f, Category g) => Category (Cde f g) where
 instance Cbpv f g => Code (Cde f g) where
   unit = C unit unit
 
-  lift f = C (lift (outC f)) (lift (stepC f))
+  whereIsK f x = C (whereIsK (outC f) (outC x)) (whereIsK (stepC f) (stepC x))
   kappa t f = C (kappa t outF) (kappa t stepF) where
     outF x' = outC (f (C x' undefined))
     stepF x' = stepC (f (C undefined x'))
