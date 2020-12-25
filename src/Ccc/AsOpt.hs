@@ -1,13 +1,17 @@
-module Ccc.AsOpt (opt) where
+module Ccc.AsOpt (optimize) where
 
 import Ccc
 import Ccc.Hom
 import Control.Category
 import Ccc.AsIntrinsified
 import Ccc.AsSimplified
-import Prelude hiding ((.), id)
+import Prelude hiding ((.), id, round)
 
-opt :: Closed a b -> Closed a b
-opt =
+optimize :: Closed a b -> Closed a b
+optimize =
   intrinsify >>>
-  (\x -> iterate simplify x !! 20)
+  (\x -> iterate round x !! 20)
+
+round :: Closed a b -> Closed a b
+round =
+  simplify

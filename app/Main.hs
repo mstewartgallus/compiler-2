@@ -30,7 +30,7 @@ main = do
   putStrLn "Kappa/Zeta Decomposition"
   putStrLn (show compiled)
 
-  let optimized = Ccc.opt compiled
+  let optimized = Ccc.optimize compiled
 
   putStrLn ""
   putStrLn "Optimized Program"

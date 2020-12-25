@@ -4,9 +4,8 @@
 
 module Ccc (Intrinsic (..), Ccc (..)) where
 
-import Ccc.HasExp
-import Ccc.HasProduct
 import Ccc.Type
+import Control.Category
 import Data.Word (Word64)
 import qualified Lam.Type as Lam
 
@@ -23,7 +22,15 @@ import qualified Lam.Type as Lam
 -- Heidelberg.
 --
 -- https://doi.org/10.1007/3-540-60164-3_28
-class (HasProduct hom, HasExp hom) => Ccc hom where
+class Category hom => Ccc hom where
+  unit :: hom a Unit
+
+  zeta :: ST a -> (hom Unit a -> hom b c) -> hom b (a ~> c)
+  app :: hom b (a ~> c) -> hom Unit a -> hom b c
+
+  kappa :: ST a -> (hom Unit a -> hom b c) -> hom (a * b) c
+  whereIs :: hom (a * b) c -> hom Unit a -> hom b c
+
   u64 :: Word64 -> hom Unit U64
   constant :: Lam.ST a -> String -> String -> hom Unit (AsObject a)
   cccIntrinsic :: Intrinsic a b -> hom a b

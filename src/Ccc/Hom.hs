@@ -9,9 +9,6 @@ module Ccc.Hom (fold, Closed (..), Hom) where
 
 import Control.Category
 import Data.Word
-import Ccc.HasExp hiding ((<*>))
-import Ccc.HasUnit
-import Ccc.HasProduct
 import Ccc.Type
 import Ccc
 import Control.Monad.State hiding (lift)
@@ -42,18 +39,15 @@ instance Category (Hom x) where
   id = Id
   (.) = (:.:)
 
-instance HasUnit (Hom x) where
+instance Ccc (Hom x) where
   unit = UnitHom
 
-instance HasProduct (Hom x) where
   whereIs = WhereIs
   kappa t f = Kappa t (f . Var)
 
-instance HasExp (Hom x) where
   app = App
   zeta t f = Zeta t (f . Var)
 
-instance Ccc (Hom x) where
   u64 = U64
   constant = Constant
   cccIntrinsic = CccIntrinsic
@@ -91,24 +85,21 @@ instance Category View where
     g' <- view g
     pure $ "(" ++ f' ++ " ∘ " ++ g' ++ ")"
 
-instance HasUnit View where
+instance Ccc View where
   unit = V $ pure "unit"
 
-instance HasProduct View where
   whereIs f x = V $ pure (\f' x' -> "(" ++ f' ++ " " ++ x' ++ ")") <*> view f <*> view x
   kappa t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
     pure $ "(κ " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")"
 
-instance HasExp View where
   app f x = V $ pure (\f' x' -> "<" ++ f' ++ " " ++ x' ++ ">") <*> view f <*> view x
   zeta t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
     pure $ "(ζ " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")"
 
-instance Ccc View where
   u64 n = V $ pure (show n)
   constant _ pkg name = V $ pure (pkg ++ "/" ++ name)
   cccIntrinsic x = V $ pure (show x)

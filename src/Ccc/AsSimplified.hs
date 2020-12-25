@@ -10,9 +10,6 @@ module Ccc.AsSimplified (simplify) where
 import Ccc
 import Control.Category
 import Ccc.Hom
-import Ccc.HasExp
-import Ccc.HasProduct
-import Ccc.HasUnit
 import Ccc.Type
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), Either (..))
 
@@ -25,13 +22,13 @@ data Expr f a b where
   Id :: Category f => Expr f a a
   Compose ::  Category f => Expr f b c -> Expr f a b -> Expr f a c
 
-  Unit :: HasUnit f => Expr f a Unit
+  Unit :: Ccc f => Expr f a Unit
 
-  Kappa :: HasProduct f => ST a -> (Expr f Unit a -> Expr f b c) -> Expr f (a * b) c
-  WhereIs :: HasProduct f => Expr f (a * b) c -> Expr f Unit a -> Expr f b c
+  Kappa :: Ccc f => ST a -> (Expr f Unit a -> Expr f b c) -> Expr f (a * b) c
+  WhereIs :: Ccc f => Expr f (a * b) c -> Expr f Unit a -> Expr f b c
 
-  Zeta :: HasExp f => ST a -> (Expr f Unit a -> Expr f b c) -> Expr f b (a ~> c)
-  App :: HasExp f => Expr f b (a ~> c) -> Expr f Unit a -> Expr f b c
+  Zeta :: Ccc f => ST a -> (Expr f Unit a -> Expr f b c) -> Expr f b (a ~> c)
+  App :: Ccc f => Expr f b (a ~> c) -> Expr f Unit a -> Expr f b c
 
 simp :: Expr f a b -> Expr f a b
 simp expr = case opt expr of
@@ -87,18 +84,15 @@ instance Category f => Category (Expr f) where
   id = Id
   (.) = Compose
 
-instance HasUnit f => HasUnit (Expr f) where
+instance Ccc f => Ccc (Expr f) where
   unit = Unit
 
-instance HasProduct f => HasProduct (Expr f) where
   whereIs = WhereIs
   kappa = Kappa
 
-instance HasExp f => HasExp (Expr f) where
   zeta = Zeta
   app = App
 
-instance Ccc f => Ccc (Expr f) where
   u64 x = E (u64 x)
   constant t pkg name = E $ constant t pkg name
   cccIntrinsic x = E $ cccIntrinsic x

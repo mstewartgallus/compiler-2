@@ -3,8 +3,6 @@
 module AsCcc (asCcc) where
 
 import Ccc
-import Ccc.HasExp
-import Ccc.HasProduct
 import Ccc.Hom
 import Ccc.Type
 import Control.Category
