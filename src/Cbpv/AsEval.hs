@@ -8,9 +8,10 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Cbpv.AsEval (reify, Prog, Action, Data) where
+module Cbpv.AsEval (reify, Action, Data) where
 
 import Cbpv
+import qualified Cbpv.Hom as Hom
 import Control.Category
 import Data.Word
 import Cbpv.Sort
@@ -19,8 +20,11 @@ import qualified Ccc as Ccc
 import qualified Lam.Type as Lam
 import Prelude hiding ((.), id)
 
-reify :: Prog (U (F Unit)) (U (F U64)) -> Word64
-reify (C f) = case f (Thunk $ \w -> Unit :& Effect w) of
+reify :: Hom.Closed (U (F Unit)) (U (F U64)) -> Word64
+reify x = go (Hom.abstract x)
+
+go :: Prog (U (F Unit)) (U (F U64)) -> Word64
+go (C f) = case f (Thunk $ \w -> Unit :& Effect w) of
   Thunk t -> case t 0 of
     (U64 y :& _) -> y
 
