@@ -59,7 +59,7 @@ optC expr = case expr of
   ComposeC IdC f -> Just f
   ComposeC f IdC -> Just f
 
-  ComposeC f (ComposeC g h)  -> Just $ (f . g) . h
+  ComposeC (ComposeC f g) h  -> Just $ f . (g . h)
 
   _ -> Nothing
 
@@ -68,7 +68,7 @@ optK expr = case expr of
   ComposeK IdK f -> Just f
   ComposeK f IdK -> Just f
 
-  ComposeK f (ComposeK g h)  -> Just $ (f . g) . h
+  ComposeK (ComposeK f g) h  -> Just $ f . (g . h)
 
   _ -> Nothing
 

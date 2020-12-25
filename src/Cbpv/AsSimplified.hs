@@ -108,6 +108,8 @@ optC expr = case expr of
   WhereIsK (ComposeC y f) x  -> Just (y . whereIsK f x)
   WhereIsK (Kappa _ f) x  -> Just (f x)
 
+  ComposeC g (Kappa t f) -> Just $ kappa t $ \x -> g . f x
+
   Thunk (Force f) -> Just f
 
   _ -> Nothing
@@ -116,6 +118,9 @@ optK :: Stk f g a b -> Maybe (Stk f g a b)
 optK expr = case expr of
   ComposeK IdK f -> Just f
   ComposeK f IdK -> Just f
+
+  ComposeK g (Pop t f) -> Just $ pop t $ \x -> g . f x
+  ComposeK (Zeta t f) g -> Just $ zeta t $ \x -> f x . g
 
   WhereIs (ComposeK y f) x  -> Just (y . whereIs f x)
   App (ComposeK f y) x  -> Just (app f x . y)
