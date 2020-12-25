@@ -59,7 +59,7 @@ instance Ccc (Hom x) where
   cccIntrinsic = CccIntrinsic
 
 instance Show (Closed a b) where
-  show (Closed x) = evalState (view x) 0
+  show x = evalState (view (fold x)) 0
 
 fold :: Ccc hom => Closed a b -> hom a b
 fold (Closed x) = go x
@@ -83,36 +83,35 @@ go x = case x of
   CccIntrinsic x -> cccIntrinsic x
   Constant t pkg name -> constant t pkg name
 
-newtype View (a :: T) (b :: T) = V String
-
-view :: Hom View a b -> State Int String
-view x = case x of
-  Var (V x) -> pure x
-
-  Id -> pure "id"
-  f :.: g -> do
+newtype View (a :: T) (b :: T) = V { view :: State Int String }
+instance Category View where
+  id = V $ pure "id"
+  f . g = V $ do
     f' <- view f
     g' <- view g
     pure $ "(" ++ f' ++ " ∘ " ++ g' ++ ")"
 
-  UnitHom -> pure "unit"
+instance HasUnit View where
+  unit = V $ pure "unit"
 
-  Lift x -> pure (\x' -> "(lift " ++ x' ++ ")") <*> view x
-  Kappa t f -> do
+instance HasProduct View where
+  lift x = V $ pure (\x' -> "(lift " ++ x' ++ ")") <*> view x
+  kappa t f = V $ do
     v <- fresh
-    body <- view (f (V v))
+    body <- view (f (V $ pure v))
     pure $ "(κ " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")"
 
-  Pass x -> pure (\x' -> "(pass " ++ x' ++ ")") <*> view x
-  Zeta t f -> do
+instance HasExp View where
+  pass x = V $ pure (\x' -> "(pass " ++ x' ++ ")") <*> view x
+  zeta t f = V $ do
     v <- fresh
-    body <- view (f (V v))
+    body <- view (f (V $ pure v))
     pure $ "(ζ " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")"
 
-  U64 n -> pure (show n)
-
-  Constant _ pkg name -> pure (pkg ++ "/" ++ name)
-  CccIntrinsic x -> pure (show x)
+instance Ccc View where
+  u64 n = V $ pure (show n)
+  constant _ pkg name = V $ pure (pkg ++ "/" ++ name)
+  cccIntrinsic x = V $ pure (show x)
 
 fresh :: State Int String
 fresh = do

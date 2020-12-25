@@ -47,28 +47,28 @@ go x = case x of
   Constant t pkg name -> constant t pkg name
 
 instance Show (Closed a) where
-  show (Closed x) = evalState (view x) 0
+  show x = evalState (view (fold x)) 0
 
-newtype View (a :: T) = V String
-
-view :: Term View a -> State Int String
-view x = case x of
-  Var (V s) -> pure s
-  Be x t f -> do
-    v <- fresh
+newtype View (a :: T) = V { view :: State Int String }
+instance Lam View where
+  be x t f = V $ do
     x' <- view x
-    body <- view (f (V v))
-    pure (x' ++ " be " ++ v ++ ": " ++ show t ++ ". " ++ body)
-  Lam t f -> do
     v <- fresh
-    body <- view (f (V v))
+    body <- view (f (V $ pure v))
+    pure (x' ++ " be " ++ v ++ ": " ++ show t ++ ". " ++ body)
+
+  lam t f = V $ do
+    v <- fresh
+    body <- view (f (V $ pure v))
     pure ("(λ " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")")
-  App f x -> do
+
+  f <*> x = V $ do
     f' <- view f
     x' <- view x
     pure $ "(" ++ f' ++ " " ++ x' ++ ")"
-  U64 n -> pure (show n)
-  Constant _ pkg name -> pure (pkg ++ "/" ++ name)
+
+  u64 n = V $ pure (show n)
+  constant _ pkg name = V $ pure (pkg ++ "/" ++ name)
 
 fresh :: State Int String
 fresh = do
