@@ -4,10 +4,11 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Lam.Term (Term (..), Closed (..)) where
+module Lam.Term (abstract, Term (..), Closed (..)) where
 
 import Lam
 import Lam.Type
+import Prelude hiding ((<*>))
 import Data.Word (Word64)
 import Control.Monad.State
 
@@ -32,6 +33,18 @@ instance Lam (Term x) where
 
   u64 = U64
   constant = Constant
+
+abstract :: Lam t => Closed a -> t a
+abstract (Closed x) = go x
+
+go :: Lam t => Term t a -> t a
+go x = case x of
+  Var v -> v
+  Be x t f -> be (go x) t (go . f)
+  Lam t f -> lam t (go . f)
+  App f x -> go f <*> go x
+  U64 n -> u64 n
+  Constant t pkg name -> constant t pkg name
 
 instance Show (Closed a) where
   show (Closed x) = evalState (view x) 0
