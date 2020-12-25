@@ -8,6 +8,7 @@ import Ccc.HasProduct
 import Ccc.Type
 import Control.Category
 import qualified Lam as Lam
+import qualified Lam.Term as Lam
 import Prelude hiding (id, (.))
 
 asCcc :: Ccc k => Lam.Closed a -> k Unit (AsObject a)

@@ -16,6 +16,7 @@ import qualified Ccc.Hom as Ccc
 import qualified Ccc.Type
 import Data.Word
 import Lam
+import qualified Lam.Term as Lam
 import Lam.Type
 import Prelude hiding ((<*>))
 
