@@ -15,7 +15,3 @@ import Prelude hiding ((.), id, (<*>))
 class HasUnit k => HasExp k where
   zeta :: ST a -> (k Unit a -> k b c) -> k b (a ~> c)
   app :: k b (a ~> c) -> k Unit a -> k b c
-
-  -- | fixme.. deprecate..
-  pass :: k Unit a -> k (a ~> b) b
-  pass = app id

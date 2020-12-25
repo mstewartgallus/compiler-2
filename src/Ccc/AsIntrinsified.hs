@@ -14,7 +14,6 @@ import Ccc.HasUnit
 import Ccc.HasProduct
 import Ccc.Type
 import qualified Lam.Type as Lam
-import qualified Ccc.AsRepeat as AsRepeat
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), Either (..))
 
 intrinsify :: Closed a b -> Closed a b
