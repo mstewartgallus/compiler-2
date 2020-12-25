@@ -70,17 +70,11 @@ addIntrinsic = thunk (doAdd . force id)
 doAdd :: Cbpv stack code => stack (F (U (F U64) * U (F U64))) (F U64)
 doAdd =
   pop inferSort $ \tuple ->
-  (force (tuple >>> fst) >>>
+  (force (tuple >>> kappa inferSort (\x -> x . unit)) >>>
    (pop inferSort $ \x ->
-   (force (tuple >>> snd) >>>
+   (force (tuple >>> kappa inferSort (\_ -> id)) >>>
    (pop inferSort $ \y ->
    push (whereIsK addi x . y))) `whereIs` unit)) `whereIs` unit
 
 addi :: Cbpv stack code => code (U64 * U64) U64
 addi = cbpvIntrinsic AddIntrinsic
-
-fst :: Cbpv stack code => code (a * b) a
-fst = kappa undefined (\x -> x . unit)
-
-snd :: Cbpv stack code => code (a * b) b
-snd = kappa undefined (\_ -> id)

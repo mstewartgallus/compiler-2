@@ -133,7 +133,7 @@ instance Code View where
   kappa t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ "(κ " ++ v ++ ": " ++ "?" ++ ". " ++ body ++ ")"
+    pure $ "(κ " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")"
 
 instance Stack View where
 
