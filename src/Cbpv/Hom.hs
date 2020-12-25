@@ -145,13 +145,13 @@ instance Cbpv View View where
   pop t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ "(pop " ++ v ++ ": " ++ "?" ++ ". " ++ body ++ ")"
+    pure $ "(pop " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")"
 
   app f x = V $ pure (\f' x' -> "(" ++ f' ++ " " ++ x' ++ ")") <*> view f <*> view x
   zeta t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ "(ζ " ++ v ++ ": " ++ "?" ++ ". " ++ body ++ ")"
+    pure $ "(ζ " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")"
 
   u64 n = V $ pure (show n)
 

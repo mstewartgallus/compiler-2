@@ -113,3 +113,14 @@ instance (KnownSort a, KnownSort b) => KnownSort ('Asym a b) where
   inferSort = inferSort :&: inferSort
 instance (KnownSort a, KnownSort b) => KnownSort ('Exp a b) where
   inferSort = inferSort :-> inferSort
+
+instance Show (SSort t a) where
+  show x = case x of
+    SU64 -> "u64"
+    SUnit -> "1"
+    SU x -> "(U " ++ show x ++ ")"
+    x :*: y -> "(" ++ show x ++ " × " ++ show y ++ ")"
+
+    SEmpty -> "0"
+    x :&: y -> "(" ++ show x ++ " ⊗ " ++ show y ++ ")"
+    x :-> y -> "(" ++ show x ++ " → " ++ show y ++ ")"
