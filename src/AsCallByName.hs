@@ -1,4 +1,6 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE NoStarIsType #-}
 
 module AsCallByName (toCbpv) where
 
@@ -27,7 +29,15 @@ instance Ccc.HasUnit (V k) where
   unit = V (pip . unit)
 
 instance Ccc.HasProduct (V k) where
-  lift (V x) = V $ thunk $ pop undefined $ \y -> push (lift (x . pip) . y)
+  whereIs (V f) (V x) = V $ ofob f (x . pip)
+
+ofob ::
+  Hom k (U (F (U a * U b))) (U c) ->
+  Hom k Unit (U a) ->
+  Hom k (U b) (U c)
+ofob f x = thunk $
+  pop undefined $ \b ->
+    force f . push (thunk (push (lift x . b) . pop undefined (\_ -> id)))
 
 instance Ccc.HasExp (V k) where
   pass (V x) = V $ thunk (force id >>> pass (pip >>> x))
