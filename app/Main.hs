@@ -54,16 +54,16 @@ program =
       add <*> z <*> z
 
 compiled :: Ccc.Closed Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
-compiled = Ccc.Closed (AsCcc.asCcc program)
+compiled = AsCcc.asCcc program
 
 optimized :: Ccc.Closed Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
-optimized = Ccc.Closed (opt (Ccc.abstract compiled))
+optimized = opt compiled
 
 cbpv :: Cbpv.Closed (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
-cbpv = Cbpv.Closed (toCbpv optimized)
+cbpv = toCbpv optimized
 
 optCbpv :: Cbpv.Closed (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
-optCbpv = Cbpv.Closed (AsOpt.opt (Cbpv.abstract cbpv))
+optCbpv = AsOpt.opt cbpv
 
 result :: Word64
 result = AsEval.reify (Cbpv.abstract optCbpv)

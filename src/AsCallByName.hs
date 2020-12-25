@@ -3,6 +3,7 @@
 module AsCallByName (toCbpv) where
 
 import Cbpv
+import Cbpv.Hom
 import Cbpv.Sort
 import qualified Ccc
 import qualified Ccc.HasExp as Ccc
@@ -13,8 +14,8 @@ import qualified Ccc.Type as Ccc
 import Control.Category
 import Prelude hiding (id, (.))
 
-toCbpv :: Cbpv c d => Ccc.Closed Ccc.Unit a -> d (U (F Unit)) (U (AsAlgebra a))
-toCbpv (Ccc.Closed x) = go x
+toCbpv :: Ccc.Closed Ccc.Unit a -> Closed (U (F Unit)) (U (AsAlgebra a))
+toCbpv (Ccc.Closed x) = Closed (go x)
 
 go :: Cbpv c d => Ccc.Hom (V d) a b -> d (U (AsAlgebra a)) (U (AsAlgebra b))
 go x = case x of

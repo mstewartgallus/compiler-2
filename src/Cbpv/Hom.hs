@@ -21,7 +21,7 @@ import Data.Word
 import Data.Kind
 import Prelude hiding ((.), id)
 
-newtype Closed a b = Closed (forall x. Hom x a b)
+newtype Closed (a :: Sort t) (b :: Sort t) = Closed (forall x. Hom x a b)
 
 abstract :: Cbpv c d => Closed a b -> d a b
 abstract (Closed x) = goC x

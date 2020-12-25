@@ -1,12 +1,16 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE GADTs #-}
 
 -- | Remove duplicate force/thunk pairs
-module Cbpv.AsOpt (Stk, Cde, opt) where
+module Cbpv.AsOpt (opt) where
 
 import Cbpv
+import Cbpv.Hom
 import qualified Cbpv.AsRepeat as AsRepeat
 import Control.Category
 import Cbpv.Sort
@@ -17,8 +21,9 @@ import Prelude hiding ((.), id, fst, snd, Monad (..))
 newtype Stk f g a b = K (AsRepeat.Stk f g a b)
 newtype Cde f g a b = C (AsRepeat.Cde f g a b)
 
-opt :: Cde f g a b -> g a b
-opt (C x) = AsRepeat.repeat 100 x
+opt :: Closed @SetTag a b -> Closed @SetTag a b
+opt x = Closed $ case abstract x of
+  C y -> AsRepeat.repeat 100 y
 
 instance (Category f, Category g) => Category (Stk f g) where
   id = K id

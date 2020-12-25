@@ -4,7 +4,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Lam.Term (abstract, Term (..), Closed (..)) where
+module Lam.Term (fold, Term (..), Closed (..)) where
 
 import Lam
 import Lam.Type
@@ -34,8 +34,8 @@ instance Lam (Term x) where
   u64 = U64
   constant = Constant
 
-abstract :: Lam t => Closed a -> t a
-abstract (Closed x) = go x
+fold :: Lam t => Closed a -> t a
+fold (Closed x) = go x
 
 go :: Lam t => Term t a -> t a
 go x = case x of
