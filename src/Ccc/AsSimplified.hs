@@ -5,18 +5,19 @@
 {-# LANGUAGE TypeOperators #-}
 
 -- | Simplify various identities
-module Ccc.AsSimplified (Expr, simplify) where
+module Ccc.AsSimplified (simplify) where
 
 import Ccc
 import Control.Category
+import Ccc.Hom
 import Ccc.HasExp
 import Ccc.HasProduct
 import Ccc.HasUnit
 import Ccc.Type
 import Prelude hiding ((.), id, curry, uncurry, Monad (..), Either (..))
 
-simplify :: Expr f a b -> f a b
-simplify x = out (simp x)
+simplify :: Closed a b -> Closed a b
+simplify x = Closed (out (simp (fold x)))
 
 data Expr f a b where
   E :: f a b -> Expr f a b
