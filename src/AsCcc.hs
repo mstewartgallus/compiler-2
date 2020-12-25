@@ -18,9 +18,9 @@ asCcc x = Closed (go (Lam.fold x))
 newtype V k a = V {go :: Hom k Unit (AsObject a)}
 
 instance Lam.Lam (V k) where
-  be (V x) t f = V $ lift x >>> kappa (asObject t) (\x' -> go (f (V x')))
+  be (V x) t f = V $ whereIs (kappa (asObject t) (\x' -> go (f (V x')))) x
   lam t f = V $ zeta (asObject t) (\x -> go (f (V x)))
-  V f <*> V x = V (pass x . f)
+  V f <*> V x = V (app f x)
 
   u64 n = V (u64 n)
   constant t pkg name = V (constant t pkg name)

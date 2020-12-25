@@ -48,4 +48,4 @@ instance Ccc f => Ccc (Expr f) where
 addIntrinsic :: Ccc f => f Unit (AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))
 addIntrinsic = zeta inferT $ \x ->
                zeta inferT $ \y ->
-               add . lift x . y
+               ((add `whereIs` x) . y)
