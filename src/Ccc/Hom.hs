@@ -5,7 +5,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GADTs #-}
 
-module Ccc.Hom (Closed (..), Hom (..)) where
+module Ccc.Hom (abstract, Closed (..), Hom (..)) where
 
 import Control.Category
 import Data.Word
@@ -14,7 +14,7 @@ import Ccc
 import Ccc.HasUnit
 import Ccc.HasProduct
 import Ccc.Type
-import Control.Monad.State
+import Control.Monad.State hiding (lift)
 import Prelude hiding (id, (.))
 import qualified Lam.Type as Lam
 
@@ -60,6 +60,28 @@ instance Ccc (Hom x) where
 
 instance Show (Closed a b) where
   show (Closed x) = evalState (view x) 0
+
+abstract :: Ccc hom => Closed a b -> hom a b
+abstract (Closed x) = go x
+
+go :: Ccc hom => Hom hom a b -> hom a b
+go x = case x of
+  Var v -> v
+
+  Id -> id
+  f :.: g -> go f . go g
+
+  UnitHom -> unit
+
+  Lift x -> lift (go x)
+  Kappa t f -> kappa t (\x -> go (f x))
+
+  Pass x -> pass (go x)
+  Zeta t f -> zeta t (\x -> go (f x))
+
+  U64 n -> u64 n
+  CccIntrinsic x -> cccIntrinsic x
+  Constant t pkg name -> constant t pkg name
 
 newtype View (a :: T) (b :: T) = V String
 

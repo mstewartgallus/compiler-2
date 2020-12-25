@@ -27,11 +27,11 @@ main = do
 
   putStrLn ""
   putStrLn "Kappa/Zeta Decomposition"
-  putStrLn (show concrete)
+  putStrLn (show compiled)
 
   putStrLn ""
   putStrLn "Optimized Program"
-  putStrLn (show optConcrete)
+  putStrLn (show optimized)
 
   putStrLn ""
   putStrLn "Cbpv Program"
@@ -53,20 +53,14 @@ program =
     u64 3 `letBe` \z ->
       add <*> z <*> z
 
-compiled :: Ccc k => k Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
-compiled = AsCcc.asCcc program
+compiled :: Ccc.Closed Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
+compiled = Ccc.Closed (AsCcc.asCcc program)
 
-concrete :: Ccc.Closed Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
-concrete = Ccc.Closed compiled
-
-optConcrete :: Ccc.Closed Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
-optConcrete = Ccc.Closed optimized
-
-optimized :: Ccc k => k Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
-optimized = opt compiled
+optimized :: Ccc.Closed Ccc.Type.Unit (Ccc.Type.AsObject TYPE)
+optimized = Ccc.Closed (opt (Ccc.abstract compiled))
 
 cbpv :: Cbpv.Closed (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
-cbpv = Cbpv.Closed (toCbpv optConcrete)
+cbpv = Cbpv.Closed (toCbpv optimized)
 
 optCbpv :: Cbpv.Closed (Cbpv.Sort.U (Cbpv.Sort.F Cbpv.Sort.Unit)) (Cbpv.Sort.U (AsAlgebra ((Ccc.Type.AsObject TYPE))))
 optCbpv = Cbpv.Closed (AsOpt.opt (Cbpv.abstract cbpv))
