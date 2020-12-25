@@ -37,10 +37,10 @@ ofob ::
   Hom k (U b) (U c)
 ofob f x = thunk $
   pop undefined $ \b ->
-    force f . push (thunk (push (lift x . b) . pop undefined (\_ -> id)))
+    force f `whereIs` thunk (push (lift x . b) . pop undefined (\_ -> id))
 
 instance Ccc.HasExp (V k) where
-  pass (V x) = V $ thunk (force id >>> pass (pip >>> x))
+  app (V f) (V x) = V $ thunk (app (force f) (x . pip))
   zeta t f = V $
     thunk $
       zeta (SU (asAlgebra t)) $ \x ->

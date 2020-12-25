@@ -33,6 +33,8 @@ class Category code => Code code where
 
   kappa :: SSet a -> (code Unit a -> code b c) -> code (a * b) c
   lift :: code Unit a -> code b (a * b)
+  whereIsK :: code (a * b) c -> code Unit a -> code b c
+  whereIsK f x = f . lift x
 
 class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack where
   thunk :: stack (F x) y -> code x (U y)
@@ -41,8 +43,16 @@ class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack
   pop :: SSet a -> (code Unit a -> stack b c) -> stack (a & b) c
   push :: code Unit a -> stack b (a & b)
 
+  -- | fixme.. deprecate push ?
+  whereIs :: stack (a & b) c -> code Unit a -> stack b c
+  whereIs f x = f . push x
+
   zeta :: SSet a -> (code Unit a -> stack b c) -> stack b (a ~> c)
   pass :: code Unit a -> stack (a ~> b) b
+
+  -- | fixme.. deprecate pass ?
+  app :: stack b (a ~> c) -> code Unit a -> stack b c
+  app f x = pass x . f
 
   u64 :: Word64 -> code Unit U64
 
