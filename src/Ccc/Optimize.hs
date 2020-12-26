@@ -4,7 +4,6 @@ import Ccc
 import Ccc.Hom
 import Control.Category
 import Ccc.AsIntrinsified
-import Ccc.AsSimplified
 import Ccc.RemoveDead
 import Ccc.ZetaToKappa
 import Ccc.Inline
@@ -27,7 +26,6 @@ round =
 
 pass :: Closed a b -> Closed a b
 pass =
-  simplify >>>
+  zetaToKappa >>>
   inline >>>
-  -- zetaToKappa >>>
   removeDead

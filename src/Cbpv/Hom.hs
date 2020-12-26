@@ -87,7 +87,9 @@ data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
 
 instance Category (Hom x) where
   id = Id
-  (.) = (:.:)
+  Id . f = f
+  f . Id = f
+  f . g = f :.: g
 
 instance Code (Hom x) where
   unit = UnitHom

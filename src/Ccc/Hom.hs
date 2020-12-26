@@ -37,7 +37,9 @@ data Hom x a b where
 
 instance Category (Hom x) where
   id = Id
-  (.) = (:.:)
+  Id . f = f
+  f . Id = f
+  f . g = f :.: g
 
 instance Ccc (Hom x) where
   unit = UnitHom
