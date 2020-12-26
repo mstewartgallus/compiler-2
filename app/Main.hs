@@ -5,8 +5,8 @@ import qualified AsCcc
 import qualified Cbpv.AsEval as Cbpv
 import qualified Cbpv.AsOpt as Cbpv
 import qualified Cbpv.Hom as Cbpv
-import qualified Ccc.AsOpt as Ccc
 import qualified Ccc.Hom as Ccc
+import qualified Ccc.Optimize as Ccc
 import qualified Ccc.Type
 import Lam
 import qualified Lam.Term as Lam
