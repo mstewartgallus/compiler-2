@@ -74,7 +74,7 @@ doAdd =
    (pop inferSort $ \x ->
    (force (tuple >>> kappa inferSort (\_ -> id)) >>>
    (pop inferSort $ \y ->
-   push (whereIsK addi x . y))) `whereIs` unit)) `whereIs` unit
+   whereIs id (whereIsK addi x . y))) `whereIs` unit)) `whereIs` unit
 
 addi :: Cbpv stack code => code (U64 * U64) U64
 addi = cbpvIntrinsic AddIntrinsic

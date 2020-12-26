@@ -41,16 +41,8 @@ class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack
   pop :: SSet a -> (code Unit a -> stack b c) -> stack (a & b) c
   whereIs :: stack (a & b) c -> code Unit a -> stack b c
 
-  -- | fixme.. deprecate push ?
-  push :: code Unit a -> stack b (a & b)
-  push = whereIs id
-
   zeta :: SSet a -> (code Unit a -> stack b c) -> stack b (a ~> c)
   app :: stack b (a ~> c) -> code Unit a -> stack b c
-
-  -- | fixme.. deprecate pass ?
-  pass :: code Unit a -> stack (a ~> b) b
-  pass = app id
 
   u64 :: Word64 -> code Unit U64
 

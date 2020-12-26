@@ -5,8 +5,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
 
--- | Reassociate (f . g) . h to f . (g . h)
-module Cbpv.AsLeft (asLeft) where
+-- | Reassociate f . (g . h) to (f . g) . h
+module Cbpv.AsRight (asRight) where
 
 import Cbpv
 import Control.Category
@@ -14,25 +14,25 @@ import Cbpv.Hom
 import Cbpv.Sort
 import Prelude hiding ((.), id)
 
-asLeft :: Closed @SetTag a b -> Closed a b
-asLeft x = Closed (out (fold x))
+asRight :: Closed @SetTag a b -> Closed a b
+asRight x = Closed (out (fold x))
 
 into :: k a b -> Path k a b
-into x = x :.: Id
+into x = Id :.: x
 
 out :: Category k => Path k a b -> k a b
 out x = case x of
   Id -> id
-  f :.: g -> f . out g
+  f :.: g -> out f . g
 
 data Path k a b where
   Id :: Path k a a
-  (:.:) :: k b c -> Path k a b -> Path k a c
+  (:.:) :: Path k b c -> k a b -> Path k a c
 
 instance Category k => Category (Path k) where
   id = Id
-  Id . f = f
-  (f :.: g) . h = f :.: (g . h)
+  f . Id = f
+  f . (g :.: h) = (f . g) :.: h
 
 instance Cbpv f g => Stack (Path f) where
 
