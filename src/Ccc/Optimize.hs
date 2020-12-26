@@ -5,6 +5,8 @@ import Ccc.Hom
 import Control.Category
 import Ccc.AsIntrinsified
 import Ccc.AsSimplified
+import Ccc.RemoveDead
+import Ccc.ZetaToKappa
 import Ccc.AsLeft
 import Ccc.AsRight
 import Prelude hiding ((.), id, round)
@@ -17,7 +19,13 @@ optimize =
 round :: Closed a b -> Closed a b
 round =
   asRight >>>
-  simplify >>>
+  pass >>>
 
   asLeft >>>
-  simplify
+  pass
+
+pass :: Closed a b -> Closed a b
+pass =
+  simplify >>>
+  -- zetaToKappa >>>
+  removeDead

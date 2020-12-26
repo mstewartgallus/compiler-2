@@ -22,8 +22,6 @@ data Expr f a b where
   Id :: Category f => Expr f a a
   Compose ::  Category f => Expr f b c -> Expr f a b -> Expr f a c
 
-  Unit :: Ccc f => Expr f a Unit
-
   Kappa :: Ccc f => ST a -> (Expr f Unit a -> Expr f b c) -> Expr f (a * b) c
   WhereIs :: Ccc f => Expr f (a * b) c -> Expr f Unit a -> Expr f b c
 
@@ -40,14 +38,10 @@ opt expr  = case expr of
   Compose Id f -> Just f
   Compose f Id -> Just f
 
-  Compose Unit _ -> Just unit
-
   App (Zeta _ f) x -> Just (f x)
   WhereIs (Kappa _ f) x -> Just (f x)
 
   WhereIs (Compose y f) x -> Just (y . whereIs f x)
-
-  Compose (Compose f g) h  -> Just (f . (g . h))
 
   _ -> Nothing
 
@@ -57,8 +51,6 @@ recurse expr = case expr of
   Id -> id
 
   Compose f g -> simp f . simp g
-
-  Unit -> unit
 
   Zeta t f -> zeta t (\x -> simp (f x))
   App f x -> app (simp f) (simp x)
@@ -72,8 +64,6 @@ out expr = case expr of
   Id -> id
   Compose f g -> out f . out g
 
-  Unit -> unit
-
   Zeta t f -> zeta t (\x -> out (f (E x)))
   App f x -> app (out f) (out x)
 
@@ -85,7 +75,7 @@ instance Category f => Category (Expr f) where
   (.) = Compose
 
 instance Ccc f => Ccc (Expr f) where
-  unit = Unit
+  unit = E unit
 
   whereIs = WhereIs
   kappa = Kappa
