@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a139a3a0618ccee6999a737b1077871ae0acf0690c7128708923d6dca716ac93
+-- hash: 57a7122645aba0ac67d1719edff32c5d2f96a66056a64dccbec3e302b52bd12c
 
 name:           hoas
 version:        0.1.0.0
@@ -43,6 +43,7 @@ library
       Ccc.AsRight
       Ccc.AsSimplified
       Ccc.Hom
+      Ccc.Inline
       Ccc.Optimize
       Ccc.RemoveDead
       Ccc.Type
