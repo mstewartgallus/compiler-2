@@ -9,6 +9,7 @@ import Cbpv.AsIntrinsified
 import Cbpv.AsSimplified
 import Cbpv.AsLeft
 import Cbpv.AsRight
+import Cbpv.RemoveDead
 import Control.Category
 import Cbpv.Sort
 import Prelude hiding ((.), id, round)
@@ -27,4 +28,5 @@ round =
 
 pass :: Closed @SetTag a b -> Closed @SetTag a b
 pass =
-  simplify
+  simplify >>>
+  removeDead
