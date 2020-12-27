@@ -7,6 +7,7 @@
 module Lam.Term (fold, Term, Closed (..)) where
 
 import Lam
+import Pretty
 import Lam.Type
 import Prelude hiding ((<*>))
 import Data.Word (Word64)
@@ -47,22 +48,22 @@ go x = case x of
   U64 n -> u64 n
   Constant t pkg name -> constant t pkg name
 
-instance Pretty (Closed a) where
-  pretty x = unAnnotate $ evalState (view (fold x)) 0
+instance PrettyProgram (Closed a) where
+  prettyProgram x = evalState (view (fold x)) 0
 
-newtype View (a :: T) = V { view :: State Int (Doc ()) }
+newtype View (a :: T) = V { view :: State Int (Doc Style) }
 instance Lam View where
   be x t f = V $ do
     x' <- view x
     v <- fresh
     body <- view (f (V $ pure v))
-    let binder = sep [v, pretty ":", pretty t]
-    pure $ vsep[sep [x', pretty "be", binder, pretty "⇒"], body]
+    let binder = sep [v, keyword (pretty ":"), pretty t]
+    pure $ vsep [sep [x', keyword (pretty "be"), binder, keyword (pretty "⇒")], body]
 
   lam t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ sep [pretty "λ", v, pretty ":", pretty t, pretty "⇒", body]
+    pure $ sep [keyword (pretty "λ"), v, keyword (pretty ":"), pretty t, keyword (pretty "⇒"), body]
 
   f <*> x = V $ do
     f' <- view f
@@ -72,8 +73,8 @@ instance Lam View where
   u64 n = V $ pure (pretty n)
   constant _ pkg name = V $ pure $ pretty (pkg ++ "/" ++ name)
 
-fresh :: State Int (Doc ())
+fresh :: State Int (Doc Style)
 fresh = do
   n <- get
   put (n + 1)
-  pure $ pretty "v" <> pretty n
+  pure $ variable (pretty "v" <> pretty n)

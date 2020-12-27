@@ -17,6 +17,7 @@ import qualified Ccc.Type as Ccc
 import Control.Category
 import Control.Monad.State hiding (lift)
 import Cbpv.Sort
+import Pretty
 import Data.Word
 import Data.Kind
 import Data.Text.Prettyprint.Doc
@@ -116,41 +117,41 @@ instance Cbpv (Hom x) (Hom x) where
   cbpvIntrinsic = CbpvIntrinsic
 
 -- shit!
-instance Pretty (Closed @SetTag a b) where
-  pretty x = unAnnotate $ evalState (view (fold x)) 0
+instance PrettyProgram (Closed @SetTag a b) where
+  prettyProgram x = evalState (view (fold x)) 0
 
-newtype View (a :: Sort t) (b :: Sort t) = V { view :: State Int (Doc ()) }
+newtype View (a :: Sort t) (b :: Sort t) = V { view :: State Int (Doc Style) }
 
 instance Category View where
-  id = V $ pure $ pretty "id"
+  id = V $ pure $ keyword $ pretty "id"
   f . g = V $ do
     f' <- view f
     g' <- view g
-    pure $ parens $ sep [f', pretty "∘", g']
+    pure $ parens $ sep [f', keyword $ pretty "∘", g']
 
 instance Code View where
-  unit = V $ pure $ pretty "unit"
-  V x &&& V y = V $ pure (\x' y' -> angles $ sep $ punctuate comma [x', y']) <*> x <*> y
-  fst = V $ pure $ pretty "π₁"
-  snd = V $ pure $ pretty "π₂"
+  unit = V $ pure $ keyword $ pretty "unit"
+  V x &&& V y = V $ pure (\x' y' -> angles $ sep $ punctuate (keyword $ comma) [x', y']) <*> x <*> y
+  fst = V $ pure $ keyword $ pretty "π₁"
+  snd = V $ pure $ keyword $ pretty "π₂"
 
 instance Stack View where
 
 instance Cbpv View View where
-  thunk x = V $ pure (\x' -> parens $ sep [pretty "thunk", x']) <*> view x
-  force x = V $ pure (\x' -> parens $ sep [pretty "!", x']) <*> view x
+  thunk x = V $ pure (\x' -> parens $ sep [keyword $ pretty "thunk", x']) <*> view x
+  force x = V $ pure (\x' -> parens $ sep [keyword $ pretty "!", x']) <*> view x
 
   whereIs f x = V $ pure (\f' x' -> brackets $ sep [f', x']) <*> view f <*> view x
   pop t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ parens $ sep [pretty "κ" , v, pretty ":", pretty t, pretty "⇒", body]
+    pure $ parens $ sep [keyword $ pretty "κ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
 
   app f x = V $ pure (\f' x' -> parens $ sep [f', x']) <*> view f <*> view x
   zeta t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ parens $ sep [pretty "ζ" , v, pretty ":", pretty t, pretty "⇒", body]
+    pure $ parens $ sep [keyword $ pretty "ζ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
 
   u64 n = V $ pure (pretty n)
 
@@ -158,8 +159,8 @@ instance Cbpv View View where
   cccIntrinsic x = V $ pure $ pretty (show x)
   cbpvIntrinsic x = V $ pure  $ pretty (show x)
 
-fresh :: State Int (Doc ())
+fresh :: State Int (Doc Style)
 fresh = do
   n <- get
   put (n + 1)
-  pure (pretty "v" <> pretty n)
+  pure $ variable (pretty "v" <> pretty n)

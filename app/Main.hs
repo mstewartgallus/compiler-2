@@ -12,6 +12,7 @@ import Data.Text.Prettyprint.Doc
 import Lam
 import qualified Lam.Term as Lam
 import Lam.Type
+import Pretty
 import Prettyprinter.Render.Terminal
 import Prelude hiding ((<*>))
 
@@ -24,12 +25,18 @@ program =
 header :: AnsiStyle
 header = underlined <> bold
 
+toAnsi :: Style -> AnsiStyle
+toAnsi s = case s of
+  None -> mempty
+  Keyword -> bold
+  Variable -> italicized
+
 main :: IO ()
 main = do
   putDoc $
     annotate header (pretty "The Program:")
       <> hardline
-      <> pretty program
+      <> reAnnotate toAnsi (prettyProgram program)
       <> hardline
       <> hardline
 
@@ -38,7 +45,7 @@ main = do
   putDoc $
     annotate header (pretty "Kappa/Zeta Decomposition:")
       <> hardline
-      <> pretty compiled
+      <> reAnnotate toAnsi (prettyProgram compiled)
       <> hardline
       <> hardline
 
@@ -47,7 +54,7 @@ main = do
   putDoc $
     annotate header (pretty "Optimized Kappa/Zeta Decomposition:")
       <> hardline
-      <> pretty optimized
+      <> reAnnotate toAnsi (prettyProgram optimized)
       <> hardline
       <> hardline
 
@@ -56,7 +63,7 @@ main = do
   putDoc $
     annotate header (pretty "Call By Push Value:")
       <> hardline
-      <> pretty cbpv
+      <> reAnnotate toAnsi (prettyProgram cbpv)
       <> hardline
       <> hardline
 
@@ -64,7 +71,8 @@ main = do
 
   putDoc $
     annotate header (pretty "Optimized Call By Push Value:")
-      <> pretty optCbpv
+      <> hardline
+      <> reAnnotate toAnsi (prettyProgram optCbpv)
       <> hardline
       <> hardline
 

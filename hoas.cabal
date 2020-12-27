@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 004f07425255b4bc3a5983ebe4a628f67d49e92b311c65a69603c89edc334e42
+-- hash: d817b7e0b196ed220c2d1cba3304fbe17fb5a80ecbc20572ca55fd5452504ff7
 
 name:           hoas
 version:        0.1.0.0
@@ -52,6 +52,7 @@ library
       Lam
       Lam.Term
       Lam.Type
+      Pretty
   other-modules:
       Paths_hoas
   hs-source-dirs:
