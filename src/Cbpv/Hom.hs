@@ -19,6 +19,7 @@ import Control.Monad.State hiding (lift)
 import Cbpv.Sort
 import Data.Word
 import Data.Kind
+import Data.Text.Prettyprint.Doc
 import Prelude hiding ((.), id, fst, snd)
 
 newtype Closed (a :: Sort t) (b :: Sort t) = Closed (forall x. Hom x a b)
@@ -116,49 +117,49 @@ instance Cbpv (Hom x) (Hom x) where
 
 -- shit!
 instance Show (Closed @SetTag a b) where
-  show x = evalState (view (fold x)) 0
+  show x = show $ evalState (view (fold x)) 0
 
-newtype View (a :: Sort t) (b :: Sort t) = V { view :: State Int String }
+newtype View (a :: Sort t) (b :: Sort t) = V { view :: State Int (Doc ()) }
 
 instance Category View where
-  id = V $ pure "id"
+  id = V $ pure $ pretty "id"
   f . g = V $ do
     f' <- view f
     g' <- view g
-    pure $ "(" ++ f' ++ " ∘ " ++ g' ++ ")"
+    pure $ parens $ sep [f', pretty "∘", g']
 
 instance Code View where
-  unit = V $ pure "unit"
-  V x &&& V y = V $ pure (\x' y' -> "<" ++ x' ++ ", " ++ y' ++ ">") <*> x <*> y
-  fst = V $ pure "π₁"
-  snd = V $ pure "π₂"
+  unit = V $ pure $ pretty "unit"
+  V x &&& V y = V $ pure (\x' y' -> angles $ sep $ punctuate comma [x', y']) <*> x <*> y
+  fst = V $ pure $ pretty "π₁"
+  snd = V $ pure $ pretty "π₂"
 
 instance Stack View where
 
 instance Cbpv View View where
-  thunk x = V $ pure (\x' -> "(thunk " ++ x' ++ ")") <*> view x
-  force x = V $ pure (\x' -> "! " ++ x') <*> view x
+  thunk x = V $ pure (\x' -> parens $ sep [pretty "thunk", x']) <*> view x
+  force x = V $ pure (\x' -> parens $ sep [pretty "!", x']) <*> view x
 
-  whereIs f x = V $ pure (\f' x' -> "<" ++ f' ++ " " ++ x' ++ ">") <*> view f <*> view x
+  whereIs f x = V $ pure (\f' x' -> brackets $ sep [f', x']) <*> view f <*> view x
   pop t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ "(κ " ++ v ++ ": " ++ show t ++ "⇒ " ++ body ++ ")"
+    pure $ parens $ sep [pretty "κ" , v, pretty ":", pretty (show t), pretty "⇒", body]
 
-  app f x = V $ pure (\f' x' -> "(" ++ f' ++ " " ++ x' ++ ")") <*> view f <*> view x
+  app f x = V $ pure (\f' x' -> parens $ sep [f', x']) <*> view f <*> view x
   zeta t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ "(ζ " ++ v ++ ": " ++ show t ++ "⇒ " ++ body ++ ")"
+    pure $ parens $ sep [pretty "ζ" , v, pretty ":", pretty (show t), pretty "⇒", body]
 
-  u64 n = V $ pure (show n)
+  u64 n = V $ pure (pretty n)
 
-  constant _ pkg name = V $ pure (pkg ++ "/" ++ name)
-  cccIntrinsic x = V $ pure (show x)
-  cbpvIntrinsic x = V $ pure (show x)
+  constant _ pkg name = V $ pure $ pretty (pkg ++ "/" ++ name)
+  cccIntrinsic x = V $ pure $ pretty (show x)
+  cbpvIntrinsic x = V $ pure  $ pretty (show x)
 
-fresh :: State Int String
+fresh :: State Int (Doc ())
 fresh = do
   n <- get
   put (n + 1)
-  pure ("v" ++ show n)
+  pure (pretty "v" <> pretty n)
