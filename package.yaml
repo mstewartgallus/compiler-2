@@ -20,9 +20,9 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/hoas#readme>
 
 dependencies:
-- base >= 4.7 && < 5
+- base >= 4.13 && < 5
 - mtl >= 2.2 && < 3
-- prettyprinter >= 1.2 && < 2
+- prettyprinter >= 1.6 && < 2
 - prettyprinter-ansi-terminal >= 1.1 && < 2
 
 library:
