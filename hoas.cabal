@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 31ba4bf8a4c7c7e3b5cdfaaaffad1352000b38855fc53dca6cbf5d13a8bbfe24
+-- hash: 8b4bfebf3c60bd2a539be69c98e37eee71282823d639363ace981484401112e8
 
 name:           hoas
 version:        0.1.0.0
@@ -57,9 +57,9 @@ library
   hs-source-dirs:
       src
   build-depends:
-      atomic-primops >=0.8 && <0.9
-    , base >=4.7 && <5
+      base >=4.7 && <5
     , mtl >=2.2 && <3
+    , prettyprinter >=1.2 && <2
   default-language: Haskell2010
 
 executable hoas-exe
@@ -70,10 +70,10 @@ executable hoas-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      atomic-primops >=0.8 && <0.9
-    , base >=4.7 && <5
+      base >=4.7 && <5
     , hoas
     , mtl >=2.2 && <3
+    , prettyprinter >=1.2 && <2
   default-language: Haskell2010
 
 test-suite hoas-test
@@ -85,8 +85,8 @@ test-suite hoas-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      atomic-primops >=0.8 && <0.9
-    , base >=4.7 && <5
+      base >=4.7 && <5
     , hoas
     , mtl >=2.2 && <3
+    , prettyprinter >=1.2 && <2
   default-language: Haskell2010

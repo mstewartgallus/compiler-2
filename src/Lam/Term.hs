@@ -11,6 +11,7 @@ import Lam.Type
 import Prelude hiding ((<*>))
 import Data.Word (Word64)
 import Control.Monad.State
+import Data.Text.Prettyprint.Doc
 
 -- | A simple high level intermediate language based off the simply
 -- typed lambda calculus.  Uses parametric higher order abstract
@@ -47,44 +48,32 @@ go x = case x of
   Constant t pkg name -> constant t pkg name
 
 instance Show (Closed a) where
-  show x = evalState (view (fold x) 0) 0
+  show x = show $ evalState (view (fold x)) 0
 
-newtype View (a :: T) = V { view :: Int -> State Int String }
+newtype View (a :: T) = V { view :: State Int (Doc ()) }
 instance Lam View where
-  be x t f = V $ \p -> do
-    x' <- view x beprec
+  be x t f = V $ do
+    x' <- view x
     v <- fresh
-    body <- view (f (V $ \_ -> pure v)) beprec
-    pure $ paren (p >= beprec) $ x' ++ " be " ++ v ++ ": " ++ show t ++ ". " ++ body
+    body <- view (f (V $ pure v))
+    let binder = sep [v, pretty ":", pretty (show t)]
+    pure $ vsep[sep [x', pretty "be", binder, pretty "."], body]
 
-  lam t f = V $ \p -> do
+  lam t f = V $ do
     v <- fresh
-    body <- view (f (V $ \_ -> pure v)) lamprec
-    pure $ paren (p >= lamprec) $ "λ " ++ v ++ ": " ++ show t ++ ". " ++ body
+    body <- view (f (V $ pure v))
+    pure $ sep [pretty "λ", v, pretty ":", pretty (show t), pretty ".", body]
 
-  f <*> x = V $ \p -> do
-    f' <- view f appprec
-    x' <- view x appprec
-    pure $ paren (p >= appprec) $ f' ++ " " ++ x'
+  f <*> x = V $ do
+    f' <- view f
+    x' <- view x
+    pure $ parens $ sep [f', x']
 
-  u64 n = V $ \_ -> pure (show n)
-  constant _ pkg name = V $ \_ -> pure (pkg ++ "/" ++ name)
+  u64 n = V $ pure (pretty n)
+  constant _ pkg name = V $ pure $ pretty (pkg ++ "/" ++ name)
 
-fresh :: State Int String
+fresh :: State Int (Doc ())
 fresh = do
   n <- get
   put (n + 1)
-  pure ("v" ++ show n)
-
-paren :: Bool -> String -> String
-paren True str = "(" ++ str ++ ")"
-paren _ str = str
-
-appprec :: Int
-appprec = 9
-
-lamprec :: Int
-lamprec = 0
-
-beprec :: Int
-beprec = 0
+  pure $ pretty "v" <> pretty n
