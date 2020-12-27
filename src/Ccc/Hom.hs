@@ -55,8 +55,8 @@ instance Ccc (Hom x) where
   constant = Constant
   cccIntrinsic = CccIntrinsic
 
-instance Show (Closed a b) where
-  show x = show $ evalState (view (fold x)) 0
+instance Pretty (Closed a b) where
+  pretty x = unAnnotate $ evalState (view (fold x)) 0
 
 fold :: Ccc hom => Closed a b -> hom a b
 fold (Closed x) = go x
@@ -95,13 +95,13 @@ instance Ccc View where
   kappa t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ parens $ sep [pretty "κ", v, pretty ":", pretty (show t), pretty "⇒", body]
+    pure $ parens $ sep [pretty "κ", v, pretty ":", pretty t, pretty "⇒", body]
 
   app f x = V $ pure (\f' x' -> parens $ sep [f', x']) <*> view f <*> view x
   zeta t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ parens $ sep [pretty "ζ" , v, pretty ":", pretty (show t), pretty "⇒", body]
+    pure $ parens $ sep [pretty "ζ" , v, pretty ":", pretty t, pretty "⇒", body]
 
   u64 n = V $ pure (pretty n)
   constant _ pkg name = V $ pure $ pretty (pkg ++ "/" ++ name)

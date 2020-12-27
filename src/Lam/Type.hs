@@ -6,6 +6,7 @@
 
 module Lam.Type (KnownT, inferT, eqT, ST (..), T, type (~>), type Unit, type U64) where
 
+import Data.Text.Prettyprint.Doc
 import Data.Typeable ((:~:) (..))
 
 type (~>) = 'Exp
@@ -44,8 +45,8 @@ eqT l r = case (l, r) of
     return Refl
   _ -> Nothing
 
-instance Show (ST a) where
-  show expr = case expr of
-    SUnit -> "unit"
-    SU64 -> "u64"
-    x :-> y -> "(" ++ show x ++ " → " ++ show y ++ ")"
+instance Pretty (ST a) where
+  pretty expr = case expr of
+    SUnit -> pretty "1"
+    SU64 -> pretty "u64"
+    x :-> y -> parens $ sep [pretty x, pretty "→", pretty y]

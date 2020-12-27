@@ -8,9 +8,11 @@ import qualified Cbpv.Hom as Cbpv
 import qualified Ccc.Hom as Ccc
 import qualified Ccc.Optimize as Ccc
 import qualified Ccc.Type
+import Data.Text.Prettyprint.Doc
 import Lam
 import qualified Lam.Term as Lam
 import Lam.Type
+import Prettyprinter.Render.Terminal
 import Prelude hiding ((<*>))
 
 program :: Lam.Closed U64
@@ -22,19 +24,22 @@ program =
 main :: IO ()
 main = do
   putStrLn "The Program"
-  putStrLn (show program)
+  putDoc (pretty program)
+  putStrLn ""
+  putStrLn ""
 
   let compiled = AsCcc.asCcc program
 
-  putStrLn ""
   putStrLn "Kappa/Zeta Decomposition"
-  putStrLn (show compiled)
+  putDoc (pretty compiled)
+  putStrLn ""
+  putStrLn ""
 
   let optimized = Ccc.optimize compiled
 
-  putStrLn ""
   putStrLn "Optimized Program"
-  putStrLn (show optimized)
+  putDoc (pretty optimized)
+  putStrLn ""
 
   let cbpv = AsCallByName.toCbpv optimized
 

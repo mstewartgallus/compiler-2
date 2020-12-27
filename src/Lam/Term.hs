@@ -47,8 +47,8 @@ go x = case x of
   U64 n -> u64 n
   Constant t pkg name -> constant t pkg name
 
-instance Show (Closed a) where
-  show x = show $ evalState (view (fold x)) 0
+instance Pretty (Closed a) where
+  pretty x = unAnnotate $ evalState (view (fold x)) 0
 
 newtype View (a :: T) = V { view :: State Int (Doc ()) }
 instance Lam View where
@@ -56,13 +56,13 @@ instance Lam View where
     x' <- view x
     v <- fresh
     body <- view (f (V $ pure v))
-    let binder = sep [v, pretty ":", pretty (show t)]
+    let binder = sep [v, pretty ":", pretty t]
     pure $ vsep[sep [x', pretty "be", binder, pretty "⇒"], body]
 
   lam t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ sep [pretty "λ", v, pretty ":", pretty (show t), pretty "⇒", body]
+    pure $ sep [pretty "λ", v, pretty ":", pretty t, pretty "⇒", body]
 
   f <*> x = V $ do
     f' <- view f

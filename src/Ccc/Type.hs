@@ -7,6 +7,7 @@
 
 module Ccc.Type (ST (..), T, Unit, type (~>), type (*), type U64, AsObject, asObject, KnownT (..)) where
 import qualified Lam.Type as Type
+import Data.Text.Prettyprint.Doc
 
 type Unit = 'Unit
 
@@ -40,12 +41,12 @@ asObject t = case t of
   Type.SUnit -> SUnit
   a Type.:-> b -> asObject a :-> asObject b
 
-instance Show (ST a) where
-  show expr = case expr of
-    SUnit -> "unit"
-    SU64 -> "u64"
-    x :*: y -> "(" ++ show x ++ " × " ++ show y ++ ")"
-    x :-> y -> "(" ++ show x ++ " → " ++ show y ++ ")"
+instance Pretty (ST a) where
+  pretty expr = case expr of
+    SUnit -> pretty "1"
+    SU64 -> pretty "u64"
+    x :*: y -> parens $ sep [pretty x, pretty "×", pretty y]
+    x :-> y -> parens $ sep [pretty x, pretty "→", pretty y]
 
 class KnownT t where
   inferT :: ST t
