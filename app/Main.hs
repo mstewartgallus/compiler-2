@@ -21,40 +21,57 @@ program =
     u64 3 `letBe` \z ->
       add <*> z <*> z
 
+header :: AnsiStyle
+header = underlined <> bold
+
 main :: IO ()
 main = do
-  putStrLn "The Program"
-  putDoc (pretty program)
-  putStrLn ""
-  putStrLn ""
+  putDoc $
+    annotate header (pretty "The Program:")
+      <> hardline
+      <> pretty program
+      <> hardline
+      <> hardline
 
   let compiled = AsCcc.asCcc program
 
-  putStrLn "Kappa/Zeta Decomposition"
-  putDoc (pretty compiled)
-  putStrLn ""
-  putStrLn ""
+  putDoc $
+    annotate header (pretty "Kappa/Zeta Decomposition:")
+      <> hardline
+      <> pretty compiled
+      <> hardline
+      <> hardline
 
   let optimized = Ccc.optimize compiled
 
-  putStrLn "Optimized Program"
-  putDoc (pretty optimized)
-  putStrLn ""
+  putDoc $
+    annotate header (pretty "Optimized Kappa/Zeta Decomposition:")
+      <> hardline
+      <> pretty optimized
+      <> hardline
+      <> hardline
 
   let cbpv = AsCallByName.toCbpv optimized
 
-  putStrLn ""
-  putStrLn "Cbpv Program"
-  putDoc (pretty cbpv)
+  putDoc $
+    annotate header (pretty "Call By Push Value:")
+      <> hardline
+      <> pretty cbpv
+      <> hardline
+      <> hardline
 
   let optCbpv = Cbpv.opt cbpv
 
-  putStrLn ""
-  putStrLn "Cbpv Optimized"
-  putDoc (pretty optCbpv)
+  putDoc $
+    annotate header (pretty "Optimized Call By Push Value:")
+      <> pretty optCbpv
+      <> hardline
+      <> hardline
 
   let result = Cbpv.reify optCbpv
 
-  putStrLn ""
-  putStrLn "Result"
-  putStrLn (show result)
+  putDoc $
+    annotate header (pretty "Result:")
+      <> hardline
+      <> pretty (show result)
+      <> hardline
