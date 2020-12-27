@@ -109,6 +109,8 @@ optC expr = case expr of
 
   ComposeC Unit _ -> Just unit
 
+  ComposeC (Fanout x y) z -> Just ((x . z) &&& (y . z))
+
   ComposeC Fst (Fanout x _) -> Just x
   ComposeC Snd (Fanout _ x) -> Just x
 

@@ -137,13 +137,13 @@ instance Stack View where
 
 instance Cbpv View View where
   thunk x = V $ pure (\x' -> "(thunk " ++ x' ++ ")") <*> view x
-  force x = V $ pure (\x' -> "(force " ++ x' ++ ")") <*> view x
+  force x = V $ pure (\x' -> "! " ++ x') <*> view x
 
   whereIs f x = V $ pure (\f' x' -> "<" ++ f' ++ " " ++ x' ++ ">") <*> view f <*> view x
   pop t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ "(pop " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")"
+    pure $ "(κ " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")"
 
   app f x = V $ pure (\f' x' -> "(" ++ f' ++ " " ++ x' ++ ")") <*> view f <*> view x
   zeta t f = V $ do

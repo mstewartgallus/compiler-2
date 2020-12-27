@@ -47,31 +47,44 @@ go x = case x of
   Constant t pkg name -> constant t pkg name
 
 instance Show (Closed a) where
-  show x = evalState (view (fold x)) 0
+  show x = evalState (view (fold x) 0) 0
 
-newtype View (a :: T) = V { view :: State Int String }
+newtype View (a :: T) = V { view :: Int -> State Int String }
 instance Lam View where
-  be x t f = V $ do
-    x' <- view x
+  be x t f = V $ \p -> do
+    x' <- view x beprec
     v <- fresh
-    body <- view (f (V $ pure v))
-    pure (x' ++ " be " ++ v ++ ": " ++ show t ++ ". " ++ body)
+    body <- view (f (V $ \_ -> pure v)) beprec
+    pure $ paren (p >= beprec) $ x' ++ " be " ++ v ++ ": " ++ show t ++ ". " ++ body
 
-  lam t f = V $ do
+  lam t f = V $ \p -> do
     v <- fresh
-    body <- view (f (V $ pure v))
-    pure ("(λ " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")")
+    body <- view (f (V $ \_ -> pure v)) lamprec
+    pure $ paren (p >= lamprec) $ "λ " ++ v ++ ": " ++ show t ++ ". " ++ body
 
-  f <*> x = V $ do
-    f' <- view f
-    x' <- view x
-    pure $ "(" ++ f' ++ " " ++ x' ++ ")"
+  f <*> x = V $ \p -> do
+    f' <- view f appprec
+    x' <- view x appprec
+    pure $ paren (p >= appprec) $ f' ++ " " ++ x'
 
-  u64 n = V $ pure (show n)
-  constant _ pkg name = V $ pure (pkg ++ "/" ++ name)
+  u64 n = V $ \_ -> pure (show n)
+  constant _ pkg name = V $ \_ -> pure (pkg ++ "/" ++ name)
 
 fresh :: State Int String
 fresh = do
   n <- get
   put (n + 1)
   pure ("v" ++ show n)
+
+paren :: Bool -> String -> String
+paren True str = "(" ++ str ++ ")"
+paren _ str = str
+
+appprec :: Int
+appprec = 9
+
+lamprec :: Int
+lamprec = 0
+
+beprec :: Int
+beprec = 0
