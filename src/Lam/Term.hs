@@ -57,12 +57,12 @@ instance Lam View where
     v <- fresh
     body <- view (f (V $ pure v))
     let binder = sep [v, pretty ":", pretty (show t)]
-    pure $ vsep[sep [x', pretty "be", binder, pretty "."], body]
+    pure $ vsep[sep [x', pretty "be", binder, pretty "⇒"], body]
 
   lam t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ sep [pretty "λ", v, pretty ":", pretty (show t), pretty ".", body]
+    pure $ sep [pretty "λ", v, pretty ":", pretty (show t), pretty "⇒", body]
 
   f <*> x = V $ do
     f' <- view f

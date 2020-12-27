@@ -14,6 +14,7 @@ import Ccc
 import Control.Monad.State hiding (lift)
 import Prelude hiding (id, (.))
 import qualified Lam.Type as Lam
+import Data.Text.Prettyprint.Doc
 
 newtype Closed a b = Closed (forall x. Hom x a b)
 
@@ -55,7 +56,7 @@ instance Ccc (Hom x) where
   cccIntrinsic = CccIntrinsic
 
 instance Show (Closed a b) where
-  show x = evalState (view (fold x)) 0
+  show x = show $ evalState (view (fold x)) 0
 
 fold :: Ccc hom => Closed a b -> hom a b
 fold (Closed x) = go x
@@ -79,35 +80,35 @@ go x = case x of
   CccIntrinsic x -> cccIntrinsic x
   Constant t pkg name -> constant t pkg name
 
-newtype View (a :: T) (b :: T) = V { view :: State Int String }
+newtype View (a :: T) (b :: T) = V { view :: State Int (Doc ()) }
 instance Category View where
-  id = V $ pure "id"
+  id = V $ pure $ pretty "id"
   f . g = V $ do
     f' <- view f
     g' <- view g
-    pure $ "(" ++ f' ++ " ∘ " ++ g' ++ ")"
+    pure $ parens $ sep [f', pretty "∘", g']
 
 instance Ccc View where
-  unit = V $ pure "unit"
+  unit = V $ pure $ pretty "unit"
 
-  whereIs f x = V $ pure (\f' x' -> "(" ++ f' ++ " " ++ x' ++ ")") <*> view f <*> view x
+  whereIs f x = V $ pure (\f' x' -> brackets $ sep [f', x']) <*> view f <*> view x
   kappa t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ "(κ " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")"
+    pure $ parens $ sep [pretty "κ", v, pretty ":", pretty (show t), pretty "⇒", body]
 
-  app f x = V $ pure (\f' x' -> "(" ++ f' ++ " " ++ x' ++ ")") <*> view f <*> view x
+  app f x = V $ pure (\f' x' -> parens $ sep [f', x']) <*> view f <*> view x
   zeta t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ "(ζ " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")"
+    pure $ parens $ sep [pretty "ζ" , v, pretty ":", pretty (show t), pretty "⇒", body]
 
-  u64 n = V $ pure (show n)
-  constant _ pkg name = V $ pure (pkg ++ "/" ++ name)
-  cccIntrinsic x = V $ pure (show x)
+  u64 n = V $ pure (pretty n)
+  constant _ pkg name = V $ pure $ pretty (pkg ++ "/" ++ name)
+  cccIntrinsic x = V $ pure $ pretty (show x)
 
-fresh :: State Int String
+fresh :: State Int (Doc ())
 fresh = do
   n <- get
   put (n + 1)
-  pure ("v" ++ show n)
+  pure $ pretty "v" <> pretty n
