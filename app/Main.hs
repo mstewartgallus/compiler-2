@@ -45,13 +45,13 @@ main = do
 
   putStrLn ""
   putStrLn "Cbpv Program"
-  putStrLn (show cbpv)
+  putDoc (pretty cbpv)
 
   let optCbpv = Cbpv.opt cbpv
 
   putStrLn ""
   putStrLn "Cbpv Optimized"
-  putStrLn (show optCbpv)
+  putDoc (pretty optCbpv)
 
   let result = Cbpv.reify optCbpv
 

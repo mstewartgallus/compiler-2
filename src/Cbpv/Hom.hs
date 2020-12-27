@@ -116,8 +116,8 @@ instance Cbpv (Hom x) (Hom x) where
   cbpvIntrinsic = CbpvIntrinsic
 
 -- shit!
-instance Show (Closed @SetTag a b) where
-  show x = show $ evalState (view (fold x)) 0
+instance Pretty (Closed @SetTag a b) where
+  pretty x = unAnnotate $ evalState (view (fold x)) 0
 
 newtype View (a :: Sort t) (b :: Sort t) = V { view :: State Int (Doc ()) }
 
@@ -144,13 +144,13 @@ instance Cbpv View View where
   pop t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ parens $ sep [pretty "κ" , v, pretty ":", pretty (show t), pretty "⇒", body]
+    pure $ parens $ sep [pretty "κ" , v, pretty ":", pretty t, pretty "⇒", body]
 
   app f x = V $ pure (\f' x' -> parens $ sep [f', x']) <*> view f <*> view x
   zeta t f = V $ do
     v <- fresh
     body <- view (f (V $ pure v))
-    pure $ parens $ sep [pretty "ζ" , v, pretty ":", pretty (show t), pretty "⇒", body]
+    pure $ parens $ sep [pretty "ζ" , v, pretty ":", pretty t, pretty "⇒", body]
 
   u64 n = V $ pure (pretty n)
 

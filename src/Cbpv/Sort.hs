@@ -28,6 +28,7 @@ module Cbpv.Sort
   )
 where
 import qualified Ccc.Type as Type
+import Data.Text.Prettyprint.Doc hiding (SEmpty)
 
 type Unit = 'Unit
 
@@ -114,13 +115,13 @@ instance (KnownSort a, KnownSort b) => KnownSort ('Asym a b) where
 instance (KnownSort a, KnownSort b) => KnownSort ('Exp a b) where
   inferSort = inferSort :-> inferSort
 
-instance Show (SSort t a) where
-  show x = case x of
-    SU64 -> "u64"
-    SUnit -> "1"
-    SU x -> "(U " ++ show x ++ ")"
-    x :*: y -> "(" ++ show x ++ " × " ++ show y ++ ")"
+instance Pretty (SSort t a) where
+  pretty x = case x of
+    SU64 -> pretty "u64"
+    SUnit -> pretty "1"
+    SU x -> parens $ sep [pretty "U", pretty x]
+    x :*: y -> parens $ sep [pretty x, pretty "×", pretty y]
 
-    SEmpty -> "0"
-    x :&: y -> "(" ++ show x ++ " ⊗ " ++ show y ++ ")"
-    x :-> y -> "(" ++ show x ++ " → " ++ show y ++ ")"
+    SEmpty -> pretty "0"
+    x :&: y -> parens $ sep [pretty x, pretty "⊗", pretty y]
+    x :-> y -> parens $ sep [pretty x, pretty "→", pretty y]
