@@ -11,7 +11,7 @@ import qualified Ccc
 import qualified Ccc.Hom as Ccc
 import qualified Ccc.Type as Ccc
 import Control.Category
-import Prelude hiding (id, (.))
+import Prelude hiding (fst, id, snd, (.))
 
 toCbpv :: Ccc.Closed Ccc.Unit a -> Closed (U (F Unit)) (U (AsAlgebra a))
 toCbpv x = Closed (go (Ccc.fold x))
@@ -25,7 +25,7 @@ instance Category (V k) where
 instance Ccc.Ccc (V k) where
   unit = V (thunk id . unit)
 
-  whereIs (V f) (V x) = V $ ((f . thunk id) `whereIsK` (x . thunk id))
+  whereIs (V f) (V x) = V $ f . thunk id . ((x . thunk id . unit) &&& id)
 
   app (V f) (V x) = V $ thunk (app (force f) (x . thunk id))
   zeta t f = V $

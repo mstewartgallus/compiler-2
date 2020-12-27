@@ -15,7 +15,7 @@ import Control.Category
 import qualified Cbpv.Hom as Hom
 import Cbpv.Sort
 import Data.Kind
-import Prelude hiding ((.), id)
+import Prelude hiding ((.), id, fst, snd)
 import qualified Ccc.Type as Ccc
 import qualified Ccc as Ccc
 
@@ -35,10 +35,9 @@ instance (Category f, Category g) => Category (Cde f g) where
 
 instance Cbpv f g => Code (Cde f g) where
   unit = C unit
-
-  whereIsK (C f) (C x) = C (whereIsK f x)
-  kappa t f = C $ kappa t $ \x -> case f (C x) of
-    C y -> y
+  fst = C fst
+  snd = C snd
+  C x &&& C y = C (x &&& y)
 
 instance Cbpv f g => Stack (Stk f g) where
 
@@ -70,11 +69,11 @@ addIntrinsic = thunk (doAdd . force id)
 doAdd :: Cbpv stack code => stack (F (U (F U64) * U (F U64))) (F U64)
 doAdd =
   pop inferSort $ \tuple ->
-  (force (tuple >>> kappa inferSort (\x -> x . unit)) >>>
+  (force (fst . tuple) >>>
    (pop inferSort $ \x ->
-   (force (tuple >>> kappa inferSort (\_ -> id)) >>>
+   (force (snd . tuple) >>>
    (pop inferSort $ \y ->
-   whereIs id (whereIsK addi x . y))) `whereIs` unit)) `whereIs` unit
+   whereIs id (addi . (x &&& y)))) `whereIs` unit)) `whereIs` unit
 
 addi :: Cbpv stack code => code (U64 * U64) U64
 addi = cbpvIntrinsic AddIntrinsic

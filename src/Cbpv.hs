@@ -30,9 +30,9 @@ class Category stack => Stack (stack :: Algebra -> Algebra -> Type)
 
 class Category code => Code code where
   unit :: code x Unit
-
-  kappa :: SSet a -> (code Unit a -> code b c) -> code (a * b) c
-  whereIsK :: code (a * b) c -> code Unit a -> code b c
+  (&&&) :: code x a -> code x b -> code x (a * b)
+  fst :: code (a * b) a
+  snd :: code (a * b) b
 
 class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack where
   thunk :: stack (F x) y -> code x (U y)

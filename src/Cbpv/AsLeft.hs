@@ -12,7 +12,7 @@ import Cbpv
 import Control.Category
 import Cbpv.Hom
 import Cbpv.Sort
-import Prelude hiding ((.), id)
+import Prelude hiding ((.), id, fst, snd)
 
 asLeft :: Closed @SetTag a b -> Closed a b
 asLeft x = Closed (out (fold x))
@@ -39,8 +39,9 @@ instance Cbpv f g => Stack (Path f) where
 instance Cbpv f g => Code (Path g) where
   unit = into unit
 
-  whereIsK f x = into (whereIsK (out f) (out x))
-  kappa t f = into (kappa t $ \x -> out (f (into x)))
+  x &&& y = into (out x &&& out y)
+  fst = into fst
+  snd = into snd
 
 instance Cbpv f g => Cbpv (Path f) (Path g) where
   thunk x = into (thunk (out x))

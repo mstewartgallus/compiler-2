@@ -14,7 +14,7 @@ import Control.Category
 import Cbpv.Hom
 import Cbpv.Sort
 import Data.Kind
-import Prelude hiding ((.), id)
+import Prelude hiding ((.), id, fst, snd)
 
 removeDead :: Closed @SetTag a b -> Closed a b
 removeDead x = Closed (out (fold x))
@@ -41,9 +41,9 @@ instance Stack (Expr f) where
 instance Code (Expr g) where
   unit = Unit
 
-  whereIsK Unit _ = Unit
-  whereIsK f x = into (whereIsK (out f) (out x))
-  kappa t f = into (kappa t $ \x -> out (f (into x)))
+  fst = into fst
+  snd = into snd
+  x &&& y = into (out x &&& out y)
 
 instance Cbpv (Expr f) (Expr f) where
   thunk x = into (thunk (out x))

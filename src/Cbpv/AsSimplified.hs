@@ -15,7 +15,7 @@ import Cbpv
 import Control.Category
 import Cbpv.Sort
 import qualified Cbpv.Hom as Hom
-import Prelude hiding ((.), id, curry, uncurry, Monad (..), Either (..))
+import Prelude hiding ((.), id, fst, snd)
 
 simplify :: Hom.Closed @SetTag a b -> Hom.Closed a b
 simplify x = Hom.Closed (outC (simpC (Hom.fold x)))
@@ -39,8 +39,9 @@ data Cde f g (a :: Set) (b :: Set) where
   IdC :: Category g => Cde f g a a
   ComposeC ::  Category g => Cde f g b c -> Cde f g a b -> Cde f g a c
 
-  Kappa :: Code g => SSet a -> (Cde f g Unit a -> Cde f g b c) -> Cde f g (a * b) c
-  WhereIsK :: Code g => Cde f g (a * b) c -> Cde f g Unit a -> Cde f g b c
+  Fst :: Code g => Cde f g (a * b) a
+  Snd :: Code g => Cde f g (a * b) b
+  Fanout :: Code g => Cde f g x a -> Cde f g x b -> Cde f g x (a * b)
 
   Thunk :: Cbpv f g => Stk f g (F a) b -> Cde f g a (U b)
 
@@ -52,8 +53,9 @@ outC expr = case expr of
   IdC -> id
   ComposeC f g -> outC f . outC g
 
-  Kappa t f -> kappa t (\x -> outC (f (C x)))
-  WhereIsK f x -> whereIsK (outC f) (outC x)
+  Fanout x y -> outC x &&& outC y
+  Fst -> fst
+  Snd -> snd
 
   Thunk y -> thunk (outK y)
 
@@ -81,10 +83,10 @@ recurseC expr = case expr of
 
   Thunk y -> thunk (simpK y)
 
-  Kappa t f -> kappa t (\x -> simpC (f x))
-  WhereIsK f x -> whereIsK (simpC f) (simpC x)
-
+  Fanout x y -> simpC x &&& simpC y
   Unit -> unit
+  Fst -> fst
+  Snd -> snd
 
 recurseK :: Stk f g a b -> Stk f g a b
 recurseK expr = case expr of
@@ -107,10 +109,8 @@ optC expr = case expr of
 
   ComposeC Unit _ -> Just unit
 
-  WhereIsK (ComposeC y f) x  -> Just (y . whereIsK f x)
-  WhereIsK (Kappa _ f) x  -> Just (f x)
-
-  ComposeC g (Kappa t f) -> Just $ kappa t $ \x -> g . f x
+  ComposeC Fst (Fanout x _) -> Just x
+  ComposeC Snd (Fanout _ x) -> Just x
 
   Thunk (Force f) -> Just f
 
@@ -156,9 +156,9 @@ instance Stack f => Stack (Stk f g) where
 
 instance Code g => Code (Cde f g) where
   unit = Unit
-
-  whereIsK = WhereIsK
-  kappa = Kappa
+  (&&&) = Fanout
+  fst = Fst
+  snd = Snd
 
 instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
   thunk = Thunk

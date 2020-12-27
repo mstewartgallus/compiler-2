@@ -19,7 +19,7 @@ import Control.Monad.State hiding (lift)
 import Cbpv.Sort
 import Data.Word
 import Data.Kind
-import Prelude hiding ((.), id)
+import Prelude hiding ((.), id, fst, snd)
 
 newtype Closed (a :: Sort t) (b :: Sort t) = Closed (forall x. Hom x a b)
 
@@ -36,9 +36,9 @@ goC x = case x of
   Thunk f -> thunk (goK f)
 
   UnitHom -> unit
-
-  WhereIsK f x -> whereIsK (goC f) (goC x)
-  Kappa t f -> kappa t (\x -> goC (f x))
+  Fanout x y -> goC x &&& goC y
+  Fst -> fst
+  Snd -> snd
 
   U64 n -> u64 n
   CccIntrinsic x -> cccIntrinsic x
@@ -69,9 +69,9 @@ data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   Force :: Hom x a (U b) -> Hom x (F a) b
 
   UnitHom :: Hom x a Unit
-
-  WhereIsK :: Hom x (a * b) c -> Hom x Unit a -> Hom x b c
-  Kappa :: SSet a -> (x Unit a -> Hom x b c) -> Hom x (a * b) c
+  Fanout :: Hom x c a -> Hom x c b -> Hom x c (a * b)
+  Fst :: Hom x (a * b) a
+  Snd :: Hom x (a * b) b
 
   WhereIs :: Hom x (a & b) c -> Hom x Unit a -> Hom x b c
   Pop :: SSet a -> (x Unit a -> Hom x b c) -> Hom x (a & b) c
@@ -93,9 +93,9 @@ instance Category (Hom x) where
 
 instance Code (Hom x) where
   unit = UnitHom
-
-  whereIsK = WhereIsK
-  kappa t f = Kappa t (f . Var)
+  (&&&) = Fanout
+  fst = Fst
+  snd = Snd
 
 instance Stack (Hom x) where
 
@@ -128,14 +128,10 @@ instance Category View where
     pure $ "(" ++ f' ++ " ∘ " ++ g' ++ ")"
 
 instance Code View where
-
   unit = V $ pure "unit"
-
-  whereIsK f x = V $ pure (\f' x' -> "<" ++ f' ++ " " ++ x' ++ ")") <*> view f <*> view x
-  kappa t f = V $ do
-    v <- fresh
-    body <- view (f (V $ pure v))
-    pure $ "(κ " ++ v ++ ": " ++ show t ++ ". " ++ body ++ ")"
+  V x &&& V y = V $ pure (\x' y' -> "<" ++ x' ++ ", " ++ y' ++ ">") <*> x <*> y
+  fst = V $ pure "π₁"
+  snd = V $ pure "π₂"
 
 instance Stack View where
 
