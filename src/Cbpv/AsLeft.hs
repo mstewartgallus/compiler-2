@@ -44,7 +44,7 @@ instance Cbpv f g => Code (Path g) where
 
 instance Cbpv f g => Cbpv (Path f) (Path g) where
   thunk t f = into (thunk t $ \x -> out (f (into x)))
-  force f x = into (force (out f) (out x))
+  force x = into (force (out x))
 
   lift x = into (lift (out x))
   pop t f = into (pop t $ \x -> out (f (into x)))

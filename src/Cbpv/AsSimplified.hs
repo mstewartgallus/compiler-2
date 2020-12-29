@@ -26,7 +26,7 @@ data Stk f g (a :: Algebra) (b :: Algebra) where
   IdK :: Category f => Stk f g a a
   ComposeK ::  Category f => Stk f g b c -> Stk f g a b -> Stk f g a c
 
-  Force :: Cbpv f g => Cde f g a (U b) -> Cde f g Unit a -> Stk f g Empty b
+  Force :: Cbpv f g => Cde f g Unit (U a) -> Stk f g Empty a
 
   Pop :: Cbpv f g => SSet a -> (Cde f g Unit a -> Stk f g b c) -> Stk f g (a & b) c
   Lift :: Cbpv f g => Cde f g Unit a -> Stk f g b (a & b)
@@ -67,7 +67,7 @@ outK expr = case expr of
   IdK -> id
   ComposeK f g -> outK f . outK g
 
-  Force f x -> force (outC f) (outC x)
+  Force x -> force (outC x)
 
   Pop t f -> pop t (\x -> outK (f (C x)))
   Lift x -> lift (outC x)
@@ -94,7 +94,7 @@ recurseK expr = case expr of
   IdK -> id
   ComposeK f g -> simpK f . simpK g
 
-  Force f x -> force (simpC f) (simpC x)
+  Force x -> force (simpC x)
 
   Pop t f -> pop t (\x -> simpK (f x))
   Lift x -> lift (simpC x)
@@ -127,7 +127,7 @@ optK expr = case expr of
   ComposeK (Pop _ f) (Lift x) -> Just (f x)
   ComposeK (Pass x) (Zeta _ f) -> Just (f x)
 
-  -- Force (Thunk f) -> Just f
+  Force (Thunk _ f) -> Just (f Unit)
 
   _ -> Nothing
 

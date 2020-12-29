@@ -51,7 +51,7 @@ goK x = case x of
   Id -> id
   f :.: g -> goK f . goK g
 
-  Force x y -> force (goC x) (goC y)
+  Force x -> force (goC x)
 
   Lift x -> lift (goC x)
   Pop t f -> pop t (\x -> goK (f x))
@@ -68,7 +68,7 @@ data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   (:.:) :: Hom x b c -> Hom x a b -> Hom x a c
 
   Thunk :: SSet a -> (x Unit a -> Hom x Empty c) -> Hom x a (U c)
-  Force :: Hom x a (U b) -> Hom x Unit a -> Hom x Empty b
+  Force :: Hom x Unit (U a) -> Hom x Empty a
 
   UnitHom :: Hom x a Unit
   Fanout :: Hom x c a -> Hom x c b -> Hom x c (a * b)
@@ -156,7 +156,7 @@ instance Code View where
 instance Stack View where
 
 instance Cbpv View View where
-  force x y = V $  \p -> pure (\x' y' -> paren (p > appPrec) $ sep [keyword $ pretty "force", x', y']) <*> view x (appPrec + 1) <*> view y (appPrec + 1)
+  force x = V $  \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "force", x']) <*> view x (appPrec + 1)
   thunk t f = V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)

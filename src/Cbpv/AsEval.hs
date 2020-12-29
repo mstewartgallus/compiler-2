@@ -66,7 +66,7 @@ instance Stack Prog where
 instance Cbpv Prog Prog where
   thunk _ f = C $ \x -> Thunk $ \w -> case f (C $ \Unit -> x) of
     S y -> y w
-  force (C f) (C x) = S $ \w -> case f (x Unit) of
+  force (C x) = S $ \w -> case x Unit of
     Thunk t -> t w
 
   pass (C x) = S $ \(Lam f) -> f (x Unit)

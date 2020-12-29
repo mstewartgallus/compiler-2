@@ -29,11 +29,11 @@ instance Ccc.Ccc (V k) where
     thunk undefined $ \env ->
       lift ((x . thunk inferSort (\_ -> lift unit) . unit) &&& env)
 
-  pass (V x) = V $ thunk undefined (\env -> pass (x . thunk inferSort (\_ -> lift unit)) . force id env)
+  pass (V x) = V $ thunk undefined (\env -> pass (x . thunk inferSort (\_ -> lift unit)) . force env)
   zeta t f = V $
     thunk undefined $ \env ->
       zeta (SU (asAlgebra t)) $ \x ->
-        force (go $ f (V (x . unit))) env
+        force (go (f (V (x . unit))) . env)
 
   u64 n = V $ (thunk inferSort $ \_ -> lift (u64 n))
   constant t pkg name = V $ thunk inferSort (\_ -> constant t pkg name . lift unit)
