@@ -19,13 +19,13 @@ optimize =
 round :: Closed a b -> Closed a b
 round =
   asRight >>>
-  pass >>>
+  dopass >>>
 
   asLeft >>>
-  pass
+  dopass
 
-pass :: Closed a b -> Closed a b
-pass =
+dopass :: Closed a b -> Closed a b
+dopass =
   zetaToKappa >>>
   inline >>>
   removeDead

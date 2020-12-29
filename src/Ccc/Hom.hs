@@ -27,10 +27,10 @@ data Hom x a b where
 
   UnitHom :: Hom x a Unit
 
-  WhereIs :: Hom x (a * b) c -> Hom x Unit a -> Hom x b c
+  Lift :: Hom x Unit a -> Hom x b (a * b)
   Kappa :: ST a -> (x Unit a -> Hom x b c) -> Hom x (a * b) c
 
-  App :: Hom x b (a ~> c) -> Hom x Unit a -> Hom x b c
+  Pass :: Hom x Unit a -> Hom x (a ~> b) b
   Zeta :: ST a -> (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
 
   U64 :: Word64 -> Hom x Unit U64
@@ -46,10 +46,10 @@ instance Category (Hom x) where
 instance Ccc (Hom x) where
   unit = UnitHom
 
-  whereIs = WhereIs
+  lift = Lift
   kappa t f = Kappa t (f . Var)
 
-  app = App
+  pass = Pass
   zeta t f = Zeta t (f . Var)
 
   u64 = U64
@@ -71,10 +71,10 @@ go x = case x of
 
   UnitHom -> unit
 
-  WhereIs f x -> whereIs (go f) (go x)
+  Lift x -> lift (go x)
   Kappa t f -> kappa t (\x -> go (f x))
 
-  App f x -> app (go f) (go x)
+  Pass x -> pass (go x)
   Zeta t f -> zeta t (\x -> go (f x))
 
   U64 n -> u64 n
@@ -83,9 +83,6 @@ go x = case x of
 
 appPrec :: Int
 appPrec = 10
-
-whereIsPrec :: Int
-whereIsPrec = 11
 
 kappaPrec :: Int
 kappaPrec = 2
@@ -110,13 +107,13 @@ instance Category View where
 instance Ccc View where
   unit = V $ \_ -> pure $ keyword $ pretty "!"
 
-  whereIs f x = V $ \p -> pure (\f' x' -> paren (p > whereIsPrec) $ sep [f', keyword $ pretty "lift", x']) <*> view f (whereIsPrec + 1) <*> view x (whereIsPrec + 1)
+  lift x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", x']) <*> view x (appPrec + 1)
   kappa t f = V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
     pure $ paren (p > kappaPrec) $ sep [keyword $ pretty "κ", v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
 
-  app f x = V $ \p -> pure (\f' x' -> paren (p > appPrec) $ sep [f', keyword $ pretty "pass", x']) <*> view f (appPrec + 1) <*> view x (appPrec + 1)
+  pass x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "pass", x']) <*> view x (appPrec + 1)
   zeta t f = V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)

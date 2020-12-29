@@ -33,11 +33,10 @@ instance Ccc k => Category (Expr k) where
 instance Ccc k => Ccc (Expr k) where
   unit = Unit
 
-  whereIs Unit _ = Unit
-  whereIs f x = into (whereIs (out f) (out x))
+  lift x = into (lift (out x))
   kappa t f = into (kappa t $ \x -> out (f (into x)))
 
-  app f x = into (app (out f) (out x))
+  pass x = into (pass (out x))
   zeta t f = into (zeta t $ \x -> out (f (into x)))
 
   u64 n = into (u64 n)

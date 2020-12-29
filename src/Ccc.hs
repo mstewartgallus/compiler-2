@@ -26,10 +26,10 @@ class Category hom => Ccc hom where
   unit :: hom a Unit
 
   zeta :: ST a -> (hom Unit a -> hom b c) -> hom b (a ~> c)
-  app :: hom b (a ~> c) -> hom Unit a -> hom b c
+  pass :: hom Unit a -> hom (a ~> b) b
 
   kappa :: ST a -> (hom Unit a -> hom b c) -> hom (a * b) c
-  whereIs :: hom (a * b) c -> hom Unit a -> hom b c
+  lift :: hom Unit a -> hom b (a * b)
 
   u64 :: Word64 -> hom Unit U64
   constant :: Lam.ST a -> String -> String -> hom Unit (AsObject a)

@@ -25,9 +25,9 @@ instance Category (V k) where
 instance Ccc.Ccc (V k) where
   unit = V (thunk id . unit)
 
-  whereIs (V f) (V x) = V $ f . thunk id . ((x . thunk id . unit) &&& id)
+  lift (V x) = V $ thunk id . ((x . thunk id . unit) &&& id)
 
-  app (V f) (V x) = V $ thunk (app (force f) (x . thunk id))
+  pass (V x) = V $ thunk (app (force id) (x . thunk id))
   zeta t f = V $
     thunk $
       zeta (SU (asAlgebra t)) $ \x ->

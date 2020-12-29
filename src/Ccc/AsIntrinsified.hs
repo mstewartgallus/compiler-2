@@ -25,11 +25,11 @@ instance Category (Expr f) where
 instance Ccc (Expr f) where
   unit = E unit
 
-  whereIs (E f) (E x) = E (whereIs f x)
+  lift (E x) = E (lift x)
   kappa t f = E $ kappa t $ \x' -> case f (E x') of
     E y -> y
 
-  app (E f) (E x) = E (app f x)
+  pass (E x) = E (pass x)
   zeta t f = E $ zeta t $ \x' -> case f (E x') of
     E y -> y
 
@@ -41,4 +41,4 @@ instance Ccc (Expr f) where
 addIntrinsic :: Hom f Unit (AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))
 addIntrinsic = zeta inferT $ \x ->
                zeta inferT $ \y ->
-               ((add `whereIs` x) . y)
+               ((add . lift x) . y)
