@@ -39,10 +39,10 @@ class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack
   force :: code x (U y) -> stack (F x) y
 
   pop :: SSet a -> (code Unit a -> stack b c) -> stack (a & b) c
-  whereIs :: stack (a & b) c -> code Unit a -> stack b c
+  lift :: code Unit a -> stack b (a & b)
 
   zeta :: SSet a -> (code Unit a -> stack b c) -> stack b (a ~> c)
-  app :: stack b (a ~> c) -> code Unit a -> stack b c
+  pass :: code Unit a -> stack (a ~> b) b
 
   u64 :: Word64 -> code Unit U64
 

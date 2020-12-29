@@ -49,10 +49,10 @@ instance Cbpv (Expr f) (Expr f) where
   thunk x = into (thunk (out x))
   force x = into (force (out x))
 
-  whereIs f x = into (whereIs (out f) (out x))
+  lift x = into (lift (out x))
   pop t f = into (pop t $ \x -> out (f (into x)))
 
-  app f x = into (app (out f) (out x))
+  pass x = into (pass (out x))
   zeta t f = into (zeta t $ \x -> out (f (into x)))
 
   u64 n = into (u64 n)

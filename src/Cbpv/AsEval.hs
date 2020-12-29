@@ -68,12 +68,11 @@ instance Cbpv Prog Prog where
   force (C f) = S $ \(x :& Effect w) -> case f x of
     Thunk t -> t w
 
-  app (S f) (C x) = S $ \y -> case f y of
-    Lam g -> g (x Unit)
+  pass (C x) = S $ \(Lam f) -> f (x Unit)
   zeta _ f = S $ \env -> Lam $ \x -> case f (C $ const x) of
     S y -> y env
 
-  whereIs (S f) (C x) = S $ \y -> f (x Unit :& y)
+  lift (C x) = S $ \y -> x Unit :& y
   pop _ f = S $ \(h :& t) -> case f (C $ const h) of
     S y -> y t
 

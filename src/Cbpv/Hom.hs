@@ -53,10 +53,10 @@ goK x = case x of
 
   Force f -> force (goC f)
 
-  WhereIs f x -> whereIs (goK f) (goC x)
+  Lift x -> lift (goC x)
   Pop t f -> pop t (\x -> goK (f x))
 
-  App f x -> app (goK f) (goC x)
+  Pass x -> pass (goC x)
   Zeta t f -> zeta t (\x -> goK (f x))
 
   Constant t pkg name -> constant t pkg name
@@ -75,10 +75,10 @@ data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   Fst :: Hom x (a * b) a
   Snd :: Hom x (a * b) b
 
-  WhereIs :: Hom x (a & b) c -> Hom x Unit a -> Hom x b c
+  Lift :: Hom x Unit a -> Hom x b (a & b)
   Pop :: SSet a -> (x Unit a -> Hom x b c) -> Hom x (a & b) c
 
-  App :: Hom x c (a ~> b) -> Hom x Unit a -> Hom x c b
+  Pass :: Hom x Unit a -> Hom x (a ~> b) b
   Zeta :: SSet a -> (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
 
   U64 :: Word64 -> Hom x Unit U64
@@ -105,10 +105,10 @@ instance Cbpv (Hom x) (Hom x) where
   thunk = Thunk
   force = Force
 
-  whereIs = WhereIs
+  lift = Lift
   pop t f = Pop t (f . Var)
 
-  app = App
+  pass = Pass
   zeta t f = Zeta t (f . Var)
 
   u64 = U64
@@ -159,13 +159,13 @@ instance Cbpv View View where
   thunk x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "thunk", x']) <*> view x (appPrec + 1)
   force x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "force", x']) <*> view x (appPrec + 1)
 
-  whereIs f x = V $ \p -> pure (\f' x' -> paren (p > whereIsPrec) $ sep [f', keyword $ pretty "lift", x']) <*> view f (whereIsPrec + 1) <*> view x (whereIsPrec + 1)
+  lift x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", x']) <*> view x (appPrec + 1)
   pop t f = V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
     pure $ paren (p > kappaPrec) $ sep [keyword $ pretty "κ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
 
-  app f x = V $  \p -> pure (\f' x' -> paren (p > appPrec) $ sep [f', keyword $ pretty "pass", x']) <*> view f (appPrec + 1) <*> view x (appPrec + 1)
+  pass x = V $  \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "pass", x']) <*> view x (appPrec + 1)
   zeta t f = V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)

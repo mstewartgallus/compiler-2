@@ -29,10 +29,10 @@ data Stk f g (a :: Algebra) (b :: Algebra) where
   Force :: Cbpv f g => Cde f g a (U b) -> Stk f g (F a) b
 
   Pop :: Cbpv f g => SSet a -> (Cde f g Unit a -> Stk f g b c) -> Stk f g (a & b) c
-  WhereIs :: Cbpv f g => Stk f g (a & b) c -> Cde f g Unit a -> Stk f g b c
+  Lift :: Cbpv f g => Cde f g Unit a -> Stk f g b (a & b)
 
   Zeta :: Cbpv f g => SSet a -> (Cde f g Unit a -> Stk f g b c) -> Stk f g b (a ~> c)
-  App :: Cbpv f g => Stk f g b (a ~> c) -> Cde f g Unit a -> Stk f g b c
+  Pass :: Cbpv f g => Cde f g Unit a -> Stk f g (a ~> b) b
 
 data Cde f g (a :: Set) (b :: Set) where
   C :: g a b -> Cde f g a b
@@ -70,10 +70,10 @@ outK expr = case expr of
   Force y -> force (outC y)
 
   Pop t f -> pop t (\x -> outK (f (C x)))
-  WhereIs f x -> whereIs (outK f) (outC x)
+  Lift x -> lift (outC x)
 
   Zeta t f -> zeta t (\x -> outK (f (C x)))
-  App f x -> app (outK f) (outC x)
+  Pass x -> pass (outC x)
 
 recurseC :: Cde f g a b -> Cde f g a b
 recurseC expr = case expr of
@@ -97,10 +97,10 @@ recurseK expr = case expr of
   Force y -> force (simpC y)
 
   Pop t f -> pop t (\x -> simpK (f x))
-  WhereIs f x -> whereIs (simpK f) (simpC x)
+  Lift x -> lift (simpC x)
 
   Zeta t f -> zeta t (\x -> simpK (f x))
-  App f x -> app (simpK f) (simpC x)
+  Pass x -> pass (simpC x)
 
 optC :: Cde f g a b -> Maybe (Cde f g a b)
 optC expr = case expr of
@@ -126,11 +126,8 @@ optK expr = case expr of
   ComposeK g (Pop t f) -> Just $ pop t $ \x -> g . f x
   ComposeK (Zeta t f) g -> Just $ zeta t $ \x -> f x . g
 
-  WhereIs (ComposeK y f) x  -> Just (y . whereIs f x)
-  App (ComposeK f y) x  -> Just (app f x . y)
-
-  WhereIs (Pop _ f) x  -> Just (f x)
-  App (Zeta _ f) x -> Just (f x)
+  ComposeK (Pop _ f) (Lift x) -> Just (f x)
+  ComposeK (Pass x) (Zeta _ f) -> Just (f x)
 
   Force (Thunk f) -> Just f
 
@@ -166,10 +163,10 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
   thunk = Thunk
   force = Force
 
-  whereIs = WhereIs
+  lift = Lift
   pop = Pop
 
-  app = App
+  pass = Pass
   zeta = Zeta
 
   u64 x = C (u64 x)

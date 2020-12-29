@@ -27,13 +27,13 @@ instance Ccc.Ccc (V k) where
 
   lift (V x) = V $ thunk id . ((x . thunk id . unit) &&& id)
 
-  pass (V x) = V $ thunk (app (force id) (x . thunk id))
+  pass (V x) = V $ thunk (pass (x . thunk id) . force id)
   zeta t f = V $
     thunk $
       zeta (SU (asAlgebra t)) $ \x ->
         force $
           go $ f (V (x . unit))
 
-  u64 n = V $ (thunk (pop inferSort $ \_ -> id `whereIs` u64 n) . unit)
+  u64 n = V $ (thunk (pop inferSort $ \_ -> lift (u64 n)) . unit)
   constant t pkg name = V $ thunk (force id >>> constant t pkg name)
   cccIntrinsic x = V $ cccIntrinsic x

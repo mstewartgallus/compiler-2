@@ -45,8 +45,8 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
   thunk (K f) = C (thunk f)
   force (C f) = K (force f)
 
-  app (K f) (C x) = K (app f x)
-  whereIs (K f) (C x) = K (whereIs f x)
+  pass (C x) = K (pass x)
+  lift (C x) = K (lift x)
 
   zeta t f = K $ zeta t $ \x -> case f (C x) of
     K y -> y
@@ -73,7 +73,7 @@ doAdd =
    (pop inferSort $ \x ->
    (force (snd . tuple) >>>
    (pop inferSort $ \y ->
-   whereIs id (addi . (x &&& y)))) `whereIs` unit)) `whereIs` unit
+   lift (addi . (x &&& y)))) . lift unit)) . lift unit
 
 addi :: Cbpv stack code => code (U64 * U64) U64
 addi = cbpvIntrinsic AddIntrinsic
