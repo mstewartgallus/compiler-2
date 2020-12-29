@@ -57,7 +57,7 @@ instance Ccc (Hom x) where
   cccIntrinsic = CccIntrinsic
 
 instance PrettyProgram (Closed a b) where
-  prettyProgram x = evalState (view (fold x)) 0
+  prettyProgram x = evalState (view (fold x) 0) 0
 
 fold :: Ccc hom => Closed a b -> hom a b
 fold (Closed x) = go x
@@ -81,32 +81,50 @@ go x = case x of
   CccIntrinsic x -> cccIntrinsic x
   Constant t pkg name -> constant t pkg name
 
-newtype View (a :: T) (b :: T) = V { view :: State Int (Doc Style) }
+appPrec :: Int
+appPrec = 10
+
+whereIsPrec :: Int
+whereIsPrec = 11
+
+kappaPrec :: Int
+kappaPrec = 2
+
+zetaPrec :: Int
+zetaPrec = 5
+
+composePrec :: Int
+composePrec = 9
+
+paren :: Bool -> Doc Style -> Doc Style
+paren x = if x then parens else id
+
+newtype View (a :: T) (b :: T) = V { view :: Int -> State Int (Doc Style) }
 instance Category View where
-  id = V $ pure $ keyword (pretty "id")
-  f . g = V $ do
-    f' <- view f
-    g' <- view g
-    pure $ parens $ sep [f', keyword $ pretty "∘", g']
+  id = V $ \_ -> pure $ keyword (pretty "id")
+  f . g = V $ \p -> do
+    f' <- view f (composePrec + 1)
+    g' <- view g (composePrec + 1)
+    pure $ paren (p > composePrec) $ sep [f', keyword $ pretty "∘", g']
 
 instance Ccc View where
-  unit = V $ pure $ keyword $ pretty "unit"
+  unit = V $ \_ -> pure $ keyword $ pretty "!"
 
-  whereIs f x = V $ pure (\f' x' -> brackets $ sep [f', x']) <*> view f <*> view x
-  kappa t f = V $ do
+  whereIs f x = V $ \p -> pure (\f' x' -> paren (p > whereIsPrec) $ sep [f', keyword $ pretty "lift", x']) <*> view f (whereIsPrec + 1) <*> view x (whereIsPrec + 1)
+  kappa t f = V $ \p -> do
     v <- fresh
-    body <- view (f (V $ pure v))
-    pure $ parens $ sep [keyword $ pretty "κ", v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
+    body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
+    pure $ paren (p > kappaPrec) $ sep [keyword $ pretty "κ", v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
 
-  app f x = V $ pure (\f' x' -> parens $ sep [f', x']) <*> view f <*> view x
-  zeta t f = V $ do
+  app f x = V $ \p -> pure (\f' x' -> paren (p > appPrec) $ sep [f', keyword $ pretty "pass", x']) <*> view f (appPrec + 1) <*> view x (appPrec + 1)
+  zeta t f = V $ \p -> do
     v <- fresh
-    body <- view (f (V $ pure v))
-    pure $ parens $ sep [keyword $ pretty "ζ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
+    body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
+    pure $ paren (p > zetaPrec) $ sep [keyword $ pretty "ζ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
 
-  u64 n = V $ pure (pretty n)
-  constant _ pkg name = V $ pure $ pretty (pkg ++ "/" ++ name)
-  cccIntrinsic x = V $ pure $ pretty (show x)
+  u64 n = V $ \_ -> pure (pretty n)
+  constant _ pkg name = V $ \_ -> pure $ pretty (pkg ++ "/" ++ name)
+  cccIntrinsic x = V $ \_ -> pure $ pretty (show x)
 
 fresh :: State Int (Doc Style)
 fresh = do

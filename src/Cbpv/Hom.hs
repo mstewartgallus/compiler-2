@@ -118,46 +118,63 @@ instance Cbpv (Hom x) (Hom x) where
 
 -- shit!
 instance PrettyProgram (Closed @SetTag a b) where
-  prettyProgram x = evalState (view (fold x)) 0
+  prettyProgram x = evalState (view (fold x) 0) 0
 
-newtype View (a :: Sort t) (b :: Sort t) = V { view :: State Int (Doc Style) }
+appPrec :: Int
+appPrec = 10
+
+whereIsPrec :: Int
+whereIsPrec = 11
+
+kappaPrec :: Int
+kappaPrec = 2
+
+zetaPrec :: Int
+zetaPrec = 5
+
+composePrec :: Int
+composePrec = 9
+
+paren :: Bool -> Doc Style -> Doc Style
+paren x = if x then parens else id
+
+newtype View (a :: Sort t) (b :: Sort t) = V { view :: Int -> State Int (Doc Style) }
 
 instance Category View where
-  id = V $ pure $ keyword $ pretty "id"
-  f . g = V $ do
-    f' <- view f
-    g' <- view g
-    pure $ parens $ sep [f', keyword $ pretty "∘", g']
+  id = V $ \_ -> pure $ keyword $ pretty "id"
+  f . g = V $ \p -> do
+    f' <- view f (composePrec + 1)
+    g' <- view g (composePrec + 1)
+    pure $ paren (p > composePrec) $ sep [f', keyword $ pretty "∘", g']
 
 instance Code View where
-  unit = V $ pure $ keyword $ pretty "unit"
-  V x &&& V y = V $ pure (\x' y' -> angles $ sep $ punctuate (keyword $ comma) [x', y']) <*> x <*> y
-  fst = V $ pure $ keyword $ pretty "π₁"
-  snd = V $ pure $ keyword $ pretty "π₂"
+  unit = V $ \_ -> pure $ keyword $ pretty "!"
+  V x &&& V y = V $ \_ -> pure (\x' y' -> angles $ sep $ punctuate (keyword $ comma) [x', y']) <*> x 0 <*> y 0
+  fst = V $ \_ -> pure $ keyword $ pretty "π₁"
+  snd = V $ \_ -> pure $ keyword $ pretty "π₂"
 
 instance Stack View where
 
 instance Cbpv View View where
-  thunk x = V $ pure (\x' -> parens $ sep [keyword $ pretty "thunk", x']) <*> view x
-  force x = V $ pure (\x' -> parens $ sep [keyword $ pretty "!", x']) <*> view x
+  thunk x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "thunk", x']) <*> view x (appPrec + 1)
+  force x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "force", x']) <*> view x (appPrec + 1)
 
-  whereIs f x = V $ pure (\f' x' -> brackets $ sep [f', x']) <*> view f <*> view x
-  pop t f = V $ do
+  whereIs f x = V $ \p -> pure (\f' x' -> paren (p > whereIsPrec) $ sep [f', keyword $ pretty "lift", x']) <*> view f (whereIsPrec + 1) <*> view x (whereIsPrec + 1)
+  pop t f = V $ \p -> do
     v <- fresh
-    body <- view (f (V $ pure v))
-    pure $ parens $ sep [keyword $ pretty "κ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
+    body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
+    pure $ paren (p > kappaPrec) $ sep [keyword $ pretty "κ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
 
-  app f x = V $ pure (\f' x' -> parens $ sep [f', x']) <*> view f <*> view x
-  zeta t f = V $ do
+  app f x = V $  \p -> pure (\f' x' -> paren (p > appPrec) $ sep [f', keyword $ pretty "pass", x']) <*> view f (appPrec + 1) <*> view x (appPrec + 1)
+  zeta t f = V $ \p -> do
     v <- fresh
-    body <- view (f (V $ pure v))
-    pure $ parens $ sep [keyword $ pretty "ζ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
+    body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
+    pure $ paren (p > zetaPrec) $ sep [keyword $ pretty "ζ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
 
-  u64 n = V $ pure (pretty n)
-
-  constant _ pkg name = V $ pure $ pretty (pkg ++ "/" ++ name)
-  cccIntrinsic x = V $ pure $ pretty (show x)
-  cbpvIntrinsic x = V $ pure  $ pretty (show x)
+  u64 n = V $ \_ -> pure (pretty n)
+  constant _ pkg name = V $ \_ -> pure $ pretty (pkg ++ "/" ++ name)
+  cccIntrinsic x = V $ \_ -> pure $ pretty (show x)
+  cbpvIntrinsic x = V $ \_ -> pure  $ pretty (show x)
 
 fresh :: State Int (Doc Style)
 fresh = do

@@ -49,29 +49,41 @@ go x = case x of
   Constant t pkg name -> constant t pkg name
 
 instance PrettyProgram (Closed a) where
-  prettyProgram x = evalState (view (fold x)) 0
+  prettyProgram x = evalState (view (fold x) 0) 0
 
-newtype View (a :: T) = V { view :: State Int (Doc Style) }
+appPrec :: Int
+appPrec = 10
+
+lamPrec :: Int
+lamPrec = 9
+
+bePrec :: Int
+bePrec = 8
+
+paren :: Bool -> Doc Style -> Doc Style
+paren x = if x then parens else id
+
+newtype View (a :: T) = V { view :: Int -> State Int (Doc Style) }
 instance Lam View where
-  be x t f = V $ do
-    x' <- view x
+  be x t f = V $ \p -> do
+    x' <- view x (bePrec + 1)
     v <- fresh
-    body <- view (f (V $ pure v))
+    body <- view (f (V $ \_ -> pure v)) (bePrec + 1)
     let binder = sep [v, keyword (pretty ":"), pretty t]
-    pure $ vsep [sep [x', keyword (pretty "be"), binder, keyword (pretty "⇒")], body]
+    pure $ paren (p > bePrec) $ vsep [sep [x', keyword (pretty "be"), binder, keyword (pretty "⇒")], body]
 
-  lam t f = V $ do
+  lam t f = V $ \p -> do
     v <- fresh
-    body <- view (f (V $ pure v))
-    pure $ sep [keyword (pretty "λ"), v, keyword (pretty ":"), pretty t, keyword (pretty "⇒"), body]
+    body <- view (f (V $ \_ -> pure v)) (lamPrec + 1)
+    pure $ paren (p > lamPrec) $ sep [keyword (pretty "λ"), v, keyword (pretty ":"), pretty t, keyword (pretty "⇒"), body]
 
-  f <*> x = V $ do
-    f' <- view f
-    x' <- view x
-    pure $ parens $ sep [f', x']
+  f <*> x = V $ \p -> do
+    f' <- view f (appPrec + 1)
+    x' <- view x (appPrec + 1)
+    pure $ paren (p > appPrec) $ sep [f', x']
 
-  u64 n = V $ pure (pretty n)
-  constant _ pkg name = V $ pure $ pretty (pkg ++ "/" ++ name)
+  u64 n = V $ \_ -> pure (pretty n)
+  constant _ pkg name = V $ \_ -> pure $ pretty (pkg ++ "/" ++ name)
 
 fresh :: State Int (Doc Style)
 fresh = do
