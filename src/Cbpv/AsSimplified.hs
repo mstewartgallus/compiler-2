@@ -114,6 +114,7 @@ optC expr = case expr of
   ComposeC Fst (Fanout x _) -> Just x
   ComposeC Snd (Fanout _ x) -> Just x
 
+  ComposeC (Thunk t f) x -> Just (thunk undefined (\env -> f (x . env)))
   _ -> Nothing
 
 optK :: Stk f g a b -> Maybe (Stk f g a b)

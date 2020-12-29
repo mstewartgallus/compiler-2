@@ -35,6 +35,6 @@ instance Ccc.Ccc (V k) where
       zeta (SU (asAlgebra t)) $ \x ->
         force (go (f (V (x . unit))) . env)
 
-  u64 n = V $ (thunk inferSort $ \_ -> lift (u64 n))
+  u64 n = V $ (thunk inferSort (\_ -> lift (u64 n)) . unit)
   constant t pkg name = V $ thunk inferSort (\_ -> constant t pkg name . lift unit)
   cccIntrinsic x = V $ cccIntrinsic x
