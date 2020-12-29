@@ -35,7 +35,7 @@ goC x = case x of
   Id -> id
   f :.: g -> goC f . goC g
 
-  Thunk f -> thunk (goK f)
+  Thunk t f -> thunk t (\x -> goK (f x))
 
   UnitHom -> unit
   Fanout x y -> goC x &&& goC y
@@ -51,7 +51,7 @@ goK x = case x of
   Id -> id
   f :.: g -> goK f . goK g
 
-  Force f -> force (goC f)
+  Force x y -> force (goC x) (goC y)
 
   Lift x -> lift (goC x)
   Pop t f -> pop t (\x -> goK (f x))
@@ -67,8 +67,8 @@ data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   Id :: Hom x a a
   (:.:) :: Hom x b c -> Hom x a b -> Hom x a c
 
-  Thunk :: Hom x (F a) b -> Hom x a (U b)
-  Force :: Hom x a (U b) -> Hom x (F a) b
+  Thunk :: SSet a -> (x Unit a -> Hom x Empty c) -> Hom x a (U c)
+  Force :: Hom x a (U b) -> Hom x Unit a -> Hom x Empty b
 
   UnitHom :: Hom x a Unit
   Fanout :: Hom x c a -> Hom x c b -> Hom x c (a * b)
@@ -102,8 +102,8 @@ instance Code (Hom x) where
 instance Stack (Hom x) where
 
 instance Cbpv (Hom x) (Hom x) where
-  thunk = Thunk
   force = Force
+  thunk t f = Thunk t (f . Var)
 
   lift = Lift
   pop t f = Pop t (f . Var)
@@ -156,8 +156,11 @@ instance Code View where
 instance Stack View where
 
 instance Cbpv View View where
-  thunk x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "thunk", x']) <*> view x (appPrec + 1)
-  force x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "force", x']) <*> view x (appPrec + 1)
+  force x y = V $  \p -> pure (\x' y' -> paren (p > appPrec) $ sep [keyword $ pretty "force", x', y']) <*> view x (appPrec + 1) <*> view y (appPrec + 1)
+  thunk t f = V $ \p -> do
+    v <- fresh
+    body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
+    pure $ paren (p > zetaPrec) $ sep [keyword $ pretty "thunk" , v, keyword $ pretty ":", pretty "?", keyword $ pretty "⇒", body]
 
   lift x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", x']) <*> view x (appPrec + 1)
   pop t f = V $ \p -> do

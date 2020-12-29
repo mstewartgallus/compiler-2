@@ -26,7 +26,7 @@ data Stk f g (a :: Algebra) (b :: Algebra) where
   IdK :: Category f => Stk f g a a
   ComposeK ::  Category f => Stk f g b c -> Stk f g a b -> Stk f g a c
 
-  Force :: Cbpv f g => Cde f g a (U b) -> Stk f g (F a) b
+  Force :: Cbpv f g => Cde f g a (U b) -> Cde f g Unit a -> Stk f g Empty b
 
   Pop :: Cbpv f g => SSet a -> (Cde f g Unit a -> Stk f g b c) -> Stk f g (a & b) c
   Lift :: Cbpv f g => Cde f g Unit a -> Stk f g b (a & b)
@@ -43,7 +43,7 @@ data Cde f g (a :: Set) (b :: Set) where
   Snd :: Code g => Cde f g (a * b) b
   Fanout :: Code g => Cde f g x a -> Cde f g x b -> Cde f g x (a * b)
 
-  Thunk :: Cbpv f g => Stk f g (F a) b -> Cde f g a (U b)
+  Thunk :: Cbpv f g => SSet a -> (Cde f g Unit a -> Stk f g Empty b) -> Cde f g a (U b)
 
   Unit :: Code g => Cde f g a Unit
 
@@ -57,7 +57,7 @@ outC expr = case expr of
   Fst -> fst
   Snd -> snd
 
-  Thunk y -> thunk (outK y)
+  Thunk t f -> thunk t (\x -> outK (f (C x)))
 
   Unit -> unit
 
@@ -67,7 +67,7 @@ outK expr = case expr of
   IdK -> id
   ComposeK f g -> outK f . outK g
 
-  Force y -> force (outC y)
+  Force f x -> force (outC f) (outC x)
 
   Pop t f -> pop t (\x -> outK (f (C x)))
   Lift x -> lift (outC x)
@@ -81,7 +81,7 @@ recurseC expr = case expr of
   IdC -> id
   ComposeC f g -> simpC f . simpC g
 
-  Thunk y -> thunk (simpK y)
+  Thunk t f -> thunk t (\x -> simpK (f x))
 
   Fanout x y -> simpC x &&& simpC y
   Unit -> unit
@@ -94,7 +94,7 @@ recurseK expr = case expr of
   IdK -> id
   ComposeK f g -> simpK f . simpK g
 
-  Force y -> force (simpC y)
+  Force f x -> force (simpC f) (simpC x)
 
   Pop t f -> pop t (\x -> simpK (f x))
   Lift x -> lift (simpC x)
@@ -114,8 +114,6 @@ optC expr = case expr of
   ComposeC Fst (Fanout x _) -> Just x
   ComposeC Snd (Fanout _ x) -> Just x
 
-  Thunk (Force f) -> Just f
-
   _ -> Nothing
 
 optK :: Stk f g a b -> Maybe (Stk f g a b)
@@ -129,7 +127,7 @@ optK expr = case expr of
   ComposeK (Pop _ f) (Lift x) -> Just (f x)
   ComposeK (Pass x) (Zeta _ f) -> Just (f x)
 
-  Force (Thunk f) -> Just f
+  -- Force (Thunk f) -> Just f
 
   _ -> Nothing
 

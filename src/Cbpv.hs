@@ -35,8 +35,9 @@ class Category code => Code code where
   snd :: code (a * b) b
 
 class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack where
-  thunk :: stack (F x) y -> code x (U y)
-  force :: code x (U y) -> stack (F x) y
+  -- It's pretty obvious this should be generalized but idk precisely how
+  thunk :: SSet a -> (code Unit a -> stack Empty c) -> code a (U c)
+  force :: code a (U b) -> code Unit a -> stack Empty b
 
   pop :: SSet a -> (code Unit a -> stack b c) -> stack (a & b) c
   lift :: code Unit a -> stack b (a & b)

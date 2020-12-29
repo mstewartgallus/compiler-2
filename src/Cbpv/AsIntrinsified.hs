@@ -42,8 +42,9 @@ instance Cbpv f g => Code (Cde f g) where
 instance Cbpv f g => Stack (Stk f g) where
 
 instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
-  thunk (K f) = C (thunk f)
-  force (C f) = K (force f)
+  thunk t f = C $ thunk t $ \x -> case f (C x) of
+    K y -> y
+  force (C f) (C x) = K (force f x)
 
   pass (C x) = K (pass x)
   lift (C x) = K (lift x)
@@ -64,16 +65,16 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
 
 -- | fixme.. cleanup this mess
 addIntrinsic :: Cbpv stack code => code (U (AsAlgebra (Ccc.U64 Ccc.* Ccc.U64))) (U (AsAlgebra Ccc.U64))
-addIntrinsic = thunk (doAdd . force id)
+addIntrinsic = thunk inferSort $ \x -> doAdd . force id x
 
 doAdd :: Cbpv stack code => stack (F (U (F U64) * U (F U64))) (F U64)
 doAdd =
   pop inferSort $ \tuple ->
-  (force (fst . tuple) >>>
+  (force id (fst . tuple) >>>
    (pop inferSort $ \x ->
-   (force (snd . tuple) >>>
+   (force id (snd . tuple) >>>
    (pop inferSort $ \y ->
-   lift (addi . (x &&& y)))) . lift unit)) . lift unit
+   lift (addi . (x &&& y)))) ))
 
 addi :: Cbpv stack code => code (U64 * U64) U64
 addi = cbpvIntrinsic AddIntrinsic

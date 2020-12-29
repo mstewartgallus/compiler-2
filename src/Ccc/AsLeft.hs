@@ -33,9 +33,11 @@ instance Category k => Category (Path k) where
 instance Ccc k => Ccc (Path k) where
   unit = into unit
 
+  lift Id = into (lift unit)
   lift x = into (lift (out x))
   kappa t f = into (kappa t $ \x -> out (f (into x)))
 
+  pass Id = into (pass unit)
   pass x = into (pass (out x))
   zeta t f = into (zeta t $ \x -> out (f (into x)))
 

@@ -23,17 +23,18 @@ instance Category (V k) where
   V f . V g = V (f . g)
 
 instance Ccc.Ccc (V k) where
-  unit = V (thunk id . unit)
+  unit = V (thunk inferSort (\_ -> lift unit) . unit)
 
-  lift (V x) = V $ thunk id . ((x . thunk id . unit) &&& id)
+  lift (V x) = V $
+    thunk undefined $ \env ->
+      lift ((x . thunk inferSort (\_ -> lift unit) . unit) &&& env)
 
-  pass (V x) = V $ thunk (pass (x . thunk id) . force id)
+  pass (V x) = V $ thunk undefined (\env -> pass (x . thunk inferSort (\_ -> lift unit)) . force id env)
   zeta t f = V $
-    thunk $
+    thunk undefined $ \env ->
       zeta (SU (asAlgebra t)) $ \x ->
-        force $
-          go $ f (V (x . unit))
+        force (go $ f (V (x . unit))) env
 
-  u64 n = V $ (thunk (pop inferSort $ \_ -> lift (u64 n)) . unit)
-  constant t pkg name = V $ thunk (force id >>> constant t pkg name)
+  u64 n = V $ (thunk inferSort $ \_ -> lift (u64 n))
+  constant t pkg name = V $ thunk inferSort (\_ -> constant t pkg name . lift unit)
   cccIntrinsic x = V $ cccIntrinsic x

@@ -24,8 +24,8 @@ reify :: Hom.Closed (U (F Unit)) (U (F U64)) -> Word64
 reify x = go (Hom.fold x)
 
 go :: Prog (U (F Unit)) (U (F U64)) -> Word64
-go (C f) = case f (Thunk $ \w -> Unit :& Effect w) of
-  Thunk t -> case t 0 of
+go (C f) = case f (Thunk $ \w -> Unit :& w) of
+  Thunk t -> case t (Effect 0) of
     (U64 y :& _) -> y
 
 data family Prog (a :: Sort t) (b :: Sort t)
@@ -34,7 +34,7 @@ newtype instance Prog (a :: Sort AlgebraTag) (b :: Sort AlgebraTag) = S (Action 
 
 data family Data (a :: Set)
 
-data instance Data (U a) = Thunk (Int -> Action a)
+data instance Data (U a) = Thunk (Action Empty -> Action a)
 
 data instance Data Unit = Unit
 data instance Data (a * b) = Pair { firstOf :: (Data a), secondOf :: (Data b) }
@@ -64,8 +64,9 @@ instance Code Prog where
 instance Stack Prog where
 
 instance Cbpv Prog Prog where
-  thunk (S f) = C $ \x -> Thunk $ \w -> f (x :& Effect w)
-  force (C f) = S $ \(x :& Effect w) -> case f x of
+  thunk _ f = C $ \x -> Thunk $ \w -> case f (C $ \Unit -> x) of
+    S y -> y w
+  force (C f) (C x) = S $ \w -> case f (x Unit) of
     Thunk t -> t w
 
   pass (C x) = S $ \(Lam f) -> f (x Unit)
@@ -85,10 +86,10 @@ instance Cbpv Prog Prog where
      AddIntrinsic -> addCbpvImpl
 
 addImpl :: Prog (F Unit) (AsAlgebra (Ccc.AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64)))
-addImpl = S $ \(Unit :& Effect w0) ->
+addImpl = S $ \(Unit :& w0) ->
               Lam $ \(Thunk x) -> Lam $ \(Thunk y) -> case x w0 of
-                 U64 x' :& Effect w1 -> case y w1 of
-                   U64 y' :& Effect w2 -> U64 (x' + y') :& Effect w2
+                 U64 x' :& w1 -> case y w1 of
+                   U64 y' :& w2 -> U64 (x' + y') :& w2
 
 addCccImpl :: Prog (U (AsAlgebra (Ccc.U64 Ccc.* Ccc.U64))) (U (AsAlgebra Ccc.U64))
 addCccImpl = C $ \(Thunk input) -> undefined
