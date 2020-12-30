@@ -4,8 +4,9 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Lam.Type (KnownT, inferT, eqT, ST (..), T, type (~>), type Unit, type U64) where
+module Lam.Type (KnownT, inferT, toKnownT, eqT, ST (..), T, type (~>), type Unit, type U64) where
 
+import Dict
 import Data.Text.Prettyprint.Doc
 import Data.Typeable ((:~:) (..))
 
@@ -50,3 +51,10 @@ instance Pretty (ST a) where
     SUnit -> pretty "1"
     SU64 -> pretty "u64"
     x :-> y -> parens $ sep [pretty x, pretty "→", pretty y]
+
+toKnownT :: ST a -> Dict (KnownT a)
+toKnownT x = case x of
+  SU64 -> Dict
+  SUnit -> Dict
+  x :-> y -> case (toKnownT x, toKnownT y) of
+    (Dict, Dict) -> Dict

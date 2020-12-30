@@ -24,10 +24,12 @@ module Cbpv.Sort
     type (~>),
     AsAlgebra,
     asAlgebra,
+    toKnownSort,
     KnownSort (..)
   )
 where
 import qualified Ccc.Type as Type
+import Dict
 import Data.Text.Prettyprint.Doc hiding (SEmpty)
 
 type Unit = 'Unit
@@ -125,3 +127,18 @@ instance Pretty (SSort t a) where
     SEmpty -> pretty "0"
     x :&: y -> parens $ sep [pretty x, pretty "⊗", pretty y]
     x :-> y -> parens $ sep [pretty x, pretty "→", pretty y]
+
+toKnownSort :: SSort t a -> Dict (KnownSort a)
+toKnownSort x = case x of
+  SU64 -> Dict
+  SUnit -> Dict
+  x :*: y -> case (toKnownSort x, toKnownSort y) of
+    (Dict, Dict) -> Dict
+  SU x -> case toKnownSort x of
+    Dict -> Dict
+
+  SEmpty -> Dict
+  x :&: y -> case (toKnownSort x, toKnownSort y) of
+    (Dict, Dict) -> Dict
+  x :-> y -> case (toKnownSort x, toKnownSort y) of
+    (Dict, Dict) -> Dict

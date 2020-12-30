@@ -5,9 +5,10 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Ccc.Type (ST (..), T, Unit, type (~>), type (*), type U64, AsObject, asObject, KnownT (..)) where
+module Ccc.Type (ST (..), T, Unit, type (~>), type (*), type U64, AsObject, asObject, toKnownT, KnownT (..)) where
 import qualified Lam.Type as Type
 import Data.Text.Prettyprint.Doc
+import Dict
 
 type Unit = 'Unit
 
@@ -62,3 +63,12 @@ instance (KnownT a, KnownT b) => KnownT ('Product a b) where
 
 instance (KnownT a, KnownT b) => KnownT ('Exp a b) where
   inferT = inferT :-> inferT
+
+toKnownT :: ST a -> Dict (KnownT a)
+toKnownT x = case x of
+  SU64 -> Dict
+  SUnit -> Dict
+  x :*: y -> case (toKnownT x, toKnownT y) of
+    (Dict, Dict) -> Dict
+  x :-> y -> case (toKnownT x, toKnownT y) of
+    (Dict, Dict) -> Dict
