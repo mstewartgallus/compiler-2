@@ -1,6 +1,5 @@
 module Ccc.Optimize (optimize) where
 
-import Ccc
 import Ccc.Hom
 import Control.Category
 import Ccc.AsIntrinsified

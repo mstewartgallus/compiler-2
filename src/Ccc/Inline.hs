@@ -7,7 +7,6 @@
 module Ccc.Inline (inline) where
 
 import Ccc
-import Control.Category
 import Ccc.Hom
 import Ccc.Type
 import Prelude hiding ((.), id)
@@ -29,12 +28,11 @@ out expr = case expr of
   Lift x -> lift (out x)
   Kappa t f -> kappa t (\x -> out (f (E x)))
 
-instance Category f => Category (Expr f) where
+instance Ccc f => Ccc (Expr f) where
   id = into id
   Kappa _ f . Lift x = f x
   f . g = into (out f . out g)
 
-instance Ccc f => Ccc (Expr f) where
   unit = into unit
 
   lift = Lift

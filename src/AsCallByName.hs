@@ -18,11 +18,10 @@ toCbpv x = Closed (go (Ccc.fold x))
 
 newtype V k a b = V {go :: Hom k (U (AsAlgebra a)) (U (AsAlgebra b))}
 
-instance Category (V k) where
+instance Ccc.Ccc (V k) where
   id = V id
   V f . V g = V (f . g)
 
-instance Ccc.Ccc (V k) where
   unit = V (thunk inferSort (\_ -> lift unit) . unit)
 
   lift (V x) = V $

@@ -5,7 +5,6 @@
 module Ccc (Intrinsic (..), Ccc (..)) where
 
 import Ccc.Type
-import Control.Category
 import Data.Word (Word64)
 import qualified Lam.Type as Lam
 
@@ -22,7 +21,10 @@ import qualified Lam.Type as Lam
 -- Heidelberg.
 --
 -- https://doi.org/10.1007/3-540-60164-3_28
-class Category hom => Ccc hom where
+class Ccc hom where
+  id :: hom a a
+  (.) :: hom b c -> hom a b -> hom a c
+
   unit :: hom a Unit
 
   zeta :: ST a -> (hom Unit a -> hom b c) -> hom b (a ~> c)

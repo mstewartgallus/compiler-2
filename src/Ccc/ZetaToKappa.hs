@@ -6,7 +6,6 @@
 module Ccc.ZetaToKappa (zetaToKappa) where
 
 import Ccc
-import Control.Category
 import Ccc.Hom
 import Ccc.Type
 import Prelude hiding ((.), id)
@@ -28,12 +27,11 @@ out expr = case expr of
   Pass x -> pass (out x)
   Zeta t f -> zeta t (\x -> out (f (E x)))
 
-instance Category f => Category (Expr f) where
+instance Ccc f => Ccc (Expr f) where
   id = into id
-  Pass x . Zeta t f = into (kappa t (out . f . into) . lift (out x))
+  Pass x . Zeta t f = into (kappa t (\x -> out (f (into x))) . lift (out x))
   f . g = into (out f . out g)
 
-instance Ccc f => Ccc (Expr f) where
   unit = into unit
 
   lift x = into (lift (out x))

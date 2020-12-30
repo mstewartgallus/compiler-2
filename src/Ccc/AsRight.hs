@@ -5,7 +5,6 @@
 module Ccc.AsRight (asRight) where
 
 import Ccc
-import Control.Category
 import Ccc.Hom
 import Ccc.Type
 import Prelude hiding ((.), id)
@@ -16,7 +15,7 @@ asRight x = Closed (out (fold x))
 into :: k a b -> Path k a b
 into x = Id :.: x
 
-out :: Category k => Path k a b -> k a b
+out :: Ccc k => Path k a b -> k a b
 out x = case x of
   Id -> id
   f :.: g -> out f . g
@@ -25,12 +24,11 @@ data Path k a b where
   Id :: Path k a a
   (:.:) :: Path k b c -> k a b -> Path k a c
 
-instance Category k => Category (Path k) where
+instance Ccc k => Ccc (Path k) where
   id = Id
   f . Id = f
   f . (g :.: h) = (f . g) :.: h
 
-instance Ccc k => Ccc (Path k) where
   unit = into unit
 
   lift x = into (lift (out x))

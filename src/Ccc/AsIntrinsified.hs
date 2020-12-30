@@ -8,7 +8,6 @@ module Ccc.AsIntrinsified (intrinsify) where
 
 import Ccc
 import Ccc.Hom
-import Control.Category
 import Ccc.Type
 import qualified Lam.Type as Lam
 import Prelude hiding ((.), id)
@@ -18,11 +17,10 @@ intrinsify x = Closed (go (fold x))
 
 newtype Expr f (a :: T) (b :: T) = E { go :: Hom f a b }
 
-instance Category (Expr f) where
+instance Ccc (Expr f) where
   id = E id
   E f . E g = E (f . g)
 
-instance Ccc (Expr f) where
   unit = E unit
 
   lift (E x) = E (lift x)

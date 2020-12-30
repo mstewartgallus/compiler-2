@@ -5,7 +5,6 @@ module AsCcc (asCcc) where
 import Ccc
 import Ccc.Hom
 import Ccc.Type
-import Control.Category
 import qualified Lam as Lam
 import qualified Lam.Term as Lam
 import qualified Lam.Type as Lam

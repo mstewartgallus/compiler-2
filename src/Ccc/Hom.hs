@@ -7,7 +7,6 @@
 
 module Ccc.Hom (fold, Closed (..), Hom) where
 
-import Control.Category
 import Data.Word
 import Ccc.Type
 import Ccc
@@ -37,20 +36,19 @@ data Hom x a b where
   Constant :: Lam.ST a -> String -> String -> Hom x Unit (AsObject a)
   CccIntrinsic :: Intrinsic a b -> Hom x a b
 
-instance Category (Hom x) where
+instance Ccc (Hom x) where
   id = Id
   Id . f = f
   f . Id = f
   f . g = f :.: g
 
-instance Ccc (Hom x) where
   unit = UnitHom
 
   lift = Lift
-  kappa t f = Kappa t (f . Var)
+  kappa t f = Kappa t (\x -> f (Var x))
 
   pass = Pass
-  zeta t f = Zeta t (f . Var)
+  zeta t f = Zeta t (\x -> f (Var x))
 
   u64 = U64
   constant = Constant
@@ -94,17 +92,17 @@ composePrec :: Int
 composePrec = 9
 
 paren :: Bool -> Doc Style -> Doc Style
-paren x = if x then parens else id
+paren x y = if x then parens y else y
 
 newtype View (a :: T) (b :: T) = V { view :: Int -> State Int (Doc Style) }
-instance Category View where
+
+instance Ccc View where
   id = V $ \_ -> pure $ keyword (pretty "id")
   f . g = V $ \p -> do
     f' <- view f (composePrec + 1)
     g' <- view g (composePrec + 1)
     pure $ paren (p > composePrec) $ sep [f', keyword $ pretty "∘", g']
 
-instance Ccc View where
   unit = V $ \_ -> pure $ keyword $ pretty "!"
 
   lift x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", x']) <*> view x (appPrec + 1)

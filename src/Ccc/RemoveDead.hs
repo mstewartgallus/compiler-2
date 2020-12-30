@@ -5,7 +5,6 @@
 module Ccc.RemoveDead (removeDead) where
 
 import Ccc
-import Control.Category
 import Ccc.Hom
 import Ccc.Type
 import Prelude hiding ((.), id)
@@ -25,12 +24,11 @@ data Expr k a b where
   Unit :: Expr k a Unit
   Pure :: k a b -> Expr k a b
 
-instance Ccc k => Category (Expr k) where
+instance Ccc k => Ccc (Expr k) where
   id = into id
   Unit . _ = Unit
   f . g = into (out f . out g)
 
-instance Ccc k => Ccc (Expr k) where
   unit = Unit
 
   lift x = into (lift (out x))
