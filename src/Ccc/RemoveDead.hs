@@ -21,7 +21,7 @@ out x = case x of
   Unit -> unit
 
 data Expr k a b where
-  Unit :: Expr k a Unit
+  Unit :: KnownT a => Expr k a Unit
   Pure :: k a b -> Expr k a b
 
 instance Ccc k => Ccc (Expr k) where

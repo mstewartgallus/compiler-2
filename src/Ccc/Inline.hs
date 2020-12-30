@@ -16,8 +16,8 @@ inline x = Closed (out (fold x))
 
 data Expr f a b where
   E :: f a b -> Expr f a b
-  Lift :: Ccc f => Expr f Unit a -> Expr f b (a * b)
-  Kappa :: Ccc f => ST a -> (Expr f Unit a -> Expr f b c) -> Expr f (a * b) c
+  Lift :: (KnownT a, KnownT b, Ccc f) => Expr f Unit a -> Expr f b (a * b)
+  Kappa :: (KnownT a, KnownT b, KnownT c, Ccc f) => ST a -> (Expr f Unit a -> Expr f b c) -> Expr f (a * b) c
 
 into :: f a b -> Expr f a b
 into = E

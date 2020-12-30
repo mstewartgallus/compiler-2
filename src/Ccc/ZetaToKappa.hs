@@ -15,8 +15,8 @@ zetaToKappa x = Closed (out (fold x))
 
 data Expr f a b where
   E :: f a b -> Expr f a b
-  Pass :: Ccc f => Expr f Unit a -> Expr f (a ~> b) b
-  Zeta :: Ccc f => ST a -> (Expr f Unit a -> Expr f b c) -> Expr f b (a ~> c)
+  Pass :: (KnownT a, KnownT b, Ccc f) => Expr f Unit a -> Expr f (a ~> b) b
+  Zeta :: (KnownT a, KnownT b, KnownT c, Ccc f) => ST a -> (Expr f Unit a -> Expr f b c) -> Expr f b (a ~> c)
 
 into :: f a b -> Expr f a b
 into = E

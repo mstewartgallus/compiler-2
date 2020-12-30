@@ -4,6 +4,7 @@
 -- | Reassociate  (f . g) . h to f . (g . h)
 module Ccc.AsLeft (asLeft) where
 
+import Dict
 import Ccc
 import Ccc.Hom
 import Ccc.Type
@@ -12,7 +13,7 @@ import Prelude hiding ((.), id)
 asLeft :: Closed a b -> Closed a b
 asLeft x = Closed (out (fold x))
 
-into :: k a b -> Path k a b
+into :: (KnownT a, KnownT b) => k a b -> Path k a b
 into x = x :.: Id
 
 out :: Ccc k => Path k a b -> k a b
@@ -21,8 +22,8 @@ out x = case x of
   f :.: g -> f . out g
 
 data Path k a b where
-  Id :: Path k a a
-  (:.:) :: k b c -> Path k a b -> Path k a c
+  Id :: KnownT a => Path k a a
+  (:.:) :: (KnownT a, KnownT b, KnownT c) => k b c -> Path k a b -> Path k a c
 
 instance Ccc k => Ccc (Path k) where
   id = Id
@@ -40,5 +41,6 @@ instance Ccc k => Ccc (Path k) where
   zeta t f = into (zeta t $ \x -> out (f (into x)))
 
   u64 n = into (u64 n)
-  constant t pkg name = into (constant t pkg name)
+  constant t pkg name = case toKnownT (asObject t) of
+    Dict -> into (constant t pkg name)
   cccIntrinsic x = into (cccIntrinsic x)

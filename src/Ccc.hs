@@ -22,20 +22,20 @@ import qualified Lam.Type as Lam
 --
 -- https://doi.org/10.1007/3-540-60164-3_28
 class Ccc hom where
-  id :: hom a a
-  (.) :: hom b c -> hom a b -> hom a c
+  id :: KnownT a => hom a a
+  (.) :: (KnownT a, KnownT b, KnownT c) => hom b c -> hom a b -> hom a c
 
-  unit :: hom a Unit
+  unit :: KnownT a => hom a Unit
 
-  zeta :: ST a -> (hom Unit a -> hom b c) -> hom b (a ~> c)
-  pass :: hom Unit a -> hom (a ~> b) b
+  zeta :: (KnownT a, KnownT b, KnownT c) => ST a -> (hom Unit a -> hom b c) -> hom b (a ~> c)
+  pass :: (KnownT a, KnownT b) => hom Unit a -> hom (a ~> b) b
 
-  kappa :: ST a -> (hom Unit a -> hom b c) -> hom (a * b) c
-  lift :: hom Unit a -> hom b (a * b)
+  kappa :: (KnownT a, KnownT b, KnownT c) => ST a -> (hom Unit a -> hom b c) -> hom (a * b) c
+  lift :: (KnownT a, KnownT b) => hom Unit a -> hom b (a * b)
 
   u64 :: Word64 -> hom Unit U64
-  constant :: Lam.ST a -> String -> String -> hom Unit (AsObject a)
-  cccIntrinsic :: Intrinsic a b -> hom a b
+  constant :: Lam.KnownT a => Lam.ST a -> String -> String -> hom Unit (AsObject a)
+  cccIntrinsic :: (KnownT a, KnownT b) => Intrinsic a b -> hom a b
 
   add :: hom (U64 * U64) U64
   add = cccIntrinsic AddIntrinsic

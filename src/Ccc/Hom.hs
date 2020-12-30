@@ -19,22 +19,22 @@ import Data.Text.Prettyprint.Doc
 newtype Closed a b = Closed (forall x. Hom x a b)
 
 data Hom x a b where
-  Var :: x a b -> Hom x a b
+  Var :: (KnownT a, KnownT b) => x a b -> Hom x a b
 
-  Id :: Hom x a a
-  (:.:) :: Hom x b c -> Hom x a b -> Hom x a c
+  Id :: KnownT a => Hom x a a
+  (:.:) :: (KnownT a, KnownT b, KnownT c) => Hom x b c -> Hom x a b -> Hom x a c
 
-  UnitHom :: Hom x a Unit
+  UnitHom :: KnownT a => Hom x a Unit
 
-  Lift :: Hom x Unit a -> Hom x b (a * b)
-  Kappa :: ST a -> (x Unit a -> Hom x b c) -> Hom x (a * b) c
+  Lift :: (KnownT a, KnownT b) => Hom x Unit a -> Hom x b (a * b)
+  Kappa :: (KnownT a, KnownT b, KnownT c) => ST a -> (x Unit a -> Hom x b c) -> Hom x (a * b) c
 
-  Pass :: Hom x Unit a -> Hom x (a ~> b) b
-  Zeta :: ST a -> (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
+  Pass :: (KnownT a, KnownT b) => Hom x Unit a -> Hom x (a ~> b) b
+  Zeta :: (KnownT a, KnownT b, KnownT c) => ST a -> (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
 
   U64 :: Word64 -> Hom x Unit U64
-  Constant :: Lam.ST a -> String -> String -> Hom x Unit (AsObject a)
-  CccIntrinsic :: Intrinsic a b -> Hom x a b
+  Constant :: Lam.KnownT a => Lam.ST a -> String -> String -> Hom x Unit (AsObject a)
+  CccIntrinsic :: (KnownT a, KnownT b) => Intrinsic a b -> Hom x a b
 
 instance Ccc (Hom x) where
   id = Id

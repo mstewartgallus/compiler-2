@@ -5,6 +5,7 @@
 module Ccc.AsRight (asRight) where
 
 import Ccc
+import Dict
 import Ccc.Hom
 import Ccc.Type
 import Prelude hiding ((.), id)
@@ -12,7 +13,7 @@ import Prelude hiding ((.), id)
 asRight :: Closed a b -> Closed a b
 asRight x = Closed (out (fold x))
 
-into :: k a b -> Path k a b
+into :: (KnownT a, KnownT b) => k a b -> Path k a b
 into x = Id :.: x
 
 out :: Ccc k => Path k a b -> k a b
@@ -21,8 +22,8 @@ out x = case x of
   f :.: g -> out f . g
 
 data Path k a b where
-  Id :: Path k a a
-  (:.:) :: Path k b c -> k a b -> Path k a c
+  Id :: KnownT a => Path k a a
+  (:.:) :: (KnownT a, KnownT b, KnownT c) => Path k b c -> k a b -> Path k a c
 
 instance Ccc k => Ccc (Path k) where
   id = Id
@@ -38,5 +39,6 @@ instance Ccc k => Ccc (Path k) where
   zeta t f = into (zeta t $ \x -> out (f (into x)))
 
   u64 n = into (u64 n)
-  constant t pkg name = into (constant t pkg name)
+  constant t pkg name = case toKnownT (asObject t) of
+    Dict -> into (constant t pkg name)
   cccIntrinsic x = into (cccIntrinsic x)
