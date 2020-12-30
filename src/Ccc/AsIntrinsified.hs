@@ -24,19 +24,23 @@ instance Ccc (Expr f) where
   unit = E unit
 
   lift (E x) = E (lift x)
-  kappa t f = E $ kappa t $ \x' -> case f (E x') of
+  kappa f = E $ kappa $ \x' -> case f (E x') of
     E y -> y
 
   pass (E x) = E (pass x)
-  zeta t f = E $ zeta t $ \x' -> case f (E x') of
+  zeta f = E $ zeta $ \x' -> case f (E x') of
     E y -> y
 
   u64 x = E (u64 x)
-  constant t pkg name = E $ case (t, pkg, name) of
-    (Lam.SU64 Lam.:-> (Lam.SU64 Lam.:-> Lam.SU64), "core", "add") -> addIntrinsic
-    _ -> constant t pkg name
+  constant pkg name = me where
+    me = E $ case (typeOf me, pkg, name) of
+      (Lam.SU64 Lam.:-> (Lam.SU64 Lam.:-> Lam.SU64), "core", "add") -> addIntrinsic
+      _ -> constant pkg name
+
+typeOf :: Lam.KnownT b => Expr f a (AsObject b) -> Lam.ST b
+typeOf _ = Lam.inferT
 
 addIntrinsic :: Hom f Unit (AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))
-addIntrinsic = zeta inferT $ \x ->
-               zeta inferT $ \y ->
+addIntrinsic = zeta $ \x ->
+               zeta $ \y ->
                ((add . lift x) . y)

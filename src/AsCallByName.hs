@@ -11,6 +11,7 @@ import qualified Ccc
 import qualified Ccc.Hom as Ccc
 import qualified Ccc.Type as Ccc
 import Control.Category
+import qualified Lam.Type as Lam
 import Prelude hiding (fst, id, snd, (.))
 
 toCbpv :: Ccc.Closed Ccc.Unit a -> Closed (U (F Unit)) (U (AsAlgebra a))
@@ -29,11 +30,16 @@ instance Ccc.Ccc (V k) where
       lift ((x . thunk inferSort (\_ -> lift unit) . unit) &&& env)
 
   pass (V x) = V $ thunk undefined (\env -> pass (x . thunk inferSort (\_ -> lift unit)) . force env)
-  zeta t f = V $
-    thunk undefined $ \env ->
-      zeta (SU (asAlgebra t)) $ \x ->
-        force (go (f (V (x . unit))) . env)
+  zeta f =
+    let t = argOf f
+     in V $
+          thunk undefined $ \env ->
+            zeta (SU (asAlgebra t)) $ \x ->
+              force (go (f (V (x . unit))) . env)
 
   u64 n = V $ (thunk inferSort (\_ -> lift (u64 n)) . unit)
-  constant t pkg name = V $ thunk inferSort (\_ -> constant t pkg name . lift unit)
+  constant pkg name = V $ thunk inferSort (\_ -> constant undefined pkg name . lift unit)
   cccIntrinsic x = V $ cccIntrinsic x
+
+argOf :: Ccc.KnownT a => (V k Ccc.Unit a -> V k b c) -> Ccc.ST a
+argOf _ = Ccc.inferT

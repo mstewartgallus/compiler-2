@@ -29,16 +29,12 @@ resultOf' :: Lam.KnownT b => V k (a Lam.~> b) -> Lam.ST b
 resultOf' _ = Lam.inferT
 
 instance Lam.Lam (V k) where
-  be (V x) f =
-    let t = asObject (argOf f)
-     in case (toKnownT t, toKnownT (asObject (resultOf f))) of
-          (Dict, Dict) -> V $ kappa t (\x' -> go (f (V x'))) . lift x
-  lam f =
-    let a = asObject (argOf f)
-     in case (toKnownT a, toKnownT (asObject (resultOf f))) of
-          (Dict, Dict) -> V $ zeta a (\x -> go (f (V x)))
+  be (V x) f = case (toKnownT (asObject (argOf f)), toKnownT (asObject (resultOf f))) of
+    (Dict, Dict) -> V $ kappa (\x' -> go (f (V x'))) . lift x
+  lam f = case (toKnownT (asObject (argOf f)), toKnownT (asObject (resultOf f))) of
+    (Dict, Dict) -> V $ zeta (\x -> go (f (V x)))
   f'@(V f) <*> x'@(V x) = case (toKnownT (asObject (typeOf x')), toKnownT (asObject (resultOf' f'))) of
     (Dict, Dict) -> V (pass x . f)
 
   u64 n = V (u64 n)
-  constant pkg name = V (constant Lam.inferT pkg name)
+  constant pkg name = V (constant pkg name)

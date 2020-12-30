@@ -8,6 +8,7 @@ import Ccc
 import Dict
 import Ccc.Hom
 import Ccc.Type
+import qualified Lam.Type as Lam
 import Prelude hiding ((.), id)
 
 asRight :: Closed a b -> Closed a b
@@ -33,12 +34,21 @@ instance Ccc k => Ccc (Path k) where
   unit = into unit
 
   lift x = into (lift (out x))
-  kappa t f = into (kappa t $ \x -> out (f (into x)))
+  kappa f = into (kappa $ \x -> out (f (into x)))
 
   pass x = into (pass (out x))
-  zeta t f = into (zeta t $ \x -> out (f (into x)))
+  zeta f = into (zeta $ \x -> out (f (into x)))
 
   u64 n = into (u64 n)
-  constant t pkg name = case toKnownT (asObject t) of
-    Dict -> into (constant t pkg name)
+  constant pkg name = me where
+    a = argOf me
+    b = typeOf me
+    me = case (toKnownT (asObject a), toKnownT (asObject b)) of
+      (Dict, Dict) -> into (constant pkg name)
   cccIntrinsic x = into (cccIntrinsic x)
+
+argOf :: Lam.KnownT a => Path k (AsObject a) b -> Lam.ST a
+argOf _ = Lam.inferT
+
+typeOf :: Lam.KnownT b => Path k a (AsObject b) -> Lam.ST b
+typeOf _ = Lam.inferT

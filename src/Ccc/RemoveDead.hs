@@ -32,11 +32,11 @@ instance Ccc k => Ccc (Expr k) where
   unit = Unit
 
   lift x = into (lift (out x))
-  kappa t f = into (kappa t $ \x -> out (f (into x)))
+  kappa f = into (kappa $ \x -> out (f (into x)))
 
   pass x = into (pass (out x))
-  zeta t f = into (zeta t $ \x -> out (f (into x)))
+  zeta f = into (zeta $ \x -> out (f (into x)))
 
   u64 n = into (u64 n)
-  constant t pkg name = into (constant t pkg name)
+  constant pkg name = into (constant pkg name)
   cccIntrinsic x = into (cccIntrinsic x)

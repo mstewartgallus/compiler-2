@@ -27,13 +27,13 @@ data Hom x a b where
   UnitHom :: KnownT a => Hom x a Unit
 
   Lift :: (KnownT a, KnownT b) => Hom x Unit a -> Hom x b (a * b)
-  Kappa :: (KnownT a, KnownT b, KnownT c) => ST a -> (x Unit a -> Hom x b c) -> Hom x (a * b) c
+  Kappa :: (KnownT a, KnownT b, KnownT c) => (x Unit a -> Hom x b c) -> Hom x (a * b) c
 
   Pass :: (KnownT a, KnownT b) => Hom x Unit a -> Hom x (a ~> b) b
-  Zeta :: (KnownT a, KnownT b, KnownT c) => ST a -> (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
+  Zeta :: (KnownT a, KnownT b, KnownT c) => (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
 
   U64 :: Word64 -> Hom x Unit U64
-  Constant :: Lam.KnownT a => Lam.ST a -> String -> String -> Hom x Unit (AsObject a)
+  Constant :: Lam.KnownT a => String -> String -> Hom x Unit (AsObject a)
   CccIntrinsic :: (KnownT a, KnownT b) => Intrinsic a b -> Hom x a b
 
 instance Ccc (Hom x) where
@@ -45,10 +45,10 @@ instance Ccc (Hom x) where
   unit = UnitHom
 
   lift = Lift
-  kappa t f = Kappa t (\x -> f (Var x))
+  kappa f = Kappa (\x -> f (Var x))
 
   pass = Pass
-  zeta t f = Zeta t (\x -> f (Var x))
+  zeta f = Zeta (\x -> f (Var x))
 
   u64 = U64
   constant = Constant
@@ -70,14 +70,14 @@ go x = case x of
   UnitHom -> unit
 
   Lift x -> lift (go x)
-  Kappa t f -> kappa t (\x -> go (f x))
+  Kappa f -> kappa (\x -> go (f x))
 
   Pass x -> pass (go x)
-  Zeta t f -> zeta t (\x -> go (f x))
+  Zeta f -> zeta (\x -> go (f x))
 
   U64 n -> u64 n
   CccIntrinsic x -> cccIntrinsic x
-  Constant t pkg name -> constant t pkg name
+  Constant pkg name -> constant pkg name
 
 appPrec :: Int
 appPrec = 10
@@ -106,19 +106,23 @@ instance Ccc View where
   unit = V $ \_ -> pure $ keyword $ pretty "!"
 
   lift x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", x']) <*> view x (appPrec + 1)
-  kappa t f = V $ \p -> do
+  kappa f = let
+    t = "?"
+    in V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
     pure $ paren (p > kappaPrec) $ sep [keyword $ pretty "κ", v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
 
   pass x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "pass", x']) <*> view x (appPrec + 1)
-  zeta t f = V $ \p -> do
+  zeta f = let
+    t = "?"
+    in V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
     pure $ paren (p > zetaPrec) $ sep [keyword $ pretty "ζ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
 
   u64 n = V $ \_ -> pure (pretty n)
-  constant _ pkg name = V $ \_ -> pure $ pretty (pkg ++ "/" ++ name)
+  constant pkg name = V $ \_ -> pure $ pretty (pkg ++ "/" ++ name)
   cccIntrinsic x = V $ \_ -> pure $ pretty (show x)
 
 fresh :: State Int (Doc Style)

@@ -81,7 +81,7 @@ data SSort t (a :: Sort t) where
 type SSet = SSort SetTag
 type SAlgebra = SSort AlgebraTag
 
-type family AsAlgebra a where
+type family AsAlgebra a = r | r -> a where
   AsAlgebra Type.Unit = F Unit
   AsAlgebra (a Type.* b) = F (U (AsAlgebra a) * U (AsAlgebra b))
   AsAlgebra (a Type.~> b) = U (AsAlgebra a) ~> AsAlgebra b
