@@ -41,21 +41,21 @@ instance Cbpv f g => Code (Cde f g) where
 instance Cbpv f g => Stack (Stk f g) where
 
 instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
-  thunk t f = C $ thunk t $ \x -> case f (C x) of
+  thunk f = C $ thunk $ \x -> case f (C x) of
     K y -> y
   force (C x) = K (force x)
 
   pass (C x) = K (pass x)
   lift (C x) = K (lift x)
 
-  zeta t f = K $ zeta t $ \x -> case f (C x) of
+  zeta f = K $ zeta $ \x -> case f (C x) of
     K y -> y
-  pop t f = K $ pop t $ \x -> case f (C x) of
+  pop f = K $ pop $ \x -> case f (C x) of
     K y -> y
 
   u64 x = C (u64 x)
 
-  constant t pkg name = K (constant t pkg name)
+  constant pkg name = K (constant pkg name)
 
   cccIntrinsic x = C $ case x of
     Ccc.AddIntrinsic -> addIntrinsic
@@ -64,13 +64,13 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
 
 -- | fixme.. cleanup this mess
 addIntrinsic :: Cbpv stack code => code (U (AsAlgebra (Ccc.U64 Ccc.* Ccc.U64))) (U (AsAlgebra Ccc.U64))
-addIntrinsic = thunk inferSort $ \x -> doAdd . force x
+addIntrinsic = thunk $ \x -> doAdd . force x
 
 doAdd :: Cbpv stack code => stack (F (U (F U64) * U (F U64))) (F U64)
 doAdd =
-  pop inferSort $ \tuple -> (
-  (pop inferSort $ \x -> (
-  (pop inferSort $ \y ->
+  pop $ \tuple -> (
+  (pop $ \x -> (
+  (pop $ \y ->
   lift (addi . (x &&& y))) .
   force (snd . tuple))) .
   force (fst . tuple))

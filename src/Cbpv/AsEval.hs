@@ -63,26 +63,29 @@ instance Code Prog where
 instance Stack Prog where
 
 instance Cbpv Prog Prog where
-  thunk _ f = C $ \x -> Thunk $ \w -> case f (C $ \Unit -> x) of
+  thunk f = C $ \x -> Thunk $ \w -> case f (C $ \Unit -> x) of
     S y -> y w
   force (C x) = S $ \w -> case x Unit of
     Thunk t -> t w
 
   pass (C x) = S $ \(Lam f) -> f (x Unit)
-  zeta _ f = S $ \env -> Lam $ \x -> case f (C $ const x) of
+  zeta f = S $ \env -> Lam $ \x -> case f (C $ const x) of
     S y -> y env
 
   lift (C x) = S $ \y -> x Unit :& y
-  pop _ f = S $ \(h :& t) -> case f (C $ const h) of
+  pop f = S $ \(h :& t) -> case f (C $ const h) of
     S y -> y t
 
   u64 x = C $ const (U64 x)
-  constant t pkg name = case (t, pkg, name) of
-     (Lam.SU64 Lam.:-> (Lam.SU64 Lam.:-> Lam.SU64), "core", "add") -> addImpl
+  constant = constant' Lam.inferT
   cccIntrinsic x = case x of
      Ccc.AddIntrinsic -> addCccImpl
   cbpvIntrinsic x = case x of
      AddIntrinsic -> addCbpvImpl
+
+constant' :: Lam.ST a -> String -> String -> Prog (F Unit) (AsAlgebra (Ccc.AsObject a))
+constant' t pkg name = case (t, pkg, name) of
+  (Lam.SU64 Lam.:-> (Lam.SU64 Lam.:-> Lam.SU64), "core", "add") -> addImpl
 
 addImpl :: Prog (F Unit) (AsAlgebra (Ccc.AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64)))
 addImpl = S $ \(Unit :& w0) ->

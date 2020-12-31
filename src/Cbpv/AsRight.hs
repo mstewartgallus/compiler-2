@@ -14,6 +14,7 @@ import Cbpv.Sort
 import Dict
 import qualified Ccc as Ccc
 import qualified Ccc.Type as Ccc
+import qualified Lam.Type as Lam
 import Prelude hiding ((.), id, fst, snd)
 
 asRight :: Closed @SetTag a b -> Closed a b
@@ -45,20 +46,23 @@ instance Cbpv f g => Code (Path g) where
   snd = into snd
 
 instance Cbpv f g => Cbpv (Path f) (Path g) where
-  thunk t f = into (thunk t $ \x -> out (f (into x)))
+  thunk f = into (thunk $ \x -> out (f (into x)))
   force x = into (force (out x))
 
   lift x = into (lift (out x))
-  pop t f = into (pop t $ \x -> out (f (into x)))
+  pop f = into (pop $ \x -> out (f (into x)))
 
   pass x = into (pass (out x))
-  zeta t f = into (zeta t $ \x -> out (f (into x)))
+  zeta f = into (zeta $ \x -> out (f (into x)))
 
   u64 n = into (u64 n)
-  constant t pkg name = case toKnownSort (asAlgebra (Ccc.asObject t)) of
-    Dict -> into (constant t pkg name)
+  constant = constant' Lam.inferT
   cccIntrinsic = cccIntrinsic' Ccc.inferT Ccc.inferT
   cbpvIntrinsic x = into (cbpvIntrinsic x)
+
+constant' :: (Lam.KnownT a, Cbpv f g) => Lam.ST a -> String -> String -> Path f (F Unit) (AsAlgebra (Ccc.AsObject a))
+constant' a pkg name = case toKnownSort (asAlgebra (Ccc.asObject a)) of
+  Dict -> into (constant pkg name)
 
 cccIntrinsic' :: Cbpv f g => Ccc.ST a -> Ccc.ST b -> Ccc.Intrinsic a b -> Path g (U (AsAlgebra a)) (U (AsAlgebra b))
 cccIntrinsic' a b x = case (Ccc.toKnownT a, Ccc.toKnownT b, toKnownSort (asAlgebra a), toKnownSort (asAlgebra b)) of

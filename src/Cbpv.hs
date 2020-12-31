@@ -40,18 +40,18 @@ class Category code => Code code where
 
 class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack where
   -- It's pretty obvious this should be generalized but idk precisely how
-  thunk :: (KnownSort a, KnownSort c) => SSet a -> (code Unit a -> stack Empty c) -> code a (U c)
+  thunk :: (KnownSort a, KnownSort c) => (code Unit a -> stack Empty c) -> code a (U c)
   force :: KnownSort a => code Unit (U a) -> stack Empty a
 
-  pop :: (KnownSort a, KnownSort b, KnownSort c) => SSet a -> (code Unit a -> stack b c) -> stack (a & b) c
+  pop :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> stack (a & b) c
   lift :: (KnownSort a, KnownSort b) => code Unit a -> stack b (a & b)
 
-  zeta :: (KnownSort a, KnownSort b, KnownSort c) => SSet a -> (code Unit a -> stack b c) -> stack b (a ~> c)
+  zeta :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> stack b (a ~> c)
   pass :: (KnownSort a, KnownSort b) => code Unit a -> stack (a ~> b) b
 
   u64 :: Word64 -> code Unit U64
 
-  constant :: Lam.KnownT a => Lam.ST a -> String -> String -> stack (F Unit) (AsAlgebra (Ccc.AsObject a))
+  constant :: Lam.KnownT a => String -> String -> stack (F Unit) (AsAlgebra (Ccc.AsObject a))
   cccIntrinsic :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.Intrinsic a b -> code (U (AsAlgebra a)) (U (AsAlgebra b))
   cbpvIntrinsic :: (KnownSort a, KnownSort b) => Intrinsic a b -> code a b
 

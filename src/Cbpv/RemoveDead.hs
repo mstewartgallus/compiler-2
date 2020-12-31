@@ -45,16 +45,16 @@ instance Code (Expr g) where
   x &&& y = into (out x &&& out y)
 
 instance Cbpv (Expr f) (Expr f) where
-  thunk t f = into (thunk t $ \x -> out (f (into x)))
+  thunk f = into (thunk $ \x -> out (f (into x)))
   force x = into (force (out x))
 
   lift x = into (lift (out x))
-  pop t f = into (pop t $ \x -> out (f (into x)))
+  pop f = into (pop $ \x -> out (f (into x)))
 
   pass x = into (pass (out x))
-  zeta t f = into (zeta t $ \x -> out (f (into x)))
+  zeta f = into (zeta $ \x -> out (f (into x)))
 
   u64 n = into (u64 n)
-  constant t pkg name = into (constant t pkg name)
+  constant pkg name = into (constant pkg name)
   cccIntrinsic x = into (cccIntrinsic x)
   cbpvIntrinsic x = into (cbpvIntrinsic x)

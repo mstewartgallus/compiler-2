@@ -27,10 +27,10 @@ data Stk f g (a :: Algebra) (b :: Algebra) where
 
   Force :: (KnownSort a, Cbpv f g) => Cde f g Unit (U a) -> Stk f g Empty a
 
-  Pop :: (KnownSort a, KnownSort b, KnownSort c, Cbpv f g) => SSet a -> (Cde f g Unit a -> Stk f g b c) -> Stk f g (a & b) c
+  Pop :: (KnownSort a, KnownSort b, KnownSort c, Cbpv f g) => (Cde f g Unit a -> Stk f g b c) -> Stk f g (a & b) c
   Lift :: (KnownSort a, KnownSort b, Cbpv f g) => Cde f g Unit a -> Stk f g b (a & b)
 
-  Zeta :: (KnownSort a, KnownSort b, KnownSort c, Cbpv f g) => SSet a -> (Cde f g Unit a -> Stk f g b c) -> Stk f g b (a ~> c)
+  Zeta :: (KnownSort a, KnownSort b, KnownSort c, Cbpv f g) => (Cde f g Unit a -> Stk f g b c) -> Stk f g b (a ~> c)
   Pass :: (KnownSort a, KnownSort b, Cbpv f g) => Cde f g Unit a -> Stk f g (a ~> b) b
 
 data Cde f g (a :: Set) (b :: Set) where
@@ -42,7 +42,7 @@ data Cde f g (a :: Set) (b :: Set) where
   Snd :: (KnownSort a, KnownSort b, Code g) => Cde f g (a * b) b
   Fanout :: (KnownSort a, KnownSort b, KnownSort x, Code g) => Cde f g x a -> Cde f g x b -> Cde f g x (a * b)
 
-  Thunk :: (KnownSort a, KnownSort b, Cbpv f g) => SSet a -> (Cde f g Unit a -> Stk f g Empty b) -> Cde f g a (U b)
+  Thunk :: (KnownSort a, KnownSort b, Cbpv f g) => (Cde f g Unit a -> Stk f g Empty b) -> Cde f g a (U b)
 
   Unit :: (KnownSort a, Code g) => Cde f g a Unit
 
@@ -56,7 +56,7 @@ outC expr = case expr of
   Fst -> fst
   Snd -> snd
 
-  Thunk t f -> thunk t (\x -> outK (f (C x)))
+  Thunk f -> thunk (\x -> outK (f (C x)))
 
   Unit -> unit
 
@@ -68,10 +68,10 @@ outK expr = case expr of
 
   Force x -> force (outC x)
 
-  Pop t f -> pop t (\x -> outK (f (C x)))
+  Pop f -> pop (\x -> outK (f (C x)))
   Lift x -> lift (outC x)
 
-  Zeta t f -> zeta t (\x -> outK (f (C x)))
+  Zeta f -> zeta (\x -> outK (f (C x)))
   Pass x -> pass (outC x)
 
 recurseC :: Cde f g a b -> Cde f g a b
@@ -80,7 +80,7 @@ recurseC expr = case expr of
   IdC -> id
   ComposeC f g -> simpC f . simpC g
 
-  Thunk t f -> thunk t (\x -> simpK (f x))
+  Thunk f -> thunk (\x -> simpK (f x))
 
   Fanout x y -> simpC x &&& simpC y
   Unit -> unit
@@ -95,10 +95,10 @@ recurseK expr = case expr of
 
   Force x -> force (simpC x)
 
-  Pop t f -> pop t (\x -> simpK (f x))
+  Pop f -> pop (\x -> simpK (f x))
   Lift x -> lift (simpC x)
 
-  Zeta t f -> zeta t (\x -> simpK (f x))
+  Zeta f -> zeta (\x -> simpK (f x))
   Pass x -> pass (simpC x)
 
 optC :: Cde f g a b -> Maybe (Cde f g a b)
@@ -113,7 +113,7 @@ optC expr = case expr of
   ComposeC Fst (Fanout x _) -> Just x
   ComposeC Snd (Fanout _ x) -> Just x
 
-  ComposeC (Thunk t f) x -> Just (thunk undefined (\env -> f (x . env)))
+  ComposeC (Thunk f) x -> Just (thunk (\env -> f (x . env)))
   _ -> Nothing
 
 optK :: Stk f g a b -> Maybe (Stk f g a b)
@@ -121,13 +121,13 @@ optK expr = case expr of
   ComposeK IdK f -> Just f
   ComposeK f IdK -> Just f
 
-  ComposeK g (Pop t f) -> Just $ pop t $ \x -> g . f x
-  ComposeK (Zeta t f) g -> Just $ zeta t $ \x -> f x . g
+  ComposeK g (Pop f) -> Just $ pop $ \x -> g . f x
+  ComposeK (Zeta f) g -> Just $ zeta $ \x -> f x . g
 
-  ComposeK (Pop _ f) (Lift x) -> Just (f x)
-  ComposeK (Pass x) (Zeta _ f) -> Just (f x)
+  ComposeK (Pop f) (Lift x) -> Just (f x)
+  ComposeK (Pass x) (Zeta f) -> Just (f x)
 
-  Force (Thunk _ f) -> Just (f Unit)
+  Force (Thunk f) -> Just (f Unit)
 
   _ -> Nothing
 
@@ -168,6 +168,6 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
   zeta = Zeta
 
   u64 x = C (u64 x)
-  constant t pkg name = K (constant t pkg name)
+  constant pkg name = K (constant pkg name)
   cccIntrinsic x = C (cccIntrinsic x)
   cbpvIntrinsic x = C (cbpvIntrinsic x)

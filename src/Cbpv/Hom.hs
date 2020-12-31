@@ -34,7 +34,7 @@ goC x = case x of
   Id -> id
   f :.: g -> goC f . goC g
 
-  Thunk t f -> thunk t (\x -> goK (f x))
+  Thunk f -> thunk (\x -> goK (f x))
 
   UnitHom -> unit
   Fanout x y -> goC x &&& goC y
@@ -53,12 +53,12 @@ goK x = case x of
   Force x -> force (goC x)
 
   Lift x -> lift (goC x)
-  Pop t f -> pop t (\x -> goK (f x))
+  Pop f -> pop (\x -> goK (f x))
 
   Pass x -> pass (goC x)
-  Zeta t f -> zeta t (\x -> goK (f x))
+  Zeta f -> zeta (\x -> goK (f x))
 
-  Constant t pkg name -> constant t pkg name
+  Constant pkg name -> constant pkg name
 
 data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   Var :: (KnownSort a, KnownSort b) => x a b -> Hom x a b
@@ -66,7 +66,7 @@ data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   Id :: KnownSort a => Hom x a a
   (:.:) :: (KnownSort a, KnownSort b, KnownSort c) => Hom x b c -> Hom x a b -> Hom x a c
 
-  Thunk :: (KnownSort a, KnownSort c) => SSet a -> (x Unit a -> Hom x Empty c) -> Hom x a (U c)
+  Thunk :: (KnownSort a, KnownSort c) => (x Unit a -> Hom x Empty c) -> Hom x a (U c)
   Force :: KnownSort a => Hom x Unit (U a) -> Hom x Empty a
 
   UnitHom :: KnownSort a => Hom x a Unit
@@ -75,14 +75,14 @@ data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   Snd :: (KnownSort a, KnownSort b) => Hom x (a * b) b
 
   Lift :: (KnownSort a, KnownSort b) => Hom x Unit a -> Hom x b (a & b)
-  Pop :: (KnownSort a, KnownSort b, KnownSort c) => SSet a -> (x Unit a -> Hom x b c) -> Hom x (a & b) c
+  Pop :: (KnownSort a, KnownSort b, KnownSort c) => (x Unit a -> Hom x b c) -> Hom x (a & b) c
 
   Pass :: (KnownSort a, KnownSort b) => Hom x Unit a -> Hom x (a ~> b) b
-  Zeta :: (KnownSort a, KnownSort b, KnownSort c) => SSet a -> (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
+  Zeta :: (KnownSort a, KnownSort b, KnownSort c) => (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
 
   U64 :: Word64 -> Hom x Unit U64
 
-  Constant :: Lam.KnownT a => Lam.ST a -> String -> String -> Hom x (F Unit) (AsAlgebra (Ccc.AsObject a))
+  Constant :: Lam.KnownT a => String -> String -> Hom x (F Unit) (AsAlgebra (Ccc.AsObject a))
   CccIntrinsic :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.Intrinsic a b -> Hom x (U (AsAlgebra a)) (U (AsAlgebra b))
   CbpvIntrinsic :: (KnownSort a, KnownSort b) => Intrinsic a b -> Hom x a b
 
@@ -102,13 +102,13 @@ instance Stack (Hom x) where
 
 instance Cbpv (Hom x) (Hom x) where
   force = Force
-  thunk t f = Thunk t (\x -> f (Var x))
+  thunk f = Thunk (\x -> f (Var x))
 
   lift = Lift
-  pop t f = Pop t (\x -> f (Var x))
+  pop f = Pop (\x -> f (Var x))
 
   pass = Pass
-  zeta t f = Zeta t (\x -> f (Var x))
+  zeta f = Zeta (\x -> f (Var x))
 
   u64 = U64
   constant = Constant
@@ -159,33 +159,44 @@ instance Stack View where
 
 instance Cbpv View View where
   force x = V $  \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "force", x']) <*> view x (appPrec + 1)
-  thunk t f = V $ \p -> do
+  thunk = thunk' inferSort
+
+  lift x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", x']) <*> view x (appPrec + 1)
+  pop = pop' inferSort
+
+  pass x = V $  \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "pass", x']) <*> view x (appPrec + 1)
+  zeta = zeta' inferSort
+
+  u64 n = V $ \_ -> pure (pretty n)
+  constant pkg name = V $ \_ -> pure $ pretty (pkg ++ "/" ++ name)
+  cccIntrinsic x = V $ \_ -> pure $ pretty (show x)
+  cbpvIntrinsic x = V $ \_ -> pure  $ pretty (show x)
+
+thunk' :: SSet a -> (View Unit a -> View Empty c) -> View a (U c)
+thunk' t f =
+  V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
     pure $ paren (p > zetaPrec) $ dent $ vsep [
       sep [keyword $ pretty "thunk" , v, keyword $ pretty ":", pretty "?", keyword $ pretty "⇒"],
            body]
 
-  lift x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", x']) <*> view x (appPrec + 1)
-  pop t f = V $ \p -> do
+pop' :: SSet a -> (View Unit a -> View b c) -> View (a & b) c
+pop' t f =
+  V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
     pure $ paren (p > kappaPrec) $ dent $ vsep [
       sep [keyword $ pretty "κ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒"],
       body]
 
-  pass x = V $  \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "pass", x']) <*> view x (appPrec + 1)
-  zeta t f = V $ \p -> do
+zeta' :: SSet a -> (View Unit a -> View b c) -> View b (a ~> c)
+zeta' t f = V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
     pure $ paren (p > zetaPrec) $ dent $ vsep [
       sep [keyword $ pretty "ζ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒"],
       body]
-
-  u64 n = V $ \_ -> pure (pretty n)
-  constant _ pkg name = V $ \_ -> pure $ pretty (pkg ++ "/" ++ name)
-  cccIntrinsic x = V $ \_ -> pure $ pretty (show x)
-  cbpvIntrinsic x = V $ \_ -> pure  $ pretty (show x)
 
 fresh :: State Int (Doc Style)
 fresh = do

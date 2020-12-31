@@ -30,7 +30,7 @@ instance Ccc.Ccc (V k) where
   pass = pass' Ccc.inferT Ccc.inferT
   zeta = zeta' Ccc.inferT Ccc.inferT Ccc.inferT
 
-  u64 n = V $ (thunk inferSort (\_ -> lift (u64 n)) . unit)
+  u64 n = V $ (thunk (\_ -> lift (u64 n)) . unit)
   constant = constant' Lam.inferT
   cccIntrinsic x = V $ cccIntrinsic x
 
@@ -44,28 +44,28 @@ compose a b c (V f) (V g) = case (toKnownSort (asAlgebra a), toKnownSort (asAlge
 
 unit' :: Ccc.ST a -> V k a Ccc.Unit
 unit' a = case toKnownSort (asAlgebra a) of
-  Dict -> V (thunk inferSort (\_ -> lift unit) . unit)
+  Dict -> V (thunk (\_ -> lift unit) . unit)
 
 lift' :: Ccc.ST a -> Ccc.ST b -> V k Ccc.Unit a -> V k b (a Ccc.* b)
 lift' a b (V x) = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b)) of
   (Dict, Dict) -> V $
-    thunk undefined $ \env ->
-      lift ((x . thunk inferSort (\_ -> lift unit) . unit) &&& env)
+    thunk $ \env ->
+      lift ((x . thunk (\_ -> lift unit) . unit) &&& env)
 
 pass' :: Ccc.ST a -> Ccc.ST b -> V k Ccc.Unit a -> V k (a Ccc.~> b) b
 pass' a b (V x) = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b)) of
-  (Dict, Dict) -> V $ thunk undefined (\env -> pass (x . thunk inferSort (\_ -> lift unit)) . force env)
+  (Dict, Dict) -> V $ thunk (\env -> pass (x . thunk (\_ -> lift unit)) . force env)
 
 zeta' :: Ccc.ST a -> Ccc.ST b -> Ccc.ST c -> (V k Ccc.Unit a -> V k b c) -> V k b (a Ccc.~> c)
 zeta' a b c f = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b), toKnownSort (asAlgebra c)) of
   (Dict, Dict, Dict) -> V $
-    thunk undefined $ \env ->
-      zeta (SU (asAlgebra a)) $ \x ->
+    thunk $ \env ->
+      zeta $ \x ->
         force (go (f (V (x . unit))) . env)
 
 constant' :: Lam.KnownT a => Lam.ST a -> String -> String -> V k Ccc.Unit (Ccc.AsObject a)
 constant' t pkg name = case toKnownSort (asAlgebra (Ccc.asObject t)) of
-  Dict -> V $ thunk inferSort (\_ -> constant undefined pkg name . lift unit)
+  Dict -> V $ thunk (\_ -> constant pkg name . lift unit)
 
 argOf :: Ccc.KnownT a => (V k Ccc.Unit a -> V k b c) -> Ccc.ST a
 argOf _ = Ccc.inferT
