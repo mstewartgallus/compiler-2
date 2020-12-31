@@ -32,13 +32,11 @@ instance Ccc (Expr f) where
     E y -> y
 
   u64 x = E (u64 x)
-  constant pkg name = me where
-    me = E $ case (typeOf me, pkg, name) of
-      (Lam.SU64 Lam.:-> (Lam.SU64 Lam.:-> Lam.SU64), "core", "add") -> addIntrinsic
-      _ -> constant pkg name
+  constant = k Lam.inferT
 
-typeOf :: Lam.KnownT b => Expr f a (AsObject b) -> Lam.ST b
-typeOf _ = Lam.inferT
+k :: Lam.KnownT a => Lam.ST a -> String -> String -> Expr f Unit (AsObject a)
+k (Lam.SU64 Lam.:-> (Lam.SU64 Lam.:-> Lam.SU64)) "core" "add" = E addIntrinsic
+k _ pkg name = constant pkg name
 
 addIntrinsic :: Hom f Unit (AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))
 addIntrinsic = zeta $ \x ->
