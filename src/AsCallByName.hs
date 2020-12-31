@@ -44,13 +44,13 @@ compose a b c (V f) (V g) = case (toKnownSort (asAlgebra a), toKnownSort (asAlge
 
 unit' :: Ccc.ST a -> V k a Ccc.Unit
 unit' a = case toKnownSort (asAlgebra a) of
-  Dict -> V (thunk (\_ -> lift unit) . unit)
+  Dict -> V (thunk (\_ -> lift unit))
 
 lift' :: Ccc.ST a -> Ccc.ST b -> V k Ccc.Unit a -> V k b (a Ccc.* b)
 lift' a b (V x) = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b)) of
   (Dict, Dict) -> V $
     thunk $ \env ->
-      lift ((x . thunk (\_ -> lift unit) . unit) &&& env)
+      lift ((x . thunk (\_ -> lift unit)) &&& env)
 
 pass' :: Ccc.ST a -> Ccc.ST b -> V k Ccc.Unit a -> V k (a Ccc.~> b) b
 pass' a b (V x) = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b)) of
