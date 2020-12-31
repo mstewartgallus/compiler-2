@@ -10,7 +10,6 @@
 module Cbpv.RemoveDead (removeDead) where
 
 import Cbpv
-import Control.Category
 import Cbpv.Hom
 import Cbpv.Sort
 import Data.Kind

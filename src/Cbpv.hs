@@ -3,15 +3,15 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Cbpv (Stack (..), Code (..), Cbpv (..), Intrinsic (..)) where
+module Cbpv (Category (..), Stack (..), Code (..), Cbpv (..), Intrinsic (..)) where
 
 import Cbpv.Sort
 import qualified Ccc as Ccc
 import qualified Ccc.Type as Ccc
-import Control.Category
 import Data.Kind
 import Data.Word (Word64)
 import qualified Lam.Type as Lam
@@ -26,6 +26,10 @@ import Prelude hiding (id, (.))
 -- difficult to work with.
 --
 -- Paul Blain Levy. "Call-by-Push-Value: A Subsuming Paradigm".
+class Category hom where
+  id :: hom a a
+  (.) :: hom b c -> hom a b -> hom a c
+
 class Category stack => Stack (stack :: Algebra -> Algebra -> Type)
 
 class Category code => Code code where

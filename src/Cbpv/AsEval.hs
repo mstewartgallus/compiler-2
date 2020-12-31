@@ -12,7 +12,6 @@ module Cbpv.AsEval (reify, Action, Data) where
 
 import Cbpv
 import qualified Cbpv.Hom as Hom
-import Control.Category
 import Data.Word
 import Cbpv.Sort
 import qualified Ccc.Type as Ccc
@@ -48,12 +47,12 @@ infixr 9 :&
 newtype instance Action (a ~> b) = Lam (Data a -> Action b)
 
 instance Category (Prog @SetTag) where
-  id = C id
-  C f . C g = C (f . g)
+  id = C $ \x -> x
+  C f . C g = C (\x -> f (g x))
 
 instance Category (Prog @AlgebraTag) where
-  id = S id
-  S f . S g = S (f . g)
+  id = S $ \x -> x
+  S f . S g = S (\x -> f (g x))
 
 instance Code Prog where
   unit = C $ const Unit

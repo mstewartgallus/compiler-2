@@ -12,7 +12,6 @@
 module Cbpv.AsSimplified (simplify) where
 
 import Cbpv
-import Control.Category
 import Cbpv.Sort
 import qualified Cbpv.Hom as Hom
 import Prelude hiding ((.), id, fst, snd)

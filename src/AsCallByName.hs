@@ -10,7 +10,6 @@ import Cbpv.Sort
 import qualified Ccc
 import qualified Ccc.Hom as Ccc
 import qualified Ccc.Type as Ccc
-import Control.Category
 import qualified Lam.Type as Lam
 import Prelude hiding (fst, id, snd, (.))
 

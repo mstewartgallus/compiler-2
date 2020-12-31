@@ -11,7 +11,6 @@
 module Cbpv.AsIntrinsified (intrinsify) where
 
 import Cbpv
-import Control.Category
 import qualified Cbpv.Hom as Hom
 import Cbpv.Sort
 import Data.Kind
@@ -69,12 +68,12 @@ addIntrinsic = thunk inferSort $ \x -> doAdd . force x
 
 doAdd :: Cbpv stack code => stack (F (U (F U64) * U (F U64))) (F U64)
 doAdd =
-  pop inferSort $ \tuple ->
-  (force (fst . tuple) >>>
-   (pop inferSort $ \x ->
-   (force (snd . tuple) >>>
-   (pop inferSort $ \y ->
-   lift (addi . (x &&& y)))) ))
+  pop inferSort $ \tuple -> (
+  (pop inferSort $ \x -> (
+  (pop inferSort $ \y ->
+  lift (addi . (x &&& y))) .
+  force (snd . tuple))) .
+  force (fst . tuple))
 
 addi :: Cbpv stack code => code (U64 * U64) U64
 addi = cbpvIntrinsic AddIntrinsic

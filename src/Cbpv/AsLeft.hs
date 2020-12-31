@@ -9,7 +9,6 @@
 module Cbpv.AsLeft (asLeft) where
 
 import Cbpv
-import Control.Category
 import Cbpv.Hom
 import Cbpv.Sort
 import Prelude hiding ((.), id, fst, snd)

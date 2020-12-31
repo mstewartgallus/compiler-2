@@ -14,7 +14,6 @@ import Cbpv
 import qualified Lam.Type as Lam
 import qualified Ccc
 import qualified Ccc.Type as Ccc
-import Control.Category
 import Control.Monad.State hiding (lift)
 import Cbpv.Sort
 import Pretty
@@ -103,13 +102,13 @@ instance Stack (Hom x) where
 
 instance Cbpv (Hom x) (Hom x) where
   force = Force
-  thunk t f = Thunk t (f . Var)
+  thunk t f = Thunk t (\x -> f (Var x))
 
   lift = Lift
-  pop t f = Pop t (f . Var)
+  pop t f = Pop t (\x -> f (Var x))
 
   pass = Pass
-  zeta t f = Zeta t (f . Var)
+  zeta t f = Zeta t (\x -> f (Var x))
 
   u64 = U64
   constant = Constant
@@ -136,7 +135,7 @@ composePrec :: Int
 composePrec = 9
 
 paren :: Bool -> Doc Style -> Doc Style
-paren x = if x then parens else id
+paren x y = if x then parens y else y
 
 newtype View (a :: Sort t) (b :: Sort t) = V { view :: Int -> State Int (Doc Style) }
 
