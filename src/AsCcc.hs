@@ -16,25 +16,22 @@ asCcc x = Closed (go (Lam.fold x))
 
 newtype V k a = V {go :: Hom k Unit (AsObject a)}
 
-typeOf :: Lam.KnownT a => V k a -> Lam.ST a
-typeOf _ = Lam.inferT
-
-argOf :: Lam.KnownT a => (V k a -> V k b) -> Lam.ST a
-argOf _ = Lam.inferT
-
-resultOf :: Lam.KnownT b => (V k a -> V k b) -> Lam.ST b
-resultOf _ = Lam.inferT
-
-resultOf' :: Lam.KnownT b => V k (a Lam.~> b) -> Lam.ST b
-resultOf' _ = Lam.inferT
-
 instance Lam.Lam (V k) where
-  be (V x) f = case (toKnownT (asObject (argOf f)), toKnownT (asObject (resultOf f))) of
-    (Dict, Dict) -> V $ kappa (\x' -> go (f (V x'))) . lift x
-  lam f = case (toKnownT (asObject (argOf f)), toKnownT (asObject (resultOf f))) of
-    (Dict, Dict) -> V $ zeta (\x -> go (f (V x)))
-  f'@(V f) <*> x'@(V x) = case (toKnownT (asObject (typeOf x')), toKnownT (asObject (resultOf' f'))) of
-    (Dict, Dict) -> V (pass x . f)
+  be = be' Lam.inferT Lam.inferT
+  lam = lam' Lam.inferT Lam.inferT
+  (<*>) = pass' Lam.inferT Lam.inferT
 
   u64 n = V (u64 n)
   constant pkg name = V (constant pkg name)
+
+be' :: Lam.ST a -> Lam.ST b -> V k a -> (V k a -> V k b) -> V k b
+be' a b (V x) f = case (toKnownT (asObject a), toKnownT (asObject b)) of
+  (Dict, Dict) -> V $ kappa (\x' -> go (f (V x'))) . lift x
+
+lam' :: Lam.ST a -> Lam.ST b -> (V k a -> V k b) -> V k (a Lam.~> b)
+lam' a b f = case (toKnownT (asObject a), toKnownT (asObject b)) of
+  (Dict, Dict) -> V $ zeta (\x -> go (f (V x)))
+
+pass' :: Lam.ST a -> Lam.ST b -> V k (a Lam.~> b) -> V k a -> V k b
+pass' a b (V f) (V x) = case (toKnownT (asObject a), toKnownT (asObject b)) of
+  (Dict, Dict) -> V (pass x . f)
