@@ -30,7 +30,7 @@ instance Ccc.Ccc (V k) where
   pass = pass' Ccc.inferT Ccc.inferT
   zeta = zeta' Ccc.inferT Ccc.inferT Ccc.inferT
 
-  u64 n = V $ (thunk (\_ -> lift (u64 n)) . unit)
+  u64 n = V $ (thunk (\_ -> lift (u64 n)))
   constant = constant' Lam.inferT
   cccIntrinsic = cccIntrinsic' Ccc.inferT Ccc.inferT
 
@@ -44,17 +44,17 @@ compose a b c (V f) (V g) = case (toKnownSort (asAlgebra a), toKnownSort (asAlge
 
 unit' :: Ccc.ST a -> V k a Ccc.Unit
 unit' a = case toKnownSort (asAlgebra a) of
-  Dict -> V (thunk (\_ -> lift unit))
+  Dict -> V (thunk (\_ -> lift id))
 
 lift' :: Ccc.ST a -> Ccc.ST b -> V k Ccc.Unit a -> V k b (a Ccc.* b)
 lift' a b (V x) = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b)) of
   (Dict, Dict) -> V $
     thunk $ \env ->
-      lift ((x . thunk (\_ -> lift unit)) &&& env)
+      lift ((x . thunk (\_ -> lift id)) &&& env)
 
 pass' :: Ccc.ST a -> Ccc.ST b -> V k Ccc.Unit a -> V k (a Ccc.~> b) b
 pass' a b (V x) = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b)) of
-  (Dict, Dict) -> V $ thunk (\env -> pass (x . thunk (\_ -> lift unit)) . force env)
+  (Dict, Dict) -> V $ thunk (\env -> pass (x . thunk (\_ -> lift id)) . force env)
 
 zeta' :: Ccc.ST a -> Ccc.ST b -> Ccc.ST c -> (V k Ccc.Unit a -> V k b c) -> V k b (a Ccc.~> c)
 zeta' a b c f = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b), toKnownSort (asAlgebra c)) of
@@ -69,4 +69,4 @@ cccIntrinsic' a b intrins = case (toKnownSort (asAlgebra a), toKnownSort (asAlge
 
 constant' :: Lam.KnownT a => Lam.ST a -> String -> String -> V k Ccc.Unit (Ccc.AsObject a)
 constant' t pkg name = case toKnownSort (asAlgebra (Ccc.asObject t)) of
-  Dict -> V $ thunk (\_ -> constant pkg name . lift unit)
+  Dict -> V $ thunk (\_ -> constant pkg name . lift id)
