@@ -66,9 +66,3 @@ zeta' a b c f = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b), toKn
 constant' :: Lam.KnownT a => Lam.ST a -> String -> String -> V k Ccc.Unit (Ccc.AsObject a)
 constant' t pkg name = case toKnownSort (asAlgebra (Ccc.asObject t)) of
   Dict -> V $ thunk (\_ -> constant pkg name . lift unit)
-
-argOf :: Ccc.KnownT a => (V k Ccc.Unit a -> V k b c) -> Ccc.ST a
-argOf _ = Ccc.inferT
-
-resultOf :: Ccc.KnownT b => (V k Ccc.Unit a -> V k b c) -> Ccc.ST b
-resultOf _ = Ccc.inferT
