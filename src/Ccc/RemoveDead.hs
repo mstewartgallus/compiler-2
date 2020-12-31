@@ -12,19 +12,19 @@ import Prelude hiding ((.), id)
 removeDead :: Closed a b -> Closed a b
 removeDead x = Closed (out (fold x))
 
-into :: k a b -> Expr k a b
-into x = Pure x
+into :: Hom k a b -> Expr k a b
+into = Pure
 
-out :: Ccc k => Expr k a b -> k a b
+out :: Expr k a b -> Hom k a b
 out x = case x of
   Pure x -> x
   Unit -> unit
 
 data Expr k a b where
   Unit :: KnownT a => Expr k a Unit
-  Pure :: k a b -> Expr k a b
+  Pure :: Hom k a b -> Expr k a b
 
-instance Ccc k => Ccc (Expr k) where
+instance Ccc (Expr k) where
   id = into id
   Unit . _ = Unit
   f . g = into (out f . out g)

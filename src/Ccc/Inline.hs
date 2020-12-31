@@ -3,7 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
 
--- | Inline (kappa t f) `whereIs` x to f x sometimes (all the time rn)
+-- | Inline kappa t f . push x to f x sometimes (all the time rn)
 module Ccc.Inline (inline) where
 
 import Ccc

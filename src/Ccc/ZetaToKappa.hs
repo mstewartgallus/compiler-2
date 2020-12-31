@@ -2,7 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
 
--- | Convert (zeta t f) `app` x to (kappa t f) `whereIs` x
+-- | Convert pass x . zeta t f to kappa t f . push x
 module Ccc.ZetaToKappa (zetaToKappa) where
 
 import Ccc
