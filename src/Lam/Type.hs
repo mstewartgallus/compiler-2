@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Lam.Type (KnownT, inferT, toKnownT, eqT, ST (..), T, type (~>), type Unit, type U64) where
+module Lam.Type (KnownT, inferT, toKnownT, ST (..), T, type (~>), type Unit, type U64) where
 
 import Dict
 import Data.Text.Prettyprint.Doc
@@ -35,16 +35,6 @@ instance KnownT 'U64 where
 
 instance (KnownT a, KnownT b) => KnownT ('Exp a b) where
   inferT = inferT :-> inferT
-
-eqT :: ST a -> ST b -> Maybe (a :~: b)
-eqT l r = case (l, r) of
-  (SUnit, SUnit) -> Just Refl
-  (SU64, SU64) -> Just Refl
-  (x :-> y, x' :-> y') -> do
-    Refl <- eqT x x'
-    Refl <- eqT y y'
-    return Refl
-  _ -> Nothing
 
 instance Pretty (ST a) where
   pretty expr = case expr of

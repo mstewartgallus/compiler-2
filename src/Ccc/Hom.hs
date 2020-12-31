@@ -38,6 +38,7 @@ data Hom x a b where
 
 instance Ccc (Hom x) where
   id = Id
+
   Id . f = f
   f . Id = f
   f . g = f :.: g
@@ -106,25 +107,26 @@ instance Ccc View where
   unit = V $ \_ -> pure $ keyword $ pretty "!"
 
   lift x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", x']) <*> view x (appPrec + 1)
-  kappa f = V $ \p -> do
-    let t = argOf f
-    v <- fresh
-    body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
-    pure $ paren (p > kappaPrec) $ sep [keyword $ pretty "κ", v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
+  kappa = kappa' inferT
 
   pass x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "pass", x']) <*> view x (appPrec + 1)
-  zeta f = V $ \p -> do
-    let t = argOf f
-    v <- fresh
-    body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
-    pure $ paren (p > zetaPrec) $ sep [keyword $ pretty "ζ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
+  zeta = zeta' inferT
 
   u64 n = V $ \_ -> pure (pretty n)
   constant pkg name = V $ \_ -> pure $ pretty (pkg ++ "/" ++ name)
   cccIntrinsic x = V $ \_ -> pure $ pretty (show x)
 
-argOf :: KnownT a => (View Unit a -> View b c) -> ST a
-argOf _ = inferT
+kappa' :: ST a -> (View Unit a -> View b c) -> View (a * b) c
+kappa' t f = V $ \p -> do
+    v <- fresh
+    body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
+    pure $ paren (p > kappaPrec) $ sep [keyword $ pretty "κ", v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
+
+zeta' :: ST a -> (View Unit a -> View b c) -> View b (a ~> c)
+zeta' t f = V $ \p -> do
+    v <- fresh
+    body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
+    pure $ paren (p > zetaPrec) $ sep [keyword $ pretty "ζ", v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
 
 fresh :: State Int (Doc Style)
 fresh = do
