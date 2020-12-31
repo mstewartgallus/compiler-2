@@ -140,12 +140,15 @@ paren x = if x then parens else id
 
 newtype View (a :: Sort t) (b :: Sort t) = V { view :: Int -> State Int (Doc Style) }
 
+dent :: Doc a -> Doc a
+dent = nest 3
+
 instance Category View where
   id = V $ \_ -> pure $ keyword $ pretty "id"
   f . g = V $ \p -> do
     f' <- view f (composePrec + 1)
     g' <- view g (composePrec + 1)
-    pure $ paren (p > composePrec) $ sep [f', keyword $ pretty "∘", g']
+    pure $ paren (p > composePrec) $ vsep [f', keyword $ pretty "∘", g']
 
 instance Code View where
   unit = V $ \_ -> pure $ keyword $ pretty "!"
@@ -160,19 +163,25 @@ instance Cbpv View View where
   thunk t f = V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
-    pure $ paren (p > zetaPrec) $ sep [keyword $ pretty "thunk" , v, keyword $ pretty ":", pretty "?", keyword $ pretty "⇒", body]
+    pure $ paren (p > zetaPrec) $ dent $ vsep [
+      sep [keyword $ pretty "thunk" , v, keyword $ pretty ":", pretty "?", keyword $ pretty "⇒"],
+           body]
 
   lift x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", x']) <*> view x (appPrec + 1)
   pop t f = V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
-    pure $ paren (p > kappaPrec) $ sep [keyword $ pretty "κ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
+    pure $ paren (p > kappaPrec) $ dent $ vsep [
+      sep [keyword $ pretty "κ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒"],
+      body]
 
   pass x = V $  \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "pass", x']) <*> view x (appPrec + 1)
   zeta t f = V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
-    pure $ paren (p > zetaPrec) $ sep [keyword $ pretty "ζ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
+    pure $ paren (p > zetaPrec) $ dent $ vsep [
+      sep [keyword $ pretty "ζ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒"],
+      body]
 
   u64 n = V $ \_ -> pure (pretty n)
   constant _ pkg name = V $ \_ -> pure $ pretty (pkg ++ "/" ++ name)
