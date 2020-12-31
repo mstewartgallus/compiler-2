@@ -64,6 +64,6 @@ constant' :: (Lam.KnownT a, Cbpv f g) => Lam.ST a -> String -> String -> Path f 
 constant' a pkg name = case toKnownSort (asAlgebra (Ccc.asObject a)) of
   Dict -> into (constant pkg name)
 
-cccIntrinsic' :: Cbpv f g => Ccc.ST a -> Ccc.ST b -> Ccc.Intrinsic a b -> Path g (U (AsAlgebra a)) (U (AsAlgebra b))
+cccIntrinsic' :: Cbpv f g => Ccc.ST a -> Ccc.ST b -> Ccc.Intrinsic a b -> Path f (AsAlgebra a) (AsAlgebra b)
 cccIntrinsic' a b x = case (Ccc.toKnownT a, Ccc.toKnownT b, toKnownSort (asAlgebra a), toKnownSort (asAlgebra b)) of
   (Dict, Dict, Dict, Dict) -> into (cccIntrinsic x)

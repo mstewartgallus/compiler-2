@@ -32,7 +32,7 @@ instance Ccc.Ccc (V k) where
 
   u64 n = V $ (thunk (\_ -> lift (u64 n)) . unit)
   constant = constant' Lam.inferT
-  cccIntrinsic x = V $ cccIntrinsic x
+  cccIntrinsic = cccIntrinsic' Ccc.inferT Ccc.inferT
 
 id' :: Ccc.ST a -> V k a a
 id' t = case toKnownSort (asAlgebra t) of
@@ -62,6 +62,10 @@ zeta' a b c f = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b), toKn
     thunk $ \env ->
       zeta $ \x ->
         force (go (f (V (x . unit))) . env)
+
+cccIntrinsic' :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.ST a -> Ccc.ST b -> Ccc.Intrinsic a b -> V k a b
+cccIntrinsic' a b intrins = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b)) of
+  (Dict, Dict) -> V $ thunk (\x -> cccIntrinsic intrins . force x)
 
 constant' :: Lam.KnownT a => Lam.ST a -> String -> String -> V k Ccc.Unit (Ccc.AsObject a)
 constant' t pkg name = case toKnownSort (asAlgebra (Ccc.asObject t)) of

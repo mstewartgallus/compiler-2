@@ -57,14 +57,14 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
 
   constant pkg name = K (constant pkg name)
 
-  cccIntrinsic x = C $ case x of
+  cccIntrinsic x = K $ case x of
     Ccc.AddIntrinsic -> addIntrinsic
     _ -> cccIntrinsic x
   cbpvIntrinsic x = C (cbpvIntrinsic x)
 
 -- | fixme.. cleanup this mess
-addIntrinsic :: Cbpv stack code => code (U (AsAlgebra (Ccc.U64 Ccc.* Ccc.U64))) (U (AsAlgebra Ccc.U64))
-addIntrinsic = thunk $ \x -> doAdd . force x
+addIntrinsic :: Cbpv stack code => stack (AsAlgebra (Ccc.U64 Ccc.* Ccc.U64)) (AsAlgebra Ccc.U64)
+addIntrinsic = doAdd
 
 doAdd :: Cbpv stack code => stack (F (U (F U64) * U (F U64))) (F U64)
 doAdd =

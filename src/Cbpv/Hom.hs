@@ -42,7 +42,6 @@ goC x = case x of
   Snd -> snd
 
   U64 n -> u64 n
-  CccIntrinsic x -> cccIntrinsic x
   CbpvIntrinsic x -> cbpvIntrinsic x
 
 goK :: Cbpv c d => Hom d a b -> c a b
@@ -51,6 +50,8 @@ goK x = case x of
   f :.: g -> goK f . goK g
 
   Force x -> force (goC x)
+
+  CccIntrinsic x -> cccIntrinsic x
 
   Lift x -> lift (goC x)
   Pop f -> pop (\x -> goK (f x))
@@ -83,7 +84,7 @@ data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   U64 :: Word64 -> Hom x Unit U64
 
   Constant :: Lam.KnownT a => String -> String -> Hom x (F Unit) (AsAlgebra (Ccc.AsObject a))
-  CccIntrinsic :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.Intrinsic a b -> Hom x (U (AsAlgebra a)) (U (AsAlgebra b))
+  CccIntrinsic :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.Intrinsic a b -> Hom x (AsAlgebra a) (AsAlgebra b)
   CbpvIntrinsic :: (KnownSort a, KnownSort b) => Intrinsic a b -> Hom x a b
 
 instance Category (Hom x) where

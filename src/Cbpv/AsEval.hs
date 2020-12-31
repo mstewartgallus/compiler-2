@@ -79,7 +79,7 @@ instance Cbpv Prog Prog where
   u64 x = C $ const (U64 x)
   constant = constant' Lam.inferT
   cccIntrinsic x = case x of
-     Ccc.AddIntrinsic -> addCccImpl
+     Ccc.AddIntrinsic -> undefined
   cbpvIntrinsic x = case x of
      AddIntrinsic -> addCbpvImpl
 
@@ -92,9 +92,6 @@ addImpl = S $ \(Unit :& w0) ->
               Lam $ \(Thunk x) -> Lam $ \(Thunk y) -> case x w0 of
                  U64 x' :& w1 -> case y w1 of
                    U64 y' :& w2 -> U64 (x' + y') :& w2
-
-addCccImpl :: Prog (U (AsAlgebra (Ccc.U64 Ccc.* Ccc.U64))) (U (AsAlgebra Ccc.U64))
-addCccImpl = C $ \(Thunk input) -> undefined
 
 addCbpvImpl :: Prog (U64 * U64) U64
 addCbpvImpl = C $ \(Pair (U64 x) (U64 y)) -> U64 (x + y)
