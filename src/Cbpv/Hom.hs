@@ -178,7 +178,7 @@ thunk' t f =
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
     pure $ paren (p > zetaPrec) $ dent $ vsep [
-      sep [keyword $ pretty "thunk" , v, keyword $ pretty ":", pretty "?", keyword $ pretty "⇒"],
+      sep [keyword $ pretty "thunk" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒"],
            body]
 
 pop' :: SSet a -> (View Unit a -> View b c) -> View (a & b) c
