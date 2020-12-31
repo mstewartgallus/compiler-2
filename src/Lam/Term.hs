@@ -65,19 +65,8 @@ paren x = if x then parens else id
 
 newtype View (a :: T) = V { view :: Int -> State Int (Doc Style) }
 instance Lam View where
-  be x f = V $ \p -> do
-    let t = typeOf x
-    x' <- view x (bePrec + 1)
-    v <- fresh
-    body <- view (f (V $ \_ -> pure v)) (bePrec + 1)
-    let binder = sep [v, keyword (pretty ":"), pretty t]
-    pure $ paren (p > bePrec) $ vsep [sep [x', keyword (pretty "be"), binder, keyword (pretty "⇒")], body]
-
-  lam f = V $ \p -> do
-    let t = argT f
-    v <- fresh
-    body <- view (f (V $ \_ -> pure v)) (lamPrec + 1)
-    pure $ paren (p > lamPrec) $ sep [keyword (pretty "λ"), v, keyword (pretty ":"), pretty "?", keyword (pretty "⇒"), body]
+  be = be' inferT
+  lam = lam' inferT
 
   f <*> x = V $ \p -> do
     f' <- view f (appPrec + 1)
@@ -87,11 +76,19 @@ instance Lam View where
   u64 n = V $ \_ -> pure (pretty n)
   constant pkg name = V $ \_ -> pure $ pretty (pkg ++ "/" ++ name)
 
-argT :: KnownT a => (View a -> View b) -> ST a
-argT _ = inferT
+be' :: ST a -> View a -> (View a -> View b) -> View b
+be' t x f = V $ \p -> do
+  x' <- view x (bePrec + 1)
+  v <- fresh
+  body <- view (f (V $ \_ -> pure v)) (bePrec + 1)
+  let binder = sep [v, keyword (pretty ":"), pretty t]
+  pure $ paren (p > bePrec) $ vsep [sep [x', keyword (pretty "be"), binder, keyword (pretty "⇒")], body]
 
-typeOf :: KnownT a => View a -> ST a
-typeOf _ = inferT
+lam' :: ST a -> (View a -> View b) -> View (a ~> b)
+lam' t f = V $ \p -> do
+    v <- fresh
+    body <- view (f (V $ \_ -> pure v)) (lamPrec + 1)
+    pure $ paren (p > lamPrec) $ sep [keyword (pretty "λ"), v, keyword (pretty ":"), pretty "?", keyword (pretty "⇒"), body]
 
 fresh :: State Int (Doc Style)
 fresh = do
