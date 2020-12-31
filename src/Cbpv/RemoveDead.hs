@@ -27,7 +27,7 @@ out x = case x of
   Unit -> unit
 
 data Expr (k :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
-  Unit :: Expr k a Unit
+  Unit :: KnownSort a => Expr k a Unit
   Pure :: Hom k a b -> Expr k a b
 
 instance Category (Expr f) where

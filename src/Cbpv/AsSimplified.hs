@@ -22,29 +22,29 @@ simplify x = Hom.Closed (outC (simpC (Hom.fold x)))
 data Stk f g (a :: Algebra) (b :: Algebra) where
   K :: f a b -> Stk f g a b
 
-  IdK :: Category f => Stk f g a a
-  ComposeK ::  Category f => Stk f g b c -> Stk f g a b -> Stk f g a c
+  IdK :: (KnownSort a, Category f) => Stk f g a a
+  ComposeK :: (KnownSort a, KnownSort b, KnownSort c, Category f) => Stk f g b c -> Stk f g a b -> Stk f g a c
 
-  Force :: Cbpv f g => Cde f g Unit (U a) -> Stk f g Empty a
+  Force :: (KnownSort a, Cbpv f g) => Cde f g Unit (U a) -> Stk f g Empty a
 
-  Pop :: Cbpv f g => SSet a -> (Cde f g Unit a -> Stk f g b c) -> Stk f g (a & b) c
-  Lift :: Cbpv f g => Cde f g Unit a -> Stk f g b (a & b)
+  Pop :: (KnownSort a, KnownSort b, KnownSort c, Cbpv f g) => SSet a -> (Cde f g Unit a -> Stk f g b c) -> Stk f g (a & b) c
+  Lift :: (KnownSort a, KnownSort b, Cbpv f g) => Cde f g Unit a -> Stk f g b (a & b)
 
-  Zeta :: Cbpv f g => SSet a -> (Cde f g Unit a -> Stk f g b c) -> Stk f g b (a ~> c)
-  Pass :: Cbpv f g => Cde f g Unit a -> Stk f g (a ~> b) b
+  Zeta :: (KnownSort a, KnownSort b, KnownSort c, Cbpv f g) => SSet a -> (Cde f g Unit a -> Stk f g b c) -> Stk f g b (a ~> c)
+  Pass :: (KnownSort a, KnownSort b, Cbpv f g) => Cde f g Unit a -> Stk f g (a ~> b) b
 
 data Cde f g (a :: Set) (b :: Set) where
   C :: g a b -> Cde f g a b
-  IdC :: Category g => Cde f g a a
-  ComposeC ::  Category g => Cde f g b c -> Cde f g a b -> Cde f g a c
+  IdC :: (KnownSort a, Category g) => Cde f g a a
+  ComposeC ::  (KnownSort a, KnownSort b, KnownSort c, Category g) => Cde f g b c -> Cde f g a b -> Cde f g a c
 
-  Fst :: Code g => Cde f g (a * b) a
-  Snd :: Code g => Cde f g (a * b) b
-  Fanout :: Code g => Cde f g x a -> Cde f g x b -> Cde f g x (a * b)
+  Fst :: (KnownSort a, KnownSort b, Code g) => Cde f g (a * b) a
+  Snd :: (KnownSort a, KnownSort b, Code g) => Cde f g (a * b) b
+  Fanout :: (KnownSort a, KnownSort b, KnownSort x, Code g) => Cde f g x a -> Cde f g x b -> Cde f g x (a * b)
 
-  Thunk :: Cbpv f g => SSet a -> (Cde f g Unit a -> Stk f g Empty b) -> Cde f g a (U b)
+  Thunk :: (KnownSort a, KnownSort b, Cbpv f g) => SSet a -> (Cde f g Unit a -> Stk f g Empty b) -> Cde f g a (U b)
 
-  Unit :: Code g => Cde f g a Unit
+  Unit :: (KnownSort a, Code g) => Cde f g a Unit
 
 outC :: Cde f g a b -> g a b
 outC expr = case expr of

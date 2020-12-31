@@ -27,33 +27,33 @@ import Prelude hiding (id, (.))
 --
 -- Paul Blain Levy. "Call-by-Push-Value: A Subsuming Paradigm".
 class Category hom where
-  id :: hom a a
-  (.) :: hom b c -> hom a b -> hom a c
+  id :: KnownSort a => hom a a
+  (.) :: (KnownSort a, KnownSort b, KnownSort c) => hom b c -> hom a b -> hom a c
 
 class Category stack => Stack (stack :: Algebra -> Algebra -> Type)
 
 class Category code => Code code where
-  unit :: code x Unit
-  (&&&) :: code x a -> code x b -> code x (a * b)
-  fst :: code (a * b) a
-  snd :: code (a * b) b
+  unit :: KnownSort a => code a Unit
+  (&&&) :: (KnownSort x, KnownSort a, KnownSort b) => code x a -> code x b -> code x (a * b)
+  fst :: (KnownSort a, KnownSort b) => code (a * b) a
+  snd :: (KnownSort a, KnownSort b) => code (a * b) b
 
 class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack where
   -- It's pretty obvious this should be generalized but idk precisely how
-  thunk :: SSet a -> (code Unit a -> stack Empty c) -> code a (U c)
-  force :: code Unit (U a) -> stack Empty a
+  thunk :: (KnownSort a, KnownSort c) => SSet a -> (code Unit a -> stack Empty c) -> code a (U c)
+  force :: KnownSort a => code Unit (U a) -> stack Empty a
 
-  pop :: SSet a -> (code Unit a -> stack b c) -> stack (a & b) c
-  lift :: code Unit a -> stack b (a & b)
+  pop :: (KnownSort a, KnownSort b, KnownSort c) => SSet a -> (code Unit a -> stack b c) -> stack (a & b) c
+  lift :: (KnownSort a, KnownSort b) => code Unit a -> stack b (a & b)
 
-  zeta :: SSet a -> (code Unit a -> stack b c) -> stack b (a ~> c)
-  pass :: code Unit a -> stack (a ~> b) b
+  zeta :: (KnownSort a, KnownSort b, KnownSort c) => SSet a -> (code Unit a -> stack b c) -> stack b (a ~> c)
+  pass :: (KnownSort a, KnownSort b) => code Unit a -> stack (a ~> b) b
 
   u64 :: Word64 -> code Unit U64
 
-  constant :: Lam.ST a -> String -> String -> stack (F Unit) (AsAlgebra (Ccc.AsObject a))
-  cccIntrinsic :: Ccc.Intrinsic a b -> code (U (AsAlgebra a)) (U (AsAlgebra b))
-  cbpvIntrinsic :: Intrinsic a b -> code a b
+  constant :: Lam.KnownT a => Lam.ST a -> String -> String -> stack (F Unit) (AsAlgebra (Ccc.AsObject a))
+  cccIntrinsic :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.Intrinsic a b -> code (U (AsAlgebra a)) (U (AsAlgebra b))
+  cbpvIntrinsic :: (KnownSort a, KnownSort b) => Intrinsic a b -> code a b
 
   add :: code (U64 * U64) U64
   add = cbpvIntrinsic AddIntrinsic

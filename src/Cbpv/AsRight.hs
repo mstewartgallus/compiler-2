@@ -11,12 +11,15 @@ module Cbpv.AsRight (asRight) where
 import Cbpv
 import Cbpv.Hom
 import Cbpv.Sort
+import Dict
+import qualified Ccc as Ccc
+import qualified Ccc.Type as Ccc
 import Prelude hiding ((.), id, fst, snd)
 
 asRight :: Closed @SetTag a b -> Closed a b
 asRight x = Closed (out (fold x))
 
-into :: k a b -> Path k a b
+into :: (KnownSort a, KnownSort b) => k a b -> Path k a b
 into x = Id :.: x
 
 out :: Category k => Path k a b -> k a b
@@ -25,8 +28,8 @@ out x = case x of
   f :.: g -> out f . g
 
 data Path k a b where
-  Id :: Path k a a
-  (:.:) :: Path k b c -> k a b -> Path k a c
+  Id :: KnownSort a => Path k a a
+  (:.:) :: (KnownSort a, KnownSort b, KnownSort c) => Path k b c -> k a b -> Path k a c
 
 instance Category k => Category (Path k) where
   id = Id
@@ -52,6 +55,11 @@ instance Cbpv f g => Cbpv (Path f) (Path g) where
   zeta t f = into (zeta t $ \x -> out (f (into x)))
 
   u64 n = into (u64 n)
-  constant t pkg name = into (constant t pkg name)
-  cccIntrinsic x = into (cccIntrinsic x)
+  constant t pkg name = case toKnownSort (asAlgebra (Ccc.asObject t)) of
+    Dict -> into (constant t pkg name)
+  cccIntrinsic = cccIntrinsic' Ccc.inferT Ccc.inferT
   cbpvIntrinsic x = into (cbpvIntrinsic x)
+
+cccIntrinsic' :: Cbpv f g => Ccc.ST a -> Ccc.ST b -> Ccc.Intrinsic a b -> Path g (U (AsAlgebra a)) (U (AsAlgebra b))
+cccIntrinsic' a b x = case (Ccc.toKnownT a, Ccc.toKnownT b, toKnownSort (asAlgebra a), toKnownSort (asAlgebra b)) of
+  (Dict, Dict, Dict, Dict) -> into (cccIntrinsic x)

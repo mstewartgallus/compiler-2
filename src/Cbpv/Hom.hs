@@ -61,30 +61,30 @@ goK x = case x of
   Constant t pkg name -> constant t pkg name
 
 data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
-  Var :: x a b -> Hom x a b
+  Var :: (KnownSort a, KnownSort b) => x a b -> Hom x a b
 
-  Id :: Hom x a a
-  (:.:) :: Hom x b c -> Hom x a b -> Hom x a c
+  Id :: KnownSort a => Hom x a a
+  (:.:) :: (KnownSort a, KnownSort b, KnownSort c) => Hom x b c -> Hom x a b -> Hom x a c
 
-  Thunk :: SSet a -> (x Unit a -> Hom x Empty c) -> Hom x a (U c)
-  Force :: Hom x Unit (U a) -> Hom x Empty a
+  Thunk :: (KnownSort a, KnownSort c) => SSet a -> (x Unit a -> Hom x Empty c) -> Hom x a (U c)
+  Force :: KnownSort a => Hom x Unit (U a) -> Hom x Empty a
 
-  UnitHom :: Hom x a Unit
-  Fanout :: Hom x c a -> Hom x c b -> Hom x c (a * b)
-  Fst :: Hom x (a * b) a
-  Snd :: Hom x (a * b) b
+  UnitHom :: KnownSort a => Hom x a Unit
+  Fanout :: (KnownSort a, KnownSort b, KnownSort c) => Hom x c a -> Hom x c b -> Hom x c (a * b)
+  Fst :: (KnownSort a, KnownSort b) => Hom x (a * b) a
+  Snd :: (KnownSort a, KnownSort b) => Hom x (a * b) b
 
-  Lift :: Hom x Unit a -> Hom x b (a & b)
-  Pop :: SSet a -> (x Unit a -> Hom x b c) -> Hom x (a & b) c
+  Lift :: (KnownSort a, KnownSort b) => Hom x Unit a -> Hom x b (a & b)
+  Pop :: (KnownSort a, KnownSort b, KnownSort c) => SSet a -> (x Unit a -> Hom x b c) -> Hom x (a & b) c
 
-  Pass :: Hom x Unit a -> Hom x (a ~> b) b
-  Zeta :: SSet a -> (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
+  Pass :: (KnownSort a, KnownSort b) => Hom x Unit a -> Hom x (a ~> b) b
+  Zeta :: (KnownSort a, KnownSort b, KnownSort c) => SSet a -> (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
 
   U64 :: Word64 -> Hom x Unit U64
 
-  Constant :: Lam.ST a -> String -> String -> Hom x (F Unit) (AsAlgebra (Ccc.AsObject a))
-  CccIntrinsic :: Ccc.Intrinsic a b -> Hom x (U (AsAlgebra a)) (U (AsAlgebra b))
-  CbpvIntrinsic :: Intrinsic a b -> Hom x a b
+  Constant :: Lam.KnownT a => Lam.ST a -> String -> String -> Hom x (F Unit) (AsAlgebra (Ccc.AsObject a))
+  CccIntrinsic :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.Intrinsic a b -> Hom x (U (AsAlgebra a)) (U (AsAlgebra b))
+  CbpvIntrinsic :: (KnownSort a, KnownSort b) => Intrinsic a b -> Hom x a b
 
 instance Category (Hom x) where
   id = Id
