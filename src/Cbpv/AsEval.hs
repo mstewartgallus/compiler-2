@@ -1,5 +1,8 @@
 {-# LANGUAGE DataKinds #-}
+-- Strictness isn't any sort of optimization, just to show that the
+-- semantics aren't reliant on Haskell's
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE Strict #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE EmptyCase #-}
