@@ -4,6 +4,7 @@ import qualified AsCallByName
 import qualified AsCcc
 import qualified Cbpv.AsEval as Cbpv
 import qualified Cbpv.AsOpt as Cbpv
+import qualified Cbpv.AsScheme as Cbpv
 import qualified Cbpv.Hom as Cbpv
 import qualified Ccc.Hom as Ccc
 import qualified Ccc.Optimize as Ccc
@@ -82,4 +83,13 @@ main = do
     annotate header (pretty "Result:")
       <> hardline
       <> pretty (show result)
+      <> hardline
+      <> hardline
+
+  let scheme = Cbpv.toScheme optCbpv
+
+  putDoc $
+    annotate header (pretty "Scheme Prototype:")
+      <> hardline
+      <> reAnnotate toAnsi scheme
       <> hardline
