@@ -179,7 +179,7 @@ thunk' t f =
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
     pure $ paren (p > zetaPrec) $ dent $ vsep [
-      sep [keyword $ pretty "thunk" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒"],
+      sep [keyword $ pretty "thunk" , v, keyword $ pretty ":", prettyProgram t, keyword $ pretty "⇒"],
            body]
 
 pop' :: SSet a -> (View Unit a -> View b c) -> View (a & b) c
@@ -188,7 +188,7 @@ pop' t f =
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
     pure $ paren (p > kappaPrec) $ dent $ vsep [
-      sep [keyword $ pretty "κ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒"],
+      sep [keyword $ pretty "κ" , v, keyword $ pretty ":", prettyProgram t, keyword $ pretty "⇒"],
       body]
 
 zeta' :: SSet a -> (View Unit a -> View b c) -> View b (a ~> c)
@@ -196,7 +196,7 @@ zeta' t f = V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
     pure $ paren (p > zetaPrec) $ dent $ vsep [
-      sep [keyword $ pretty "ζ" , v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒"],
+      sep [keyword $ pretty "ζ" , v, keyword $ pretty ":", prettyProgram t, keyword $ pretty "⇒"],
       body]
 
 fresh :: State Int (Doc Style)
