@@ -20,7 +20,7 @@ program :: Lam.Closed U64
 program =
   Lam.Closed $
     u64 3 `be` \z ->
-      add <*> z <*> z
+      (z * z) + (z + z)
 
 header :: AnsiStyle
 header = underlined <> bold

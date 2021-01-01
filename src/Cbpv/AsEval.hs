@@ -86,12 +86,19 @@ instance Cbpv Prog Prog where
 constant' :: Lam.ST a -> String -> String -> Prog (F Unit) (AsAlgebra (Ccc.AsObject a))
 constant' t pkg name = case (t, pkg, name) of
   (Lam.SU64 Lam.:-> (Lam.SU64 Lam.:-> Lam.SU64), "core", "add") -> addImpl
+  (Lam.SU64 Lam.:-> (Lam.SU64 Lam.:-> Lam.SU64), "core", "multiply") -> multiplyImpl
 
 addImpl :: Prog (F Unit) (AsAlgebra (Ccc.AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64)))
 addImpl = S $ \(Unit :& w0) ->
               Lam $ \(Thunk x) -> Lam $ \(Thunk y) -> case x w0 of
                  U64 x' :& w1 -> case y w1 of
                    U64 y' :& w2 -> U64 (x' + y') :& w2
+
+multiplyImpl :: Prog (F Unit) (AsAlgebra (Ccc.AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64)))
+multiplyImpl = S $ \(Unit :& w0) ->
+              Lam $ \(Thunk x) -> Lam $ \(Thunk y) -> case x w0 of
+                 U64 x' :& w1 -> case y w1 of
+                   U64 y' :& w2 -> U64 (x' * y') :& w2
 
 addCbpvImpl :: Prog (U64 * U64) U64
 addCbpvImpl = C $ \(Pair (U64 x) (U64 y)) -> U64 (x + y)

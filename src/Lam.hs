@@ -16,6 +16,3 @@ class Lam t where
 
   u64 :: Word64 -> t U64
   constant :: KnownT a => String -> String -> t a
-
-  add :: t (U64 ~> U64 ~> U64)
-  add = constant "core" "add"

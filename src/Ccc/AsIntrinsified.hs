@@ -33,10 +33,11 @@ instance Ccc (Expr f) where
 
   u64 x = E (u64 x)
   constant = k Lam.inferT
+  cccIntrinsic x = E (cccIntrinsic x)
 
 k :: Lam.KnownT a => Lam.ST a -> String -> String -> Expr f Unit (AsObject a)
 k (Lam.SU64 Lam.:-> (Lam.SU64 Lam.:-> Lam.SU64)) "core" "add" = E addIntrinsic
-k _ pkg name = constant pkg name
+k _ pkg name = E (constant pkg name)
 
 addIntrinsic :: Hom f Unit (AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))
 addIntrinsic = zeta $ \x ->

@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE RankNTypes #-}
@@ -26,6 +27,11 @@ data Term x a where
   Constant :: KnownT a => String -> String -> Term x a
 
 newtype Closed a = Closed (forall x. Term x a)
+
+instance Num (Term x U64) where
+  x + y = constant "core" "add" <*> x <*> y
+  x - y = constant "core" "subtract" <*> x <*> y
+  x * y = constant "core" "multiply" <*> x <*> y
 
 instance Lam (Term x) where
   lam f = Lam (f . Var)
@@ -64,6 +70,7 @@ paren :: Bool -> Doc Style -> Doc Style
 paren x = if x then parens else id
 
 newtype View (a :: T) = V { view :: Int -> State Int (Doc Style) }
+
 instance Lam View where
   be = be' inferT
   lam = lam' inferT
