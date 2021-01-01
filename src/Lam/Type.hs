@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Lam.Type (KnownT, inferT, toKnownT, ST (..), T, type (~>), type Unit, type U64) where
+module Lam.Type (eqT, KnownT, inferT, toKnownT, ST (..), T, type (~>), type Unit, type U64) where
 
 import Dict
 import Data.Text.Prettyprint.Doc
@@ -48,3 +48,12 @@ toKnownT x = case x of
   SUnit -> Dict
   x :-> y -> case (toKnownT x, toKnownT y) of
     (Dict, Dict) -> Dict
+
+eqT :: ST a -> ST b -> Maybe (a :~: b)
+eqT x y = case (x, y) of
+  (SU64, SU64) -> pure Refl
+  (SUnit, SUnit) -> pure Refl
+  (a :-> b, a' :-> b') -> do
+    Refl <- eqT a a'
+    Refl <- eqT b b'
+    pure Refl

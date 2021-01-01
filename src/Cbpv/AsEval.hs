@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -18,6 +19,9 @@ import qualified Ccc.Type as Ccc
 import qualified Ccc as Ccc
 import qualified Lam.Type as Lam
 import Prelude hiding ((.), id)
+import Data.Map (Map)
+import qualified Data.Map as Map
+import Data.Typeable ((:~:) (..))
 
 reify :: Hom.Closed (U (F Unit)) (U (F U64)) -> Word64
 reify x = go (Hom.fold x)
@@ -84,9 +88,30 @@ instance Cbpv Prog Prog where
      AddIntrinsic -> addCbpvImpl
 
 constant' :: Lam.ST a -> String -> String -> Prog (F Unit) (AsAlgebra (Ccc.AsObject a))
-constant' t pkg name = case (t, pkg, name) of
-  (Lam.SU64 Lam.:-> (Lam.SU64 Lam.:-> Lam.SU64), "core", "add") -> addImpl
-  (Lam.SU64 Lam.:-> (Lam.SU64 Lam.:-> Lam.SU64), "core", "multiply") -> multiplyImpl
+constant' t pkg name = case maybeK t pkg name of
+  Nothing -> undefined
+  Just x -> x
+
+maybeK :: Lam.ST a -> String -> String -> Maybe (Prog (F Unit) (AsAlgebra (Ccc.AsObject a)))
+maybeK t pkgName name = do
+  pkg <- Map.lookup pkgName constants
+  Constant t' k <- Map.lookup name pkg
+  Refl <- Lam.eqT t t'
+  pure k
+
+addCbpvImpl :: Prog (U64 * U64) U64
+addCbpvImpl = C $ \(Pair (U64 x) (U64 y)) -> U64 (x + y)
+
+data Constant = forall a. Constant (Lam.ST a) (Prog (F Unit) (AsAlgebra (Ccc.AsObject a)))
+
+constants :: Map String (Map String Constant)
+constants = Map.fromList [
+  ("core", Map.fromList [
+      ("add", Constant Lam.inferT addImpl),
+      ("multiply", Constant Lam.inferT multiplyImpl),
+      ("subtract", Constant Lam.inferT subtractImpl)
+      ])
+  ]
 
 addImpl :: Prog (F Unit) (AsAlgebra (Ccc.AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64)))
 addImpl = S $ \(Unit :& w0) ->
@@ -100,5 +125,8 @@ multiplyImpl = S $ \(Unit :& w0) ->
                  U64 x' :& w1 -> case y w1 of
                    U64 y' :& w2 -> U64 (x' * y') :& w2
 
-addCbpvImpl :: Prog (U64 * U64) U64
-addCbpvImpl = C $ \(Pair (U64 x) (U64 y)) -> U64 (x + y)
+subtractImpl :: Prog (F Unit) (AsAlgebra (Ccc.AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64)))
+subtractImpl = S $ \(Unit :& w0) ->
+              Lam $ \(Thunk x) -> Lam $ \(Thunk y) -> case x w0 of
+                 U64 x' :& w1 -> case y w1 of
+                   U64 y' :& w2 -> U64 (x' - y') :& w2
