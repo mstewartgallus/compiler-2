@@ -146,9 +146,9 @@ dent = nest 3
 instance Category View where
   id = V $ \_ -> pure $ keyword $ pretty "id"
   f . g = V $ \p -> do
-    f' <- view f (composePrec + 1)
     g' <- view g (composePrec + 1)
-    pure $ paren (p > composePrec) $ vsep [f', keyword $ pretty "∘", g']
+    f' <- view f (composePrec + 1)
+    pure $ paren (p > composePrec) $ vsep [g', keyword $ pretty ">>>", f']
 
 instance Code View where
   unit = V $ \_ -> pure $ keyword $ pretty "!"
@@ -169,9 +169,9 @@ instance Cbpv View View where
   zeta = zeta' inferSort
 
   u64 n = V $ \_ -> pure (pretty n)
-  constant pkg name = V $ \_ -> pure $ pretty (pkg ++ "/" ++ name)
-  cccIntrinsic x = V $ \_ -> pure $ pretty (show x)
-  cbpvIntrinsic x = V $ \_ -> pure  $ pretty (show x)
+  constant pkg name = V $ \p -> pure $ paren (p > appPrec) $ sep [keyword $ pretty "call", pretty (pkg ++ "/" ++ name)]
+  cccIntrinsic x = V $ \p -> pure $ paren (p > appPrec) $ sep [keyword $ pretty "ccc", pretty $ show x]
+  cbpvIntrinsic x = V $ \p -> pure $ paren (p > appPrec) $ sep [keyword $ pretty "intrinsic", pretty $ show x]
 
 thunk' :: SSet a -> (View Unit a -> View Empty c) -> View a (U c)
 thunk' t f =
