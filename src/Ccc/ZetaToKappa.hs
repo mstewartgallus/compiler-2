@@ -29,8 +29,8 @@ out expr = case expr of
 
 instance Ccc f => Ccc (Expr f) where
   id = into id
-  f . g = into (out f . out g)
   Pass x . Zeta f = f x
+  f . g = into (out f . out g)
 
   unit = into unit
 
