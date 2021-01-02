@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f07d3c9b70871a853d72c1fdbb1eeac1d8a290edc2cd9ff401fcc2e4d2f9cab3
+-- hash: 752ce2d102d67d828759ce5bab650a7dc4ae20c07c4fc33adaf60681b4eaaf0d
 
 name:           hoas
 version:        0.1.0.0
@@ -30,13 +30,13 @@ library
       AsCallByName
       AsCcc
       AsPointless
+      AsScheme
       Cbpv
       Cbpv.AsEval
       Cbpv.AsIntrinsified
       Cbpv.AsLeft
       Cbpv.AsOpt
       Cbpv.AsRight
-      Cbpv.AsScheme
       Cbpv.AsSimplified
       Cbpv.Hom
       Cbpv.RemoveDead
@@ -56,6 +56,7 @@ library
       Lam.Term
       Lam.Type
       Pointless
+      Pointless.Hom
       Pretty
   other-modules:
       Paths_hoas
