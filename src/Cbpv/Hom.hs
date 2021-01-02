@@ -53,10 +53,10 @@ goK x = case x of
 
   CccIntrinsic x -> cccIntrinsic x
 
-  Lift x -> lift (goC x)
+  Lift f x -> lift (goK f) (goC x)
   Pop f -> pop (\x -> goK (f x))
 
-  Pass x -> pass (goC x)
+  Pass f x -> pass (goK f) (goC x)
   Zeta f -> zeta (\x -> goK (f x))
 
   Constant pkg name -> constant pkg name
@@ -75,10 +75,10 @@ data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   Fst :: (KnownSort a, KnownSort b) => Hom x (a * b) a
   Snd :: (KnownSort a, KnownSort b) => Hom x (a * b) b
 
-  Lift :: (KnownSort a, KnownSort b) => Hom x Unit a -> Hom x b (a & b)
+  Lift :: (KnownSort a, KnownSort b, KnownSort c) => Hom x (a & b) c -> Hom x Unit a -> Hom x b c
   Pop :: (KnownSort a, KnownSort b, KnownSort c) => (x Unit a -> Hom x b c) -> Hom x (a & b) c
 
-  Pass :: (KnownSort a, KnownSort b) => Hom x Unit a -> Hom x (a ~> b) b
+  Pass :: (KnownSort a, KnownSort b, KnownSort c) => Hom x b (a ~> c) -> Hom x Unit a -> Hom x b c
   Zeta :: (KnownSort a, KnownSort b, KnownSort c) => (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
 
   U64 :: Word64 -> Hom x Unit U64
@@ -162,10 +162,10 @@ instance Cbpv View View where
   force x = V $  \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "force", x']) <*> view x (appPrec + 1)
   thunk = thunk' inferSort
 
-  lift x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", x']) <*> view x (appPrec + 1)
+  lift f x = V $ \p -> pure (\f' x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", f', x']) <*> view f (appPrec + 1) <*> view x (appPrec + 1)
   pop = pop' inferSort
 
-  pass x = V $  \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "pass", x']) <*> view x (appPrec + 1)
+  pass f x = V $ \p -> pure (\f' x' -> paren (p > appPrec) $ sep [keyword $ pretty "pass", f', x']) <*> view f (appPrec + 1) <*> view x (appPrec + 1)
   zeta = zeta' inferSort
 
   u64 n = V $ \_ -> pure (pretty n)

@@ -45,8 +45,8 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
     K y -> y
   force (C x) = K (force x)
 
-  pass (C x) = K (pass x)
-  lift (C x) = K (lift x)
+  pass (K f) (C x) = K (pass f x)
+  lift (K f) (C x) = K (lift f x)
 
   zeta f = K $ zeta $ \x -> case f (C x) of
     K y -> y
@@ -71,7 +71,7 @@ doAdd =
   pop $ \tuple -> (
   (pop $ \x -> (
   (pop $ \y ->
-  lift (addi . (x &&& y))) .
+  lift id (addi . (x &&& y))) .
   force (snd . tuple))) .
   force (fst . tuple))
 

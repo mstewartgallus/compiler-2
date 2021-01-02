@@ -44,10 +44,10 @@ class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack
   force :: KnownSort a => code Unit (U a) -> stack Empty a
 
   pop :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> stack (a & b) c
-  lift :: (KnownSort a, KnownSort b) => code Unit a -> stack b (a & b)
+  lift :: (KnownSort a, KnownSort b, KnownSort c) => stack (a & b) c -> code Unit a -> stack b c
 
   zeta :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> stack b (a ~> c)
-  pass :: (KnownSort a, KnownSort b) => code Unit a -> stack (a ~> b) b
+  pass :: (KnownSort a, KnownSort b, KnownSort c) => stack b (a ~> c) -> code Unit a -> stack b c
 
   u64 :: Word64 -> code Unit U64
 

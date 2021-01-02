@@ -28,10 +28,10 @@ data Stk f g (a :: Algebra) (b :: Algebra) where
   Force :: (KnownSort a, Cbpv f g) => Cde f g Unit (U a) -> Stk f g Empty a
 
   Pop :: (KnownSort a, KnownSort b, KnownSort c, Cbpv f g) => (Cde f g Unit a -> Stk f g b c) -> Stk f g (a & b) c
-  Lift :: (KnownSort a, KnownSort b, Cbpv f g) => Cde f g Unit a -> Stk f g b (a & b)
+  Lift :: (KnownSort a, KnownSort b, KnownSort c, Cbpv f g) => Stk f g (a & b) c -> Cde f g Unit a -> Stk f g b c
 
   Zeta :: (KnownSort a, KnownSort b, KnownSort c, Cbpv f g) => (Cde f g Unit a -> Stk f g b c) -> Stk f g b (a ~> c)
-  Pass :: (KnownSort a, KnownSort b, Cbpv f g) => Cde f g Unit a -> Stk f g (a ~> b) b
+  Pass :: (KnownSort a, KnownSort b, KnownSort c, Cbpv f g) => Stk f g b (a ~> c) -> Cde f g Unit a -> Stk f g b c
 
 data Cde f g (a :: Set) (b :: Set) where
   C :: g a b -> Cde f g a b
@@ -69,10 +69,10 @@ outK expr = case expr of
   Force x -> force (outC x)
 
   Pop f -> pop (\x -> outK (f (C x)))
-  Lift x -> lift (outC x)
+  Lift f x -> lift (outK f) (outC x)
 
   Zeta f -> zeta (\x -> outK (f (C x)))
-  Pass x -> pass (outC x)
+  Pass f x -> pass (outK f) (outC x)
 
 recurseC :: Cde f g a b -> Cde f g a b
 recurseC expr = case expr of
@@ -96,10 +96,10 @@ recurseK expr = case expr of
   Force x -> force (simpC x)
 
   Pop f -> pop (\x -> simpK (f x))
-  Lift x -> lift (simpC x)
+  Lift f x -> lift (simpK f) (simpC x)
 
   Zeta f -> zeta (\x -> simpK (f x))
-  Pass x -> pass (simpC x)
+  Pass f x -> pass (simpK f) (simpC x)
 
 optC :: Cde f g a b -> Maybe (Cde f g a b)
 optC expr = case expr of
@@ -124,8 +124,8 @@ optK expr = case expr of
   ComposeK g (Pop f) -> Just $ pop $ \x -> g . f x
   ComposeK (Zeta f) g -> Just $ zeta $ \x -> f x . g
 
-  ComposeK (Pop f) (Lift x) -> Just (f x)
-  ComposeK (Pass x) (Zeta f) -> Just (f x)
+  Lift (Pop f) x -> Just (f x)
+  Pass (Zeta f) x -> Just (f x)
 
   Force (Thunk f) -> Just (f Unit)
 

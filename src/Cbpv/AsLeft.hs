@@ -49,10 +49,10 @@ instance Cbpv f g => Cbpv (Path f) (Path g) where
   thunk f = into (thunk $ \x -> out (f (into x)))
   force x = into (force (out x))
 
-  lift x = into (lift (out x))
+  lift f x = into (lift (out f) (out x))
   pop f = into (pop $ \x -> out (f (into x)))
 
-  pass x = into (pass (out x))
+  pass f x = into (pass (out f) (out x))
   zeta f = into (zeta $ \x -> out (f (into x)))
 
   u64 n = into (u64 n)

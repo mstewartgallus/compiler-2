@@ -29,11 +29,13 @@ import Control.Monad.State hiding (lift)
 
 toScheme :: Hom.Closed (U (F Unit)) (U (F U64)) -> Doc Style
 toScheme x = case Hom.fold x of
-  C y -> evalState (val (y (ThunkVal (PushAct UnitVal)))) 0
+  C y -> evalState (val (y (ThunkVal (PushAct IdAct UnitVal)))) 0
 
 data Val x a where
   VarVal :: x a -> Val x a
   UnitVal :: Val x Unit
+  FstVal :: Val x (a * b) -> Val x a
+  SndVal :: Val x (a * b) -> Val x b
   ThunkVal :: Act x Empty a -> Val x (U a)
   FanoutVal :: Val x a -> Val x b -> Val x (a * b)
   U64Val :: Word64 -> Val x U64
@@ -42,8 +44,9 @@ data Val x a where
 data Act x a b where
   IdAct :: Act x a a
   ComposeAct :: Act x b c -> Act x a b -> Act x a c
-  PushAct :: Val x a -> Act x b (a & b)
-  PassAct :: Val x a -> Act x (a ~> b) b
+  ForceAct :: Val x (U a) -> Act x Empty a
+  PushAct :: Act x (a & b) c -> Val x a -> Act x b c
+  PassAct :: Act x b (a ~> c) -> Val x a -> Act x b c
   PopAct :: (Val x a -> Act x b c) -> Act x (a & b) c
   CallAct :: Lam.ST a -> String -> String -> Act x (F Unit) (AsAlgebra (Ccc.AsObject a))
 
@@ -61,6 +64,12 @@ val x = case x of
   ThunkVal a -> do
     a' <- act a
     pure $ parens $ sep [pretty "delay", a']
+  FstVal x -> do
+    x' <- val x
+    pure $ parens $ sep [pretty "fst", x']
+  SndVal x -> do
+    x' <- val x
+    pure $ parens $ sep [pretty "snd", x']
   FanoutVal x y -> do
     x' <- val x
     y' <- val y
@@ -77,12 +86,17 @@ act x = case x of
     f' <- act f
     g' <- act g
     pure $ parens $ vsep [g', f']
-  PushAct v -> do
-    v' <- val v
-    pure $ parens $ sep [pretty "push", v']
-  PassAct v -> do
-    v' <- val v
-    pure $ parens $ sep [pretty "pass", v']
+  ForceAct x -> do
+    x' <- val x
+    pure $ parens $ sep [pretty "force", x']
+  PushAct f x -> do
+    f' <- act f
+    x' <- val x
+    pure $ parens $ sep [pretty "push", f', x']
+  PassAct f x -> do
+    f' <- act f
+    x' <- val x
+    pure $ parens $ sep [f', x']
   PopAct f -> do
     v <- fresh
     body <- act (f (VarVal (V v)))
@@ -100,17 +114,19 @@ instance Category (Prog @AlgebraTag x) where
 
 instance Code (Prog x) where
   unit = C $ \_ -> UnitVal
+  fst = C $ \x -> FstVal x
+  snd = C $ \x -> SndVal x
   C x &&& C y = C $ \env -> FanoutVal (x env) (y env)
 
 instance Stack (Prog x) where
 
 instance Cbpv (Prog x) (Prog x) where
+  force (C x) = K $ ForceAct (x UnitVal)
   thunk f = C $ \env -> case f (C $ \_ -> env) of
     K y -> ThunkVal y
 
-  pass (C x) = K (PassAct (x UnitVal))
-
-  lift (C x) = K (PushAct (x UnitVal))
+  pass (K f) (C x) = K (PassAct f (x UnitVal))
+  lift (K f) (C x) = K (PushAct f (x UnitVal))
 
   pop f = K $ PopAct $ \x -> case f (C $ \_ -> x) of
     K y -> y
