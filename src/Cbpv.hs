@@ -66,7 +66,9 @@ class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack
 
 data Intrinsic a b where
   AddIntrinsic :: Intrinsic (U64 * U64) U64
+  MulIntrinsic :: Intrinsic (U64 * U64) U64
 
 instance Show (Intrinsic a b) where
   show x = case x of
     AddIntrinsic -> "$add"
+    MulIntrinsic -> "$mul"

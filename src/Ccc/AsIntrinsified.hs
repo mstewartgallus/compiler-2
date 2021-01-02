@@ -37,9 +37,23 @@ instance Ccc (Expr f) where
 
 k :: Lam.KnownT a => Lam.ST a -> String -> String -> Expr f Unit (AsObject a)
 k (Lam.SU64 Lam.:-> (Lam.SU64 Lam.:-> Lam.SU64)) "core" "add" = E addIntrinsic
+k (Lam.SU64 Lam.:-> (Lam.SU64 Lam.:-> Lam.SU64)) "core" "multiply" = E multiplyIntrinsic
 k _ pkg name = E (constant pkg name)
 
 addIntrinsic :: Hom f Unit (AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))
-addIntrinsic = zeta $ \x ->
-               zeta $ \y ->
-               ((lift add x) . y)
+addIntrinsic =
+  zeta $ \x ->
+  zeta $ \y ->
+  ((lift add x) . y)
+
+multiplyIntrinsic :: Hom f Unit (AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))
+multiplyIntrinsic =
+  zeta $ \x ->
+  zeta $ \y ->
+  ((lift mul x) . y)
+
+add :: Ccc hom => hom (U64 * U64) U64
+add = cccIntrinsic AddIntrinsic
+
+mul :: Ccc hom => hom (U64 * U64) U64
+mul = cccIntrinsic MulIntrinsic

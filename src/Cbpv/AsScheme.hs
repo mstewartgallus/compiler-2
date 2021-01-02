@@ -38,7 +38,9 @@ toScheme' x = case Hom.foldK x of
          evalState (act (y EmptyAct)) 0
 
 rt :: String
-rt = "(define (add tple) + (car tple) (cdr tple))"
+rt =
+  "(define (add tple) (+ (car tple) (cdr tple)))" <>
+  "(define (mul tple) (* (car tple) (cdr tple)))"
 
 data Val x y a where
   VarVal :: x a -> Val x y a
@@ -57,7 +59,7 @@ data Act x y a where
   VarAct :: y a -> Act x y a
   EmptyAct :: Act x y Empty
   ForceAct :: Val x y (U a) -> Act x y a
-  PushAct :: Act x y b -> Val x y a -> Act x y (a & b)
+  PushAct :: Val x y a -> Act x y b -> Act x y (a & b)
   PassAct :: Act x y (a ~> c) -> Val x y a -> Act x y c
   PopAct :: Act x y (a & b) -> (Val x y a -> Act x y b -> Act x y c) -> Act x y c
   CallAct :: Lam.ST a -> String -> String -> Act x y (AsAlgebra (Ccc.AsObject a))
@@ -97,6 +99,7 @@ val x = case x of
     arg' <- val arg
     case intrins of
       AddIntrinsic -> pure $ parens $ sep [pretty "add", arg']
+      MulIntrinsic -> pure $ parens $ sep [pretty "mul", arg']
 
 act :: Act V V a -> State Int (Doc Style)
 act x = case x of
@@ -105,10 +108,10 @@ act x = case x of
   ForceAct x -> do
     x' <- val x
     pure $ parens $ sep [pretty "force", x']
-  PushAct x y -> do
-    x' <- act x
-    y' <- val y
-    pure $ parens $ sep [pretty "cons", x', y']
+  PushAct h t -> do
+    h' <- val h
+    t' <- act t
+    pure $ parens $ sep [pretty "cons", h', t']
   PassAct f x -> do
     f' <- act f
     x' <- val x
@@ -146,15 +149,14 @@ instance Cbpv (Prog x y) (Prog x y) where
     K y -> ThunkVal (y EmptyAct)
 
   pass (K f) (C x) = K $ \env -> PassAct (f env) (x UnitVal)
-  push (K f) (C x) = K $ \env -> f (PushAct env (x UnitVal))
+  push (K f) (C x) = K $ \env -> f (PushAct (x UnitVal) env)
 
   pop f = K $ \x -> PopAct x $ \h t -> case f (C $ \_ -> h) of
     K y -> y t
 
   u64 n = C $ \_ -> U64Val n
   constant pkg name = K $ \_ -> CallAct Lam.inferT pkg name
-  cbpvIntrinsic x = C $ \arg -> case x of
-     AddIntrinsic -> IntrinsicVal x arg
+  cbpvIntrinsic x = C (IntrinsicVal x)
 
 fresh :: State Int (Doc Style)
 fresh = do

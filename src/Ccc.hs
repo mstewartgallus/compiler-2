@@ -37,12 +37,11 @@ class Ccc hom where
   constant :: Lam.KnownT a => String -> String -> hom Unit (AsObject a)
   cccIntrinsic :: (KnownT a, KnownT b) => Intrinsic a b -> hom a b
 
-  add :: hom (U64 * U64) U64
-  add = cccIntrinsic AddIntrinsic
-
 data Intrinsic a b where
   AddIntrinsic :: Intrinsic (U64 * U64) U64
+  MulIntrinsic :: Intrinsic (U64 * U64) U64
 
 instance Show (Intrinsic a b) where
   show x = case x of
     AddIntrinsic -> "#add"
+    MulIntrinsic -> "#mul"

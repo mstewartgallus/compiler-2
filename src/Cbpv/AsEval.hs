@@ -90,6 +90,7 @@ instance Cbpv Prog Prog where
      Ccc.AddIntrinsic -> undefined
   cbpvIntrinsic x = case x of
      AddIntrinsic -> addCbpvImpl
+     MulIntrinsic -> mulCbpvImpl
 
 constant' :: Lam.ST a -> String -> String -> Prog (F Unit) (AsAlgebra (Ccc.AsObject a))
 constant' t pkg name = case maybeK t pkg name of
@@ -105,6 +106,9 @@ maybeK t pkgName name = do
 
 addCbpvImpl :: Prog (U64 * U64) U64
 addCbpvImpl = C $ \(Pair (U64 x) (U64 y)) -> U64 (x + y)
+
+mulCbpvImpl :: Prog (U64 * U64) U64
+mulCbpvImpl = C $ \(Pair (U64 x) (U64 y)) -> U64 (x * y)
 
 data Constant = forall a. Constant (Lam.ST a) (Prog (F Unit) (AsAlgebra (Ccc.AsObject a)))
 

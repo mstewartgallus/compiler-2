@@ -59,15 +59,12 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
 
   cccIntrinsic x = K $ case x of
     Ccc.AddIntrinsic -> addIntrinsic
+    Ccc.MulIntrinsic -> mulIntrinsic
     _ -> cccIntrinsic x
   cbpvIntrinsic x = C (cbpvIntrinsic x)
 
--- | fixme.. cleanup this mess
 addIntrinsic :: Cbpv stack code => stack (AsAlgebra (Ccc.U64 Ccc.* Ccc.U64)) (AsAlgebra Ccc.U64)
-addIntrinsic = doAdd
-
-doAdd :: Cbpv stack code => stack (F (U (F U64) * U (F U64))) (F U64)
-doAdd =
+addIntrinsic =
   pop $ \tuple -> (
   (pop $ \x -> (
   (pop $ \y ->
@@ -75,5 +72,17 @@ doAdd =
   force (snd . tuple))) .
   force (fst . tuple))
 
+mulIntrinsic :: Cbpv stack code => stack (AsAlgebra (Ccc.U64 Ccc.* Ccc.U64)) (AsAlgebra Ccc.U64)
+mulIntrinsic =
+  pop $ \tuple -> (
+  (pop $ \x -> (
+  (pop $ \y ->
+  push id (lift muli x . y)) .
+  force (snd . tuple))) .
+  force (fst . tuple))
+
 addi :: Cbpv stack code => code (U64 * U64) U64
 addi = cbpvIntrinsic AddIntrinsic
+
+muli :: Cbpv stack code => code (U64 * U64) U64
+muli = cbpvIntrinsic MulIntrinsic
