@@ -15,6 +15,7 @@ zetaToKappa x = Closed (out (fold x))
 
 data Expr f a b where
   E :: f a b -> Expr f a b
+  Pass :: (KnownT a, KnownT b, Ccc f) => Expr f Unit a -> Expr f (a ~> b) b
   Zeta :: (KnownT a, KnownT b, KnownT c, Ccc f) => (Expr f Unit a -> Expr f b c) -> Expr f b (a ~> c)
 
 into :: f a b -> Expr f a b
@@ -23,19 +24,20 @@ into = E
 out :: Expr f a b -> f a b
 out expr = case expr of
   E x -> x
+  Pass x -> pass (out x)
   Zeta f -> zeta (\x -> out (f (E x)))
 
 instance Ccc f => Ccc (Expr f) where
   id = into id
   f . g = into (out f . out g)
+  Pass x . Zeta f = f x
 
   unit = into unit
 
-  lift f x = into (lift (out f) (out x))
+  lift x = into (lift (out x))
   kappa f = into (kappa $ \x -> out (f (into x)))
 
-  pass (Zeta f) x = f x
-  pass f x = into (pass (out f) (out x))
+  pass = Pass
   zeta = Zeta
 
   u64 x = into (u64 x)

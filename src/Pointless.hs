@@ -34,7 +34,7 @@ class (Stack stack, Code code) => Pointless stack code | stack -> code, code -> 
   drop :: (KnownSort a, KnownSort b) => stack (a & b) b
 
   push :: (KnownSort a, KnownSort b) => code Unit a -> stack b (a & b)
-  pass :: (KnownSort a, KnownSort b, KnownSort c) => stack b (a ~> c) -> code Unit a -> stack b c
+  pass :: (KnownSort a, KnownSort b) => code Unit a -> stack (a ~> b) b
 
   uncurry :: (KnownSort a, KnownSort b, KnownSort c) => stack b (a ~> c) -> stack (a & b) c
   curry :: (KnownSort a, KnownSort b, KnownSort c) => stack (a & b) c -> stack b (a ~> c)

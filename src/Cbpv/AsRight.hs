@@ -41,17 +41,17 @@ instance Cbpv f g => Stack (Path f) where
 
 instance Cbpv f g => Code (Path g) where
   unit = into unit
-  lift f x = into (lift (out f) (out x))
+  lift x = into (lift (out x))
   kappa f = into (kappa $ \x -> out (f (into x)))
 
 instance Cbpv f g => Cbpv (Path f) (Path g) where
   thunk f = into (thunk $ \x -> out (f (into x)))
   force x = into (force (out x))
 
-  push f x = into (push (out f) (out x))
+  push x = into (push (out x))
   pop f = into (pop $ \x -> out (f (into x)))
 
-  pass f x = into (pass (out f) (out x))
+  pass x = into (pass (out x))
   zeta f = into (zeta $ \x -> out (f (into x)))
 
   u64 n = into (u64 n)

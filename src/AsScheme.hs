@@ -145,7 +145,7 @@ instance Pointless (Prog x y) (Prog x y) where
       )
       env
 
-  pass (K f) (C x) = K $ \env -> PassAct (f env) (x UnitVal)
+  pass (C x) = K $ \env -> PassAct env (x UnitVal)
   push (C x) = K $ \env -> PushAct (x UnitVal) env
 
   u64 n = C $ \_ -> U64Val n

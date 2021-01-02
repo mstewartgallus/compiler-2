@@ -53,7 +53,7 @@ goK x = case x of
   CccIntrinsic x -> cccIntrinsic x
 
   Push x -> push (goC x)
-  Pass f x -> pass (goK f) (goC x)
+  Pass x -> pass (goC x)
 
   Constant pkg name -> constant pkg name
 
@@ -71,7 +71,7 @@ data Hom (a :: Sort t) (b :: Sort t) where
 
   Drop :: (KnownSort a, KnownSort b) => Hom (a & b) b
   Push :: (KnownSort a, KnownSort b) => Hom Unit a -> Hom b (a & b)
-  Pass :: (KnownSort a, KnownSort b, KnownSort c) => Hom b (a ~> c) -> Hom Unit a -> Hom b c
+  Pass :: (KnownSort a, KnownSort b) => Hom Unit a -> Hom (a ~> b) b
 
   U64 :: Word64 -> Hom  Unit U64
 
@@ -165,10 +165,9 @@ instance Pointless View View where
   push x = V $ \p -> let
     x' = view x (appPrec + 1)
     in paren (p > appPrec) $ sep [keyword $ pretty "push", x']
-  pass f x = V $ \p -> let
-    f' = view f (appPrec + 1)
+  pass x = V $ \p -> let
     x' = view x (appPrec + 1)
-    in paren (p > appPrec) $ sep [keyword $ pretty "pass", f', x']
+    in paren (p > appPrec) $ sep [keyword $ pretty "pass", x']
 
   u64 n = V $ \_ -> pretty n
   constant pkg name = V $ \p -> paren (p > appPrec) $ sep [keyword $ pretty "call", pretty (pkg ++ "/" ++ name)]

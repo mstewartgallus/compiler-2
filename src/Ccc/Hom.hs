@@ -26,10 +26,10 @@ data Hom x a b where
 
   UnitHom :: KnownT a => Hom x a Unit
 
-  Lift :: (KnownT a, KnownT b, KnownT c) => Hom x (a * b) c -> Hom x Unit a -> Hom x b c
+  Lift :: (KnownT a, KnownT b) => Hom x Unit a -> Hom x b (a * b)
   Kappa :: (KnownT a, KnownT b, KnownT c) => (x Unit a -> Hom x b c) -> Hom x (a * b) c
 
-  Pass :: (KnownT a, KnownT b, KnownT c) => Hom x b (a ~> c) -> Hom x Unit a -> Hom x b c
+  Pass :: (KnownT a, KnownT b) => Hom x Unit a -> Hom x (a ~> b) b
   Zeta :: (KnownT a, KnownT b, KnownT c) => (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
 
   U64 :: Word64 -> Hom x Unit U64
@@ -70,10 +70,10 @@ go x = case x of
 
   UnitHom -> unit
 
-  Lift f x -> lift (go f) (go x)
+  Lift x -> lift (go x)
   Kappa f -> kappa (\x -> go (f x))
 
-  Pass f x -> pass (go f) (go x)
+  Pass x -> pass (go x)
   Zeta f -> zeta (\x -> go (f x))
 
   U64 n -> u64 n
@@ -106,10 +106,10 @@ instance Ccc View where
 
   unit = V $ \_ -> pure $ keyword $ pretty "!"
 
-  lift f x = V $ \p -> pure (\f' x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", f', x']) <*> view f (appPrec + 1) <*> view x (appPrec + 1)
+  lift x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", x']) <*> view x (appPrec + 1)
   kappa = kappa' inferT
 
-  pass f x = V $ \p -> pure (\f' x' -> paren (p > appPrec) $ sep [keyword $ pretty "pass", f', x']) <*> view f (appPrec + 1) <*> view x (appPrec + 1)
+  pass x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "pass", x']) <*> view x (appPrec + 1)
   zeta = zeta' inferT
 
   u64 n = V $ \_ -> pure (pretty n)

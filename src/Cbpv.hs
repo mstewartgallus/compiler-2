@@ -42,7 +42,7 @@ class Category code => Code code where
   snd = kappa (\_ -> id)
 
   kappa :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> code b c) -> code (a * b) c
-  lift :: (KnownSort a, KnownSort b, KnownSort c) => code (a * b) c -> code Unit a -> code b c
+  lift :: (KnownSort a, KnownSort b) => code Unit a -> code b (a * b)
 
 class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack where
   -- It's pretty obvious this should be generalized but idk precisely how
@@ -50,10 +50,10 @@ class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack
   force :: KnownSort a => code Unit (U a) -> stack Empty a
 
   pop :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> stack (a & b) c
-  push :: (KnownSort a, KnownSort b, KnownSort c) => stack (a & b) c -> code Unit a -> stack b c
+  push :: (KnownSort a, KnownSort b) => code Unit a -> stack b (a & b)
 
   zeta :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> stack b (a ~> c)
-  pass :: (KnownSort a, KnownSort b, KnownSort c) => stack b (a ~> c) -> code Unit a -> stack b c
+  pass :: (KnownSort a, KnownSort b) => code Unit a -> stack (a ~> b) b
 
   u64 :: Word64 -> code Unit U64
 

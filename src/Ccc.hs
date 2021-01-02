@@ -28,10 +28,10 @@ class Ccc hom where
   unit :: KnownT a => hom a Unit
 
   zeta :: (KnownT a, KnownT b, KnownT c) => (hom Unit a -> hom b c) -> hom b (a ~> c)
-  pass :: (KnownT a, KnownT b, KnownT c) => hom b (a ~> c) -> hom Unit a -> hom b c
+  pass :: (KnownT a, KnownT b) => hom Unit a -> hom (a ~> b) b
 
   kappa :: (KnownT a, KnownT b, KnownT c) => (hom Unit a -> hom b c) -> hom (a * b) c
-  lift :: (KnownT a, KnownT b, KnownT c) => hom (a * b) c -> hom Unit a -> hom b c
+  lift :: (KnownT a, KnownT b) => hom Unit a -> hom b (a * b)
 
   u64 :: Word64 -> hom Unit U64
   constant :: Lam.KnownT a => String -> String -> hom Unit (AsObject a)
