@@ -45,13 +45,12 @@ rt =
 data Val x y a where
   VarVal :: x a -> Val x y a
   UnitVal :: Val x y Unit
-  FstVal :: Val x y (a * b) -> Val x y a
-  SndVal :: Val x y (a * b) -> Val x y b
 
+  LiftVal :: Val x y a -> Val x y b -> Val x y (a * b)
   KappaVal :: Val x y (a * b) -> (Val x y a -> Val x y b -> Val x y c) -> Val x y c
 
   ThunkVal :: Act x y a -> Val x y (U a)
-  FanoutVal :: Val x y a -> Val x y b -> Val x y (a * b)
+
   U64Val :: Word64 -> Val x y U64
   IntrinsicVal :: Intrinsic a b -> Val x y a -> Val x y b
 
@@ -78,12 +77,6 @@ val x = case x of
   ThunkVal a -> do
     a' <- act a
     pure $ parens $ dent $ vsep [pretty "delay", a']
-  FstVal x -> do
-    x' <- val x
-    pure $ parens $ sep [pretty "car", x']
-  SndVal x -> do
-    x' <- val x
-    pure $ parens $ sep [pretty "cdr", x']
   KappaVal x f -> do
     x' <- val x
     v <- fresh
@@ -91,7 +84,7 @@ val x = case x of
     let t = parens $ sep [pretty "cdr", v]
     body <- val (f (VarVal (V h)) (VarVal (V t)))
     pure $ parens $ dent $ sep [pretty "let", parens $ brackets $ sep [v, x'], body]
-  FanoutVal x y -> do
+  LiftVal x y -> do
     x' <- val x
     y' <- val y
     pure $ parens $ sep [pretty "cons", x', y']
@@ -137,7 +130,7 @@ instance Category (Prog @AlgebraTag x y) where
 instance Code (Prog x y) where
   unit = C $ \_ -> UnitVal
 
-  lift (C f) (C x) = C $ \env -> f (FanoutVal (x UnitVal) env)
+  lift (C f) (C x) = C $ \env -> f (LiftVal (x UnitVal) env)
   kappa f = C $ \x -> KappaVal x $ \h t -> case f (C $ \_ -> h) of
     C y -> y t
 
