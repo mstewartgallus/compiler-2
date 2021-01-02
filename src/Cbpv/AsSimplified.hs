@@ -124,6 +124,9 @@ optK expr = case expr of
   ComposeK g (Pop f) -> Just $ pop $ \x -> g . f x
   ComposeK (Zeta f) g -> Just $ zeta $ \x -> f x . g
 
+  ComposeK y (Lift f x) -> Just $ lift (y . f) x
+  ComposeK (Pass f x) y -> Just $ pass (f . y) x
+
   Lift (Pop f) x -> Just (f x)
   Pass (Zeta f) x -> Just (f x)
 
