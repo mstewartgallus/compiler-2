@@ -58,12 +58,12 @@ instance Pointless f g => Cbpv.Cbpv (K f g) (C f g) where
   thunk = thunk' inferSort
   force (C x) = K $ do
     x' <- x
-    pure (push (force x') unit)
+    pure (force x' . push unit)
 
   push (K f) (C x) = K $ do
     f' <- f
     x' <- x
-    pure (push f' x')
+    pure (f' . push x')
   pop = pop' inferSort
 
   pass (K f) (C x) = K $ do
@@ -179,14 +179,12 @@ instance Code g => Code (CS f g) where
 
 instance Pointless f g => Pointless (KS f g) (CS f g) where
   drop = inK drop
-  push f x =
+  push x =
     KS
-      { outK = push (outK f) (outC x),
-        removeVarK = \v -> case (removeVarK f v, removeVarC x v) of
-          (Just f', Just x') -> Just undefined
-          (Nothing, Just x') -> Just undefined
-          (Just f', Nothing) -> Just undefined
-          (Nothing, Nothing) -> Nothing
+      { outK = push (outC x),
+        removeVarK = \v -> case removeVarC x v of
+          Just x' -> Just undefined
+          Nothing -> Nothing
       }
 
   force f =

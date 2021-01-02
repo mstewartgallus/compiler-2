@@ -52,35 +52,32 @@ goK x = case x of
 
   CccIntrinsic x -> cccIntrinsic x
 
-  Push f x -> push (goK f) (goC x)
+  Push x -> push (goC x)
   Pass f x -> pass (goK f) (goC x)
-
-  -- Pop f -> pop (\x -> goK (f x))
-  -- Zeta f -> zeta (\x -> goK (f x))
 
   Constant pkg name -> constant pkg name
 
 data Hom (a :: Sort t) (b :: Sort t) where
-  Id :: KnownSort a => Hom  a a
-  (:.:) :: (KnownSort a, KnownSort b, KnownSort c) => Hom  b c -> Hom  a b -> Hom  a c
+  Id :: KnownSort a => Hom a a
+  (:.:) :: (KnownSort a, KnownSort b, KnownSort c) => Hom b c -> Hom a b -> Hom a c
 
-  Thunk :: (KnownSort a, KnownSort b) => Hom  (F a) b -> Hom  a (U b)
-  Force :: (KnownSort a, KnownSort b) => Hom  a (U b) -> Hom  (F a) b
+  Thunk :: (KnownSort a, KnownSort b) => Hom (F a) b -> Hom a (U b)
+  Force :: (KnownSort a, KnownSort b) => Hom a (U b) -> Hom (F a) b
 
-  UnitHom :: KnownSort a => Hom  a Unit
-  Fst :: (KnownSort a, KnownSort b) => Hom  (a * b) a
-  Snd :: (KnownSort a, KnownSort b) => Hom  (a * b) b
-  Fanout :: (KnownSort a, KnownSort b, KnownSort c) => Hom  c a -> Hom  c b -> Hom  c (a * b)
+  UnitHom :: KnownSort a => Hom a Unit
+  Fst :: (KnownSort a, KnownSort b) => Hom (a * b) a
+  Snd :: (KnownSort a, KnownSort b) => Hom (a * b) b
+  Fanout :: (KnownSort a, KnownSort b, KnownSort c) => Hom c a -> Hom c b -> Hom c (a * b)
 
   Drop :: (KnownSort a, KnownSort b) => Hom (a & b) b
-  Push :: (KnownSort a, KnownSort b, KnownSort c) => Hom  (a & b) c -> Hom  Unit a -> Hom  b c
-  Pass :: (KnownSort a, KnownSort b, KnownSort c) => Hom  b (a ~> c) -> Hom  Unit a -> Hom  b c
+  Push :: (KnownSort a, KnownSort b) => Hom Unit a -> Hom b (a & b)
+  Pass :: (KnownSort a, KnownSort b, KnownSort c) => Hom b (a ~> c) -> Hom Unit a -> Hom b c
 
   U64 :: Word64 -> Hom  Unit U64
 
   Constant :: Lam.KnownT a => String -> String -> Hom  (F Unit) (AsAlgebra (Ccc.AsObject a))
-  CccIntrinsic :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.Intrinsic a b -> Hom  (AsAlgebra a) (AsAlgebra b)
-  PointlessIntrinsic :: (KnownSort a, KnownSort b) => Intrinsic a b -> Hom  a b
+  CccIntrinsic :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.Intrinsic a b -> Hom (AsAlgebra a) (AsAlgebra b)
+  PointlessIntrinsic :: (KnownSort a, KnownSort b) => Intrinsic a b -> Hom a b
 
 instance Category Hom where
   id = Id
@@ -149,7 +146,7 @@ instance Code View where
   x &&& y = V $ \p -> let
     x' = view x (appPrec + 1)
     y' = view x (appPrec + 1)
-    in paren (p > appPrec) $ sep [x', keyword $ pretty ",", y']
+    in paren (p > appPrec) $ sep [x', keyword $ pretty "&&&", y']
   fst = V $ \_ -> keyword $ pretty "fst"
   snd = V $ \_ -> keyword $ pretty "snd"
 
@@ -165,10 +162,9 @@ instance Pointless View View where
     x' = view x (appPrec + 1)
     in paren (p > appPrec) $ sep [keyword $ pretty "thunk", x']
 
-  push f x = V $ \p -> let
-    f' = view f (appPrec + 1)
+  push x = V $ \p -> let
     x' = view x (appPrec + 1)
-    in paren (p > appPrec) $ sep [keyword $ pretty "push", f', x']
+    in paren (p > appPrec) $ sep [keyword $ pretty "push", x']
   pass f x = V $ \p -> let
     f' = view f (appPrec + 1)
     x' = view x (appPrec + 1)

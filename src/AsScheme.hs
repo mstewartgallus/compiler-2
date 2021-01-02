@@ -46,6 +46,7 @@ data Val x y a where
   FstVal :: Val x y (a * b) -> Val x y a
   SndVal :: Val x y (a * b) -> Val x y b
   FanoutVal :: Val x y a -> Val x y b -> Val x y (a * b)
+  LetVal :: (Val x y a -> Val x y b) -> Val x y a -> Val x y b
   ThunkVal :: (Act x y Empty -> Act x y b) -> Val x y (U b)
   U64Val :: Word64 -> Val x y U64
   IntrinsicVal :: Intrinsic a b -> Val x y a -> Val x y b
@@ -77,6 +78,17 @@ val x = case x of
   SndVal x -> do
     x' <- val x
     pure $ parens $ sep [pretty "cdr", x']
+  LetVal f x -> do
+    x' <- val x
+    v <- fresh
+    body <- val (f (VarVal (V v)))
+    pure $
+      parens $
+        dent $
+          vsep
+            [ sep [pretty "let", parens (brackets $ sep [v, x'])],
+              body
+            ]
   ThunkVal f -> do
     body <- act (f EmptyAct)
     pure $ parens $ dent $ vsep [pretty "delay", body]
@@ -126,10 +138,15 @@ instance Stack (Prog x y)
 
 instance Pointless (Prog x y) (Prog x y) where
   drop = K $ \x -> DropAct x
-  thunk (K f) = C $ \env -> ThunkVal (\t -> f (PushAct env t))
+  thunk (K f) = C $ \env ->
+    LetVal
+      ( \env' ->
+          ThunkVal (\t -> f (PushAct env' t))
+      )
+      env
 
   pass (K f) (C x) = K $ \env -> PassAct (f env) (x UnitVal)
-  push (K f) (C x) = K $ \env -> f (PushAct (x UnitVal) env)
+  push (C x) = K $ \env -> PushAct (x UnitVal) env
 
   u64 n = C $ \_ -> U64Val n
   constant pkg name = K $ \_ -> CallAct Lam.inferT pkg name
