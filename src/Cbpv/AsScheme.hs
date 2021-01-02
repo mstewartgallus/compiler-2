@@ -5,6 +5,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Cbpv.AsScheme (toScheme) where
@@ -26,72 +27,72 @@ import Control.Monad.State hiding (lift)
 
 toScheme :: Hom.Closed (U (F Unit)) (U (F U64)) -> Doc Style
 toScheme x = case Hom.fold x of
-  P y -> evalState y 0
+  C y -> evalState (y $ pretty "'()") 0
 
 -- go :: Prog (U (F Unit)) (U (F U64)) -> Word64
 -- go (C f) = case f (Thunk $ \w -> Unit :& w) of
 --   Thunk t -> case t (Effect 0) of
 --     (U64 y :& _) -> y
 
-newtype Prog (a :: Sort t) (b :: Sort t) = P { comp :: State Int (Doc Style) }
+data family Prog (a :: Sort t) (b :: Sort t)
+newtype instance Prog (a :: Set) (b :: Set) = C (Doc Style -> State Int (Doc Style))
+newtype instance Prog (a :: Algebra) (b :: Algebra) = K { comp :: State Int (Doc Style) }
 
 instance Category (Prog @SetTag) where
-  id = P $ do
-    v <- fresh
-    pure $ parens $ sep [sep [pretty "lambda", parens v], v]
-  P f . P g = P $ do
-    g' <- g
-    f' <- f
-    v <- fresh
-    pure $ parens $ sep [sep [pretty "lambda", parens v], parens (sep [f', parens (sep [g', v])])]
+  -- id = P $ do
+  --   v <- fresh
+  --   pure $ parens $ sep [sep [pretty "lambda", parens v], v]
+  C f . C g = C $ \x -> do
+    y <- g x
+    f y
 instance Category (Prog @AlgebraTag) where
-  id = P $ pure (pretty "")
-  P f . P g = P $ do
+  -- id = K $ pure (pretty "")
+  K f . K g = K $ do
     g' <- g
     f' <- f
-    pure (vsep [g', f'])
+    pure $ parens $ vsep [f', g']
 
 instance Code Prog where
-  unit = P $ pure (pretty "'()")
-  fst = P $ pure $ pretty "fst"
-  snd = P $ pure $ pretty "snd"
-  P x &&& P y = P $ do
-    x' <- x
-    y' <- y
-    pure $ parens $ sep [x', pretty ".", y']
+  unit = C $ \_ -> pure (pretty "'()")
+  -- fst = P $ pure $ pretty "fst"
+  -- snd = P $ pure $ pretty "snd"
+  C x &&& C y = C $ \env -> do
+    x' <- x env
+    y' <- y env
+    pure $ sep [x', y']
 
 instance Stack Prog where
 
 instance Cbpv Prog Prog where
-  force (P x) = P $ do
-    x' <- x
+  force (C x) = K $ do
+    x' <- x $ pretty "'()"
     pure $ parens $ sep [pretty "force", x']
-  thunk f = P $ do
-    v <- fresh
-    body <- comp (f (P $ pure v))
-    pure $ parens $ dent $ vsep [sep [pretty "thunk", parens v], body]
+  thunk f = C $ \env -> do
+    body <- comp (f (C $ \_ -> pure env))
+    pure $ parens $ dent $ vsep [pretty "delay", body]
 
-  pass (P x) = P $ do
-    x' <- x
-    pure $ parens $ sep [pretty "pass", x']
-  zeta f = P $ do
+  pass (C x) = K $ do
+    x' <- x $ pretty "'()"
+    pure $ sep [pretty "pass", x']
+  zeta f = K $ do
     v <- fresh
-    body <- comp (f (P $ pure v))
-    pure $ parens $ dent $ vsep [sep [pretty "zeta", parens v], body]
+    body <- comp (f (C $ \_ -> pure v))
+    pure $ parens $ dent $ vsep [sep [pretty "lambda", parens v], body]
 
-  lift (P x) = P $ do
-    x' <- x
-    pure $ parens $ sep [pretty "push", x']
-  pop f = P $ do
+  lift (C x) = K $ do
+    x' <- x $ pretty "'()"
+    pure x' -- $ parens $ sep [pretty "push", x']
+
+  pop f = K $ do
     v <- fresh
-    body <- comp (f (P $ pure v))
-    pure $ parens $ dent $ vsep [sep [pretty "pop", parens v], body]
+    body <- comp (f (C $ \_ -> pure v))
+    pure $ parens $ dent $ vsep [sep [pretty "lambda", parens v], body]
 
-  u64 n = P $ pure $ pretty n
-  constant pkg name = P $ do
+  u64 n = C $ \_ -> pure $ pretty n
+  constant pkg name = K $ do
     pure $ parens $ sep [pretty "call", pretty pkg, pretty name]
-  cbpvIntrinsic x = P $ case x of
-     AddIntrinsic -> pure $ pretty "add-intrinsic"
+  cbpvIntrinsic x = C $ \args -> case x of
+     AddIntrinsic -> pure $ parens $ sep [pretty "+", args]
 
 fresh :: State Int (Doc Style)
 fresh = do
