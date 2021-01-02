@@ -28,31 +28,38 @@ import Pretty
 import Control.Monad.State hiding (lift)
 
 toScheme :: Hom.Closed (U (F Unit)) (U (F U64)) -> Doc Style
-toScheme x = case Hom.fold x of
-  C y -> evalState (val (y (ThunkVal (PushAct IdAct UnitVal)))) 0
+toScheme x = toScheme' $ Hom.Closed (force (Hom.fold x . thunk (\_ -> lift id unit)))
+
+toScheme' :: Hom.Closed Empty (F U64) -> Doc Style
+toScheme' x = case Hom.foldK x of
+  K y -> pretty rt <>
+         hardline <>
+         evalState (act (y EmptyAct)) 0
+
+rt :: String
+rt = "(define (add tple) + (vector-ref tple 0) (vector-ref tple 1))"
 
 data Val x a where
   VarVal :: x a -> Val x a
   UnitVal :: Val x Unit
   FstVal :: Val x (a * b) -> Val x a
   SndVal :: Val x (a * b) -> Val x b
-  ThunkVal :: Act x Empty a -> Val x (U a)
+  ThunkVal :: Act x a -> Val x (U a)
   FanoutVal :: Val x a -> Val x b -> Val x (a * b)
   U64Val :: Word64 -> Val x U64
   IntrinsicVal :: Intrinsic a b -> Val x a -> Val x b
 
-data Act x a b where
-  IdAct :: Act x a a
-  ComposeAct :: Act x b c -> Act x a b -> Act x a c
-  ForceAct :: Val x (U a) -> Act x Empty a
-  PushAct :: Act x (a & b) c -> Val x a -> Act x b c
-  PassAct :: Act x b (a ~> c) -> Val x a -> Act x b c
-  PopAct :: (Val x a -> Act x b c) -> Act x (a & b) c
-  CallAct :: Lam.ST a -> String -> String -> Act x (F Unit) (AsAlgebra (Ccc.AsObject a))
+data Act x a where
+  EmptyAct :: Act x Empty
+  ForceAct :: Val x (U a) -> Act x a
+  PushAct :: Act x b -> Val x a -> Act x (a & b)
+  PassAct :: Act x (a ~> c) -> Val x a -> Act x c
+  -- PopAct :: (Val x a -> Act x b c) -> Act x (a & b) c
+  CallAct :: Lam.ST a -> String -> String -> Act x (AsAlgebra (Ccc.AsObject a))
 
 data family Prog (x :: Set -> Type) (a :: Sort t) (b :: Sort t)
 newtype instance Prog x (a :: Set) (b :: Set) = C (Val x a -> Val x b)
-newtype instance Prog x (a :: Algebra) (b :: Algebra) = K (Act x a b)
+newtype instance Prog x (a :: Algebra) (b :: Algebra) = K (Act x a -> Act x b)
 
 newtype V (a :: Set) = V (Doc Style)
 
@@ -66,41 +73,37 @@ val x = case x of
     pure $ parens $ sep [pretty "delay", a']
   FstVal x -> do
     x' <- val x
-    pure $ parens $ sep [pretty "fst", x']
+    pure $ parens $ sep [pretty "vector-ref", x', pretty "0"]
   SndVal x -> do
     x' <- val x
-    pure $ parens $ sep [pretty "snd", x']
+    pure $ parens $ sep [pretty "vector-ref", x', pretty "1"]
   FanoutVal x y -> do
     x' <- val x
     y' <- val y
-    pure $ parens $ sep [x', pretty ".", y']
+    pure $ parens $ sep [pretty "vector", x', y']
   IntrinsicVal intrins arg -> do
     arg' <- val arg
     case intrins of
-      AddIntrinsic -> pure $ parens $ sep [pretty "+", arg']
+      AddIntrinsic -> pure $ parens $ sep [pretty "add", arg']
 
-act :: Act V a b -> State Int (Doc Style)
+act :: Act V a -> State Int (Doc Style)
 act x = case x of
-  IdAct -> pure $ pretty "id"
-  ComposeAct f g -> do
-    f' <- act f
-    g' <- act g
-    pure $ parens $ vsep [g', f']
+  EmptyAct -> pure $ pretty "(vector)"
   ForceAct x -> do
     x' <- val x
     pure $ parens $ sep [pretty "force", x']
   PushAct f x -> do
     f' <- act f
     x' <- val x
-    pure $ parens $ sep [pretty "push", f', x']
+    pure $ parens $ sep [pretty "vector", f', x']
   PassAct f x -> do
     f' <- act f
     x' <- val x
     pure $ parens $ sep [f', x']
-  PopAct f -> do
-    v <- fresh
-    body <- act (f (VarVal (V v)))
-    pure $ parens $ dent $ vsep [sep [pretty "pop", parens v], body]
+  -- PopAct f -> do
+  --   v <- fresh
+  --   body <- act (f (VarVal (V v)))
+  --   pure $ parens $ dent $ vsep [sep [pretty "pop", parens v], body]
   CallAct _ pkg name -> do
     pure $ parens $ sep [pretty "call", pretty pkg, pretty name]
 
@@ -109,8 +112,8 @@ instance Category (Prog @SetTag x) where
   C f . C g = C $ \x -> f (g x)
 
 instance Category (Prog @AlgebraTag x) where
-  id = K IdAct
-  K f . K g = K (ComposeAct f g)
+  id = K (\x -> x)
+  K f . K g = K $ \x -> f (g x)
 
 instance Code (Prog x) where
   unit = C $ \_ -> UnitVal
@@ -121,18 +124,18 @@ instance Code (Prog x) where
 instance Stack (Prog x) where
 
 instance Cbpv (Prog x) (Prog x) where
-  force (C x) = K $ ForceAct (x UnitVal)
+  force (C x) = K $ \_ -> ForceAct (x UnitVal)
   thunk f = C $ \env -> case f (C $ \_ -> env) of
-    K y -> ThunkVal y
+    K y -> ThunkVal (y EmptyAct)
 
-  pass (K f) (C x) = K (PassAct f (x UnitVal))
-  lift (K f) (C x) = K (PushAct f (x UnitVal))
+  pass (K f) (C x) = K $ \env -> PassAct (f env) (x UnitVal)
+  lift (K f) (C x) = K $ \env -> f (PushAct env (x UnitVal))
 
-  pop f = K $ PopAct $ \x -> case f (C $ \_ -> x) of
-    K y -> y
+  -- pop f = K $ PopAct $ \x -> case f (C $ \_ -> x) of
+  --   K y -> y
 
   u64 n = C $ \_ -> U64Val n
-  constant pkg name = K (CallAct Lam.inferT pkg name)
+  constant pkg name = K $ \_ -> CallAct Lam.inferT pkg name
   cbpvIntrinsic x = C $ \arg -> case x of
      AddIntrinsic -> IntrinsicVal x arg
 
