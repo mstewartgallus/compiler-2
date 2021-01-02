@@ -25,11 +25,13 @@ module Cbpv.Sort
     AsAlgebra,
     asAlgebra,
     toKnownSort,
+eqSort,
     KnownSort (..)
   )
 where
 import qualified Ccc.Type as Type
 import Dict
+import Data.Typeable ((:~:) (..))
 import Pretty
 import Data.Text.Prettyprint.Doc hiding (SEmpty)
 
@@ -161,3 +163,25 @@ toKnownSort x = case x of
     (Dict, Dict) -> Dict
   x :-> y -> case (toKnownSort x, toKnownSort y) of
     (Dict, Dict) -> Dict
+
+eqSort :: SSort t a -> SSort t b -> Maybe (a :~: b)
+eqSort x y = case (x, y) of
+  (SU64, SU64) -> pure Refl
+  (SUnit, SUnit) -> pure Refl
+  (SU a, SU a') -> do
+    Refl <- eqSort a a'
+    pure Refl
+  (a :*: b, a' :*: b') -> do
+    Refl <- eqSort a a'
+    Refl <- eqSort b b'
+    pure Refl
+
+  (SEmpty, SEmpty) -> pure Refl
+  (a :&: b, a' :&: b') -> do
+    Refl <- eqSort a a'
+    Refl <- eqSort b b'
+    pure Refl
+  (a :-> b, a' :-> b') -> do
+    Refl <- eqSort a a'
+    Refl <- eqSort b b'
+    pure Refl

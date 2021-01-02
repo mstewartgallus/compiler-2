@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fda274edf698d83b1fe02f9d18b3838616b1098f15d170eb287e975059d2c418
+-- hash: f07d3c9b70871a853d72c1fdbb1eeac1d8a290edc2cd9ff401fcc2e4d2f9cab3
 
 name:           hoas
 version:        0.1.0.0
@@ -29,6 +29,7 @@ library
   exposed-modules:
       AsCallByName
       AsCcc
+      AsPointless
       Cbpv
       Cbpv.AsEval
       Cbpv.AsIntrinsified
@@ -54,6 +55,7 @@ library
       Lam
       Lam.Term
       Lam.Type
+      Pointless
       Pretty
   other-modules:
       Paths_hoas
