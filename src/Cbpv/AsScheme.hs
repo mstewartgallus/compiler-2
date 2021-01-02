@@ -38,7 +38,7 @@ toScheme' x = case Hom.foldK x of
          evalState (act (y EmptyAct)) 0
 
 rt :: String
-rt = "(define (add tple) + (vector-ref tple 0) (vector-ref tple 1))"
+rt = "(define (add tple) + (car tple) (cdr tple))"
 
 data Val x y a where
   VarVal :: x a -> Val x y a
@@ -78,20 +78,21 @@ val x = case x of
     pure $ parens $ dent $ vsep [pretty "delay", a']
   FstVal x -> do
     x' <- val x
-    pure $ parens $ sep [pretty "vector-ref", x', pretty "0"]
+    pure $ parens $ sep [pretty "car", x']
   SndVal x -> do
     x' <- val x
-    pure $ parens $ sep [pretty "vector-ref", x', pretty "1"]
+    pure $ parens $ sep [pretty "cdr", x']
   KappaVal x f -> do
     x' <- val x
-    h <- fresh
-    t <- fresh
+    v <- fresh
+    let h = parens $ sep [pretty "car", v]
+    let t = parens $ sep [pretty "cdr", v]
     body <- val (f (VarVal (V h)) (VarVal (V t)))
-    pure $ parens $ dent $ sep [pretty "match", x', brackets $ sep [pretty "#" <> parens (sep [h, t]), body]]
+    pure $ parens $ dent $ sep [pretty "let", parens $ brackets $ sep [v, x'], body]
   FanoutVal x y -> do
     x' <- val x
     y' <- val y
-    pure $ parens $ sep [pretty "vector", x', y']
+    pure $ parens $ sep [pretty "cons", x', y']
   IntrinsicVal intrins arg -> do
     arg' <- val arg
     case intrins of
@@ -100,24 +101,25 @@ val x = case x of
 act :: Act V V a -> State Int (Doc Style)
 act x = case x of
   VarAct (V x) -> pure x
-  EmptyAct -> pure $ pretty "(vector)"
+  EmptyAct -> pure $ pretty "'()"
   ForceAct x -> do
     x' <- val x
     pure $ parens $ sep [pretty "force", x']
-  PushAct f x -> do
-    f' <- act f
-    x' <- val x
-    pure $ parens $ sep [pretty "vector", f', x']
+  PushAct x y -> do
+    x' <- act x
+    y' <- val y
+    pure $ parens $ sep [pretty "cons", x', y']
   PassAct f x -> do
     f' <- act f
     x' <- val x
     pure $ parens $ sep [f', x']
   PopAct x f -> do
     x' <- act x
-    h <- fresh
-    t <- fresh
+    v <- fresh
+    let h = parens $ sep [pretty "car", v]
+    let t = parens $ sep [pretty "cdr", v]
     body <- act (f (VarVal (V h)) (VarAct (V t)))
-    pure $ parens $ dent $ sep [pretty "match", x', brackets $ sep [pretty "#" <> parens (sep [h, t]), body]]
+    pure $ parens $ dent $ sep [pretty "let", parens $ brackets $ sep [v, x'], body]
   CallAct _ pkg name -> do
     pure $ parens $ sep [pretty "call", pretty pkg, pretty name]
 
