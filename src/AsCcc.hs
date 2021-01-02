@@ -26,7 +26,7 @@ instance Lam.Lam (V k) where
 
 be' :: Lam.ST a -> Lam.ST b -> V k a -> (V k a -> V k b) -> V k b
 be' a b (V x) f = case (toKnownT (asObject a), toKnownT (asObject b)) of
-  (Dict, Dict) -> V $ kappa (\x' -> go (f (V x'))) . lift x
+  (Dict, Dict) -> V $ lift (kappa (\x' -> go (f (V x')))) x
 
 lam' :: Lam.ST a -> Lam.ST b -> (V k a -> V k b) -> V k (a Lam.~> b)
 lam' a b f = case (toKnownT (asObject a), toKnownT (asObject b)) of
@@ -34,4 +34,4 @@ lam' a b f = case (toKnownT (asObject a), toKnownT (asObject b)) of
 
 pass' :: Lam.ST a -> Lam.ST b -> V k (a Lam.~> b) -> V k a -> V k b
 pass' a b (V f) (V x) = case (toKnownT (asObject a), toKnownT (asObject b)) of
-  (Dict, Dict) -> V (pass x . f)
+  (Dict, Dict) -> V (pass f x)

@@ -32,10 +32,10 @@ instance Ccc (Path k) where
 
   unit = into unit
 
-  lift x = into (lift (out x))
+  lift f x = into (lift (out f) (out x))
   kappa f = into (kappa $ \x -> out (f (into x)))
 
-  pass x = into (pass (out x))
+  pass f x = into (pass (out f) (out x))
   zeta f = into (zeta $ \x -> out (f (into x)))
 
   u64 n = into (u64 n)

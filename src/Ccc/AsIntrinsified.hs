@@ -23,11 +23,11 @@ instance Ccc (Expr f) where
 
   unit = E unit
 
-  lift (E x) = E (lift x)
+  lift (E f) (E x) = E (lift f x)
   kappa f = E $ kappa $ \x' -> case f (E x') of
     E y -> y
 
-  pass (E x) = E (pass x)
+  pass (E f) (E x) = E (pass f x)
   zeta f = E $ zeta $ \x' -> case f (E x') of
     E y -> y
 
@@ -42,4 +42,4 @@ k _ pkg name = E (constant pkg name)
 addIntrinsic :: Hom f Unit (AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))
 addIntrinsic = zeta $ \x ->
                zeta $ \y ->
-               ((add . lift x) . y)
+               ((lift add x) . y)

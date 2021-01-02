@@ -16,7 +16,6 @@ inline x = Closed (out (fold x))
 
 data Expr f a b where
   E :: f a b -> Expr f a b
-  Lift :: (KnownT a, KnownT b, Ccc f) => Expr f Unit a -> Expr f b (a * b)
   Kappa :: (KnownT a, KnownT b, KnownT c, Ccc f) => (Expr f Unit a -> Expr f b c) -> Expr f (a * b) c
 
 into :: f a b -> Expr f a b
@@ -25,20 +24,19 @@ into = E
 out :: Expr f a b -> f a b
 out expr = case expr of
   E x -> x
-  Lift x -> lift (out x)
   Kappa f -> kappa (\x -> out (f (E x)))
 
 instance Ccc f => Ccc (Expr f) where
   id = into id
-  Kappa f . Lift x = f x
   f . g = into (out f . out g)
 
   unit = into unit
 
-  lift = Lift
+  lift (Kappa f) x = f x
+  lift f x = into (lift (out f) (out x))
   kappa = Kappa
 
-  pass x = into (pass (out x))
+  pass f x = into (pass (out f) (out x))
   zeta f = into (zeta $ \x -> out (f (into x)))
 
   u64 x = into (u64 x)

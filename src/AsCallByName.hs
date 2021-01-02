@@ -25,9 +25,9 @@ instance Ccc.Ccc (V k) where
 
   unit = unit' Ccc.inferT
 
-  lift = lift' Ccc.inferT Ccc.inferT
+  lift = lift' Ccc.inferT Ccc.inferT Ccc.inferT
 
-  pass = pass' Ccc.inferT Ccc.inferT
+  pass = pass' Ccc.inferT Ccc.inferT Ccc.inferT
   zeta = zeta' Ccc.inferT Ccc.inferT Ccc.inferT
 
   u64 n = V $ (thunk (\_ -> lift (u64 n)))
@@ -46,15 +46,18 @@ unit' :: Ccc.ST a -> V k a Ccc.Unit
 unit' a = case toKnownSort (asAlgebra a) of
   Dict -> V (thunk (\_ -> lift unit))
 
-lift' :: Ccc.ST a -> Ccc.ST b -> V k Ccc.Unit a -> V k b (a Ccc.* b)
-lift' a b (V x) = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b)) of
-  (Dict, Dict) -> V $
-    thunk $ \env ->
-      lift ((x . thunk (\_ -> lift unit)) &&& env)
+lift' :: Ccc.ST a -> Ccc.ST b -> Ccc.ST c -> V k (a Ccc.* b) c -> V k Ccc.Unit a -> V k b c
+lift' a b c (V f) (V x) = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b), toKnownSort (asAlgebra c)) of
+  (Dict, Dict, Dict) ->
+    V $
+      f
+        . ( thunk $ \env ->
+              lift ((x . thunk (\_ -> lift unit)) &&& env)
+          )
 
-pass' :: Ccc.ST a -> Ccc.ST b -> V k Ccc.Unit a -> V k (a Ccc.~> b) b
-pass' a b (V x) = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b)) of
-  (Dict, Dict) -> V $ thunk (\env -> pass (x . thunk (\_ -> lift unit)) . force env)
+pass' :: Ccc.ST a -> Ccc.ST b -> Ccc.ST c -> V k b (a Ccc.~> c) -> V k Ccc.Unit a -> V k b c
+pass' a b c (V f) (V x) = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b), toKnownSort (asAlgebra c)) of
+  (Dict, Dict, Dict) -> V $ thunk (\env -> pass (x . thunk (\_ -> lift unit)) . force (f . env))
 
 zeta' :: Ccc.ST a -> Ccc.ST b -> Ccc.ST c -> (V k Ccc.Unit a -> V k b c) -> V k b (a Ccc.~> c)
 zeta' a b c f = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b), toKnownSort (asAlgebra c)) of
