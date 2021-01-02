@@ -28,12 +28,18 @@ class Category code => Code code where
   snd :: (KnownSort a, KnownSort b) => code (a * b) b
 
 class (Stack stack, Code code) => Pointless stack code | stack -> code, code -> stack where
+  inStack :: KnownSort a => stack a (Unit & a)
+  lmapStack :: (KnownSort a, KnownSort b, KnownSort x) => code a b -> stack (a & x) (b & x)
+  rmapStack :: (KnownSort a, KnownSort b, KnownSort x) => stack a b -> stack (x & a) (x & b)
+
+  push :: (KnownSort a, KnownSort b) => stack ((a * b) & c) (a & (b & c))
+  pop :: (KnownSort a, KnownSort b) => stack (a & (b & c)) ((a * b) & c)
+
   thunk :: (KnownSort a, KnownSort b) => stack (F a) b -> code a (U b)
   force :: (KnownSort a, KnownSort b) => code a (U b) -> stack (F a) b
 
   drop :: (KnownSort a, KnownSort b) => stack (a & b) b
 
-  push :: (KnownSort a, KnownSort b) => code Unit a -> stack b (a & b)
   pass :: (KnownSort a, KnownSort b) => code Unit a -> stack (a ~> b) b
 
   uncurry :: (KnownSort a, KnownSort b, KnownSort c) => stack b (a ~> c) -> stack (a & b) c

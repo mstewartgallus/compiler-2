@@ -30,23 +30,23 @@ newtype C (f :: Algebra -> Algebra -> Type) (g :: Set -> Set -> Type) a b = C (S
 
 newtype K (f :: Algebra -> Algebra -> Type) (g :: Set -> Set -> Type) a b = K (State Int (KS f g a b))
 
-instance Category g => Category (C f g) where
+instance Pointless f g => Category (C f g) where
   id = C $ pure id
   C f . C g = C $ do
     f' <- f
     g' <- g
     pure (f' . g')
 
-instance Category f => Category (K f g) where
+instance Pointless f g => Category (K f g) where
   id = K $ pure id
   K f . K g = K $ do
     f' <- f
     g' <- g
     pure (f' . g')
 
-instance Stack f => Cbpv.Stack (K f g)
+instance Pointless f g => Cbpv.Stack (K f g)
 
-instance Code g => Cbpv.Code (C f g) where
+instance Pointless f g => Cbpv.Code (C f g) where
   unit = C $ pure unit
   kappa = kappa' inferSort
   lift (C x) = C $ do
@@ -57,11 +57,11 @@ instance Pointless f g => Cbpv.Cbpv (K f g) (C f g) where
   thunk = thunk' inferSort
   force (C x) = K $ do
     x' <- x
-    pure (force x' . push unit)
+    pure (force x' . inStack)
 
   push (C x) = K $ do
     x' <- x
-    pure (push x')
+    pure (lmapStack (x' . unit) . inStack)
   pop = pop' inferSort
 
   pass (C x) = K $ do
@@ -70,6 +70,7 @@ instance Pointless f g => Cbpv.Cbpv (K f g) (C f g) where
   zeta = zeta' inferSort
 
   u64 n = C $ pure (u64 n)
+  constant pkg name = K $ pure (constant pkg name)
   cbpvIntrinsic x = C $ pure (cbpvIntrinsic x)
 
 thunk' :: (Pointless f g, KnownSort a, KnownSort b) => SSet a -> (C f g Unit a -> K f g Empty b) -> C f g a (U b)
@@ -82,7 +83,7 @@ thunk' t f = C $ do
       Nothing -> y . drop
       Just x -> x
 
-kappa' :: (Code g, KnownSort a, KnownSort b, KnownSort c) => SSet a -> (C f g Unit a -> C f g b c) -> C f g (a * b) c
+kappa' :: (Pointless f g, KnownSort a, KnownSort b, KnownSort c) => SSet a -> (C f g Unit a -> C f g b c) -> C f g (a * b) c
 kappa' t f = C $ do
   v <- fresh t
   y <- case f (C $ pure $ var v) of
@@ -134,7 +135,7 @@ inK x =
       removeVarK = const Nothing
     }
 
-instance Category g => Category (CS f g) where
+instance Pointless f g => Category (CS f g) where
   id = inC id
   f . g =
     CS
@@ -142,11 +143,11 @@ instance Category g => Category (CS f g) where
         removeVarC = \v -> case (removeVarC f v, removeVarC g v) of
           (Just f', Just g') -> Just undefined
           (Nothing, Just g') -> Just (f . g')
-          (Just f', Nothing) -> Just undefined
+          (Just f', Nothing) -> Just (f' . (fst &&& (g . snd)))
           (Nothing, Nothing) -> Nothing
       }
 
-instance Category f => Category (KS f g) where
+instance Pointless f g => Category (KS f g) where
   id = inK id
   f . g =
     KS
@@ -154,13 +155,13 @@ instance Category f => Category (KS f g) where
         removeVarK = \v -> case (removeVarK f v, removeVarK g v) of
           (Just f', Just g') -> Just undefined
           (Nothing, Just g') -> Just (f . g')
-          (Just f', Nothing) -> Just undefined
+          (Just f', Nothing) -> Just (f' . rmapStack g)
           (Nothing, Nothing) -> Nothing
       }
 
-instance Stack f => Stack (KS f g)
+instance Pointless f g => Stack (KS f g)
 
-instance Code g => Code (CS f g) where
+instance Pointless f g => Code (CS f g) where
   unit = inC unit
   fst = inC fst
   snd = inC snd
@@ -176,13 +177,26 @@ instance Code g => Code (CS f g) where
 
 instance Pointless f g => Pointless (KS f g) (CS f g) where
   drop = inK drop
-  push x =
+  inStack = inK inStack
+  pop = inK pop
+  push = inK push
+
+  lmapStack x =
     KS
-      { outK = push (outC x),
+      { outK = lmapStack (outC x),
         removeVarK = \v -> case removeVarC x v of
+          Just x' -> Just (lmapStack x' . pop)
+          Nothing -> Nothing
+      }
+
+  rmapStack x =
+    KS
+      { outK = rmapStack (outK x),
+        removeVarK = \v -> case removeVarK x v of
           Just x' -> Just undefined
           Nothing -> Nothing
       }
+
   pass x =
     KS
       { outK = pass (outC x),
@@ -220,7 +234,9 @@ instance Pointless f g => Pointless (KS f g) (CS f g) where
           Just f' -> Just undefined
           Nothing -> Nothing
       }
+
   u64 n = inC (u64 n)
+  constant pkg name = inK (constant pkg name)
   cbpvIntrinsic x = inC (cbpvIntrinsic x)
 
 data Var a = Var (SSet a) Int
@@ -230,7 +246,7 @@ eqVar (Var at a) (Var bt b)
   | a == b = eqSort at bt
   | otherwise = Nothing
 
-var :: (KnownSort a, Code g) => Var a -> CS f g Unit a
+var :: (KnownSort a, Pointless f g) => Var a -> CS f g Unit a
 var v =
   CS
     { outC = error "free variable",

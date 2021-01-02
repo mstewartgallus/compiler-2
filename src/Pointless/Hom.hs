@@ -52,7 +52,14 @@ goK x = case x of
 
   CccIntrinsic x -> cccIntrinsic x
 
-  Push x -> push (goC x)
+  Push -> push
+  Pop -> pop
+
+  InStack -> inStack
+
+  LmapStack x -> lmapStack (goC x)
+  RmapStack x -> rmapStack (goK x)
+
   Pass x -> pass (goC x)
 
   Constant pkg name -> constant pkg name
@@ -70,7 +77,13 @@ data Hom (a :: Sort t) (b :: Sort t) where
   Fanout :: (KnownSort a, KnownSort b, KnownSort c) => Hom c a -> Hom c b -> Hom c (a * b)
 
   Drop :: (KnownSort a, KnownSort b) => Hom (a & b) b
-  Push :: (KnownSort a, KnownSort b) => Hom Unit a -> Hom b (a & b)
+  InStack :: (KnownSort a) => Hom a (Unit & a)
+  LmapStack :: (KnownSort a, KnownSort b, KnownSort x) => Hom a b -> Hom (a & x) (b & x)
+  RmapStack :: (KnownSort a, KnownSort b, KnownSort x) => Hom a b -> Hom (x & a) (x & b)
+
+  Push :: (KnownSort a, KnownSort b) => Hom ((a * b) & c) (a & b & c)
+  Pop :: (KnownSort a, KnownSort b) => Hom (a & b & c) ((a * b) & c)
+
   Pass :: (KnownSort a, KnownSort b) => Hom Unit a -> Hom (a ~> b) b
 
   U64 :: Word64 -> Hom  Unit U64
@@ -95,11 +108,17 @@ instance Stack Hom where
 
 instance Pointless Hom Hom where
   drop = Drop
+  inStack = InStack
 
   force = Force
   thunk = Thunk
 
   push = Push
+  pop = Pop
+
+  lmapStack = LmapStack
+  rmapStack = RmapStack
+
   pass = Pass
 
   u64 = U64
@@ -153,7 +172,19 @@ instance Code View where
 instance Stack View where
 
 instance Pointless View View where
+  inStack = V $ \_ -> keyword $ pretty "inStack"
+  push = V $ \_ -> keyword $ pretty "push"
+  pop = V $ \_ -> keyword $ pretty "pop"
+
   drop = V $ \_ -> keyword $ pretty "drop"
+
+  lmapStack x = V $ \p -> let
+    x' = view x (appPrec + 1)
+    in paren (p > appPrec) $ sep [keyword $ pretty "lmapStack", x']
+
+  rmapStack x = V $ \p -> let
+    x' = view x (appPrec + 1)
+    in paren (p > appPrec) $ sep [keyword $ pretty "rmapStack", x']
 
   force x = V $ \p -> let
     x' = view x (appPrec + 1)
@@ -162,9 +193,6 @@ instance Pointless View View where
     x' = view x (appPrec + 1)
     in paren (p > appPrec) $ sep [keyword $ pretty "thunk", x']
 
-  push x = V $ \p -> let
-    x' = view x (appPrec + 1)
-    in paren (p > appPrec) $ sep [keyword $ pretty "push", x']
   pass x = V $ \p -> let
     x' = view x (appPrec + 1)
     in paren (p > appPrec) $ sep [keyword $ pretty "pass", x']

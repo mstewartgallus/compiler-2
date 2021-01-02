@@ -55,6 +55,7 @@ data Act x y a where
   VarAct :: y a -> Act x y a
   EmptyAct :: Act x y Empty
   DropAct :: Act x y (a & b) -> Act x y b
+  PopAct :: (Val x y a -> Act x y b -> Act x y c) -> Act x y (a & b) -> Act x y c
   PushAct :: Val x y a -> Act x y b -> Act x y (a & b)
   PassAct :: Act x y (a ~> c) -> Val x y a -> Act x y c
   CallAct :: Lam.ST a -> String -> String -> Act x y (AsAlgebra (Ccc.AsObject a))
@@ -119,6 +120,13 @@ act x = case x of
     h' <- val h
     t' <- act t
     pure $ parens $ sep [pretty "cons", h', t']
+  PopAct f x -> do
+    v <- fresh
+    x' <- act x
+    let h = parens $ sep [pretty "car", v]
+    let t = parens $ sep [pretty "cdr", v]
+    body <- act (f (VarVal (V h)) (VarAct (V t)))
+    pure $ parens $ dent $ vsep [sep [pretty "let", parens $ brackets $ sep [v, x']], body]
   PassAct f x -> do
     f' <- act f
     x' <- val x
@@ -151,8 +159,13 @@ instance Pointless (Prog x y) (Prog x y) where
       )
       env
 
+  inStack = K (PushAct UnitVal)
+  lmapStack (C x) = K (PopAct (\h -> PushAct (x h)))
+  rmapStack (K x) = K (PopAct (\h t -> PushAct h (x t)))
   pass (C x) = K $ \env -> PassAct env (x UnitVal)
-  push (C x) = K $ \env -> PushAct (x UnitVal) env
+
+  push = K (PopAct (\h t -> PushAct (FstVal h) (PushAct (SndVal h) t)))
+  pop = K (PopAct (\x -> PopAct (\y -> PushAct (FanoutVal x y))))
 
   u64 n = C $ \_ -> U64Val n
   constant pkg name = K $ \_ -> CallAct Lam.inferT pkg name
