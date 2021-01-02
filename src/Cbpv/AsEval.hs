@@ -63,9 +63,9 @@ instance Category (Prog @AlgebraTag) where
 
 instance Code Prog where
   unit = C $ const Unit
-  fst = C $ \(Pair x _) -> x
-  snd = C $ \(Pair _ x) -> x
-  C x &&& C y = C $ \env -> Pair (x env) (y env)
+  lift (C f) (C x) = C $ \env -> f (Pair (x Unit) env)
+  kappa f = C $ \(Pair h t) -> case f (C $ const h) of
+    C y -> y t
 
 instance Stack Prog where
 
@@ -80,7 +80,7 @@ instance Cbpv Prog Prog where
   zeta f = S $ \env -> Lam $ \x -> case f (C $ const x) of
     S y -> y env
 
-  lift (S f) (C x) = S $ \env -> f (x Unit :& env)
+  push (S f) (C x) = S $ \env -> f (x Unit :& env)
   pop f = S $ \(h :& t) -> case f (C $ const h) of
     S y -> y t
 

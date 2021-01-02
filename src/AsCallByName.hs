@@ -30,7 +30,7 @@ instance Ccc.Ccc (V k) where
   pass = pass' Ccc.inferT Ccc.inferT Ccc.inferT
   zeta = zeta' Ccc.inferT Ccc.inferT Ccc.inferT
 
-  u64 n = V $ (thunk (\_ -> lift id (u64 n)))
+  u64 n = V $ (thunk (\_ -> push id (u64 n)))
   constant = constant' Lam.inferT
   cccIntrinsic = cccIntrinsic' Ccc.inferT Ccc.inferT
 
@@ -44,7 +44,7 @@ compose a b c (V f) (V g) = case (toKnownSort (asAlgebra a), toKnownSort (asAlge
 
 unit' :: Ccc.ST a -> V k a Ccc.Unit
 unit' a = case toKnownSort (asAlgebra a) of
-  Dict -> V (thunk (\_ -> lift id unit))
+  Dict -> V (thunk (\_ -> push id unit))
 
 lift' :: Ccc.ST a -> Ccc.ST b -> Ccc.ST c -> V k (a Ccc.* b) c -> V k Ccc.Unit a -> V k b c
 lift' a b c (V f) (V x) = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b), toKnownSort (asAlgebra c)) of
@@ -52,12 +52,15 @@ lift' a b c (V f) (V x) = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebr
     V $
       f
         . ( thunk $ \env ->
-              lift id ((x . thunk (\_ -> lift id unit)) &&& env)
+              push id (fanout (x . thunk (\_ -> push id unit)) env)
           )
+
+fanout :: (KnownSort a, KnownSort b) => Hom k Unit a -> Hom k Unit b -> Hom k Unit (a * b)
+fanout x y = lift id x . y
 
 pass' :: Ccc.ST a -> Ccc.ST b -> Ccc.ST c -> V k b (a Ccc.~> c) -> V k Ccc.Unit a -> V k b c
 pass' a b c (V f) (V x) = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b), toKnownSort (asAlgebra c)) of
-  (Dict, Dict, Dict) -> V $ thunk (\env -> pass (force (f . env)) (x . thunk (\_ -> lift id unit)))
+  (Dict, Dict, Dict) -> V $ thunk (\env -> pass (force (f . env)) (x . thunk (\_ -> push id unit)))
 
 zeta' :: Ccc.ST a -> Ccc.ST b -> Ccc.ST c -> (V k Ccc.Unit a -> V k b c) -> V k b (a Ccc.~> c)
 zeta' a b c f = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b), toKnownSort (asAlgebra c)) of
@@ -72,4 +75,4 @@ cccIntrinsic' a b intrins = case (toKnownSort (asAlgebra a), toKnownSort (asAlge
 
 constant' :: Lam.KnownT a => Lam.ST a -> String -> String -> V k Ccc.Unit (Ccc.AsObject a)
 constant' t pkg name = case toKnownSort (asAlgebra (Ccc.asObject t)) of
-  Dict -> V $ thunk (\_ -> constant pkg name . lift id unit)
+  Dict -> V $ thunk (\_ -> constant pkg name . push id unit)

@@ -34,9 +34,15 @@ class Category stack => Stack (stack :: Algebra -> Algebra -> Type)
 
 class Category code => Code code where
   unit :: KnownSort a => code a Unit
-  (&&&) :: (KnownSort x, KnownSort a, KnownSort b) => code x a -> code x b -> code x (a * b)
+
   fst :: (KnownSort a, KnownSort b) => code (a * b) a
+  fst = kappa (\x -> x . unit)
+
   snd :: (KnownSort a, KnownSort b) => code (a * b) b
+  snd = kappa (\_ -> id)
+
+  kappa :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> code b c) -> code (a * b) c
+  lift :: (KnownSort a, KnownSort b, KnownSort c) => code (a * b) c -> code Unit a -> code b c
 
 class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack where
   -- It's pretty obvious this should be generalized but idk precisely how
@@ -44,7 +50,7 @@ class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack
   force :: KnownSort a => code Unit (U a) -> stack Empty a
 
   pop :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> stack (a & b) c
-  lift :: (KnownSort a, KnownSort b, KnownSort c) => stack (a & b) c -> code Unit a -> stack b c
+  push :: (KnownSort a, KnownSort b, KnownSort c) => stack (a & b) c -> code Unit a -> stack b c
 
   zeta :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> stack b (a ~> c)
   pass :: (KnownSort a, KnownSort b, KnownSort c) => stack b (a ~> c) -> code Unit a -> stack b c

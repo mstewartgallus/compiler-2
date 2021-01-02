@@ -40,9 +40,8 @@ goC x = case x of
   Thunk f -> thunk (\x -> goK (f x))
 
   UnitHom -> unit
-  Fanout x y -> goC x &&& goC y
-  Fst -> fst
-  Snd -> snd
+  Kappa f -> kappa (\x -> goC (f x))
+  Lift f x -> lift (goC f) (goC x)
 
   U64 n -> u64 n
   CbpvIntrinsic x -> cbpvIntrinsic x
@@ -56,7 +55,7 @@ goK x = case x of
 
   CccIntrinsic x -> cccIntrinsic x
 
-  Lift f x -> lift (goK f) (goC x)
+  Push f x -> push (goK f) (goC x)
   Pop f -> pop (\x -> goK (f x))
 
   Pass f x -> pass (goK f) (goC x)
@@ -74,11 +73,11 @@ data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   Force :: KnownSort a => Hom x Unit (U a) -> Hom x Empty a
 
   UnitHom :: KnownSort a => Hom x a Unit
-  Fanout :: (KnownSort a, KnownSort b, KnownSort c) => Hom x c a -> Hom x c b -> Hom x c (a * b)
-  Fst :: (KnownSort a, KnownSort b) => Hom x (a * b) a
-  Snd :: (KnownSort a, KnownSort b) => Hom x (a * b) b
 
-  Lift :: (KnownSort a, KnownSort b, KnownSort c) => Hom x (a & b) c -> Hom x Unit a -> Hom x b c
+  Lift :: (KnownSort a, KnownSort b, KnownSort c) => Hom x (a * b) c -> Hom x Unit a -> Hom x b c
+  Kappa :: (KnownSort a, KnownSort b, KnownSort c) => (x Unit a -> Hom x b c) -> Hom x (a * b) c
+
+  Push :: (KnownSort a, KnownSort b, KnownSort c) => Hom x (a & b) c -> Hom x Unit a -> Hom x b c
   Pop :: (KnownSort a, KnownSort b, KnownSort c) => (x Unit a -> Hom x b c) -> Hom x (a & b) c
 
   Pass :: (KnownSort a, KnownSort b, KnownSort c) => Hom x b (a ~> c) -> Hom x Unit a -> Hom x b c
@@ -98,9 +97,8 @@ instance Category (Hom x) where
 
 instance Code (Hom x) where
   unit = UnitHom
-  (&&&) = Fanout
-  fst = Fst
-  snd = Snd
+  lift = Lift
+  kappa f = Kappa (\x -> f (Var x))
 
 instance Stack (Hom x) where
 
@@ -108,7 +106,7 @@ instance Cbpv (Hom x) (Hom x) where
   force = Force
   thunk f = Thunk (\x -> f (Var x))
 
-  lift = Lift
+  push = Push
   pop f = Pop (\x -> f (Var x))
 
   pass = Pass
@@ -155,9 +153,9 @@ instance Category View where
 
 instance Code View where
   unit = V $ \_ -> pure $ keyword $ pretty "!"
-  V x &&& V y = V $ \_ -> pure (\x' y' -> angles $ sep $ punctuate (keyword $ comma) [x', y']) <*> x 0 <*> y 0
-  fst = V $ \_ -> pure $ keyword $ pretty "π₁"
-  snd = V $ \_ -> pure $ keyword $ pretty "π₂"
+
+  lift f x = V $ \p -> pure (\f' x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", f', x']) <*> view f (appPrec + 1) <*> view x (appPrec + 1)
+  kappa = kappa' inferSort
 
 instance Stack View where
 
@@ -165,7 +163,7 @@ instance Cbpv View View where
   force x = V $  \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "force", x']) <*> view x (appPrec + 1)
   thunk = thunk' inferSort
 
-  lift f x = V $ \p -> pure (\f' x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", f', x']) <*> view f (appPrec + 1) <*> view x (appPrec + 1)
+  push f x = V $ \p -> pure (\f' x' -> paren (p > appPrec) $ sep [keyword $ pretty "push", f', x']) <*> view f (appPrec + 1) <*> view x (appPrec + 1)
   pop = pop' inferSort
 
   pass f x = V $ \p -> pure (\f' x' -> paren (p > appPrec) $ sep [keyword $ pretty "pass", f', x']) <*> view f (appPrec + 1) <*> view x (appPrec + 1)
@@ -185,13 +183,22 @@ thunk' t f =
       sep [keyword $ pretty "thunk" , v, keyword $ pretty ":", prettyProgram t, keyword $ pretty "⇒"],
            body]
 
+kappa' :: SSet a -> (View Unit a -> View b c) -> View (a * b) c
+kappa' t f =
+  V $ \p -> do
+    v <- fresh
+    body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
+    pure $ paren (p > kappaPrec) $ dent $ vsep [
+      sep [keyword $ pretty "κ" , v, keyword $ pretty ":", prettyProgram t, keyword $ pretty "⇒"],
+      body]
+
 pop' :: SSet a -> (View Unit a -> View b c) -> View (a & b) c
 pop' t f =
   V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
     pure $ paren (p > kappaPrec) $ dent $ vsep [
-      sep [keyword $ pretty "κ" , v, keyword $ pretty ":", prettyProgram t, keyword $ pretty "⇒"],
+      sep [keyword $ pretty "pop" , v, keyword $ pretty ":", prettyProgram t, keyword $ pretty "⇒"],
       body]
 
 zeta' :: SSet a -> (View Unit a -> View b c) -> View b (a ~> c)

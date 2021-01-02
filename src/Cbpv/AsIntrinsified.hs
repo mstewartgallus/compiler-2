@@ -34,9 +34,9 @@ instance (Category f, Category g) => Category (Cde f g) where
 
 instance Cbpv f g => Code (Cde f g) where
   unit = C unit
-  fst = C fst
-  snd = C snd
-  C x &&& C y = C (x &&& y)
+  lift (C f) (C x) = C (lift f x)
+  kappa f = C $ kappa $ \x -> case f (C x) of
+    C y -> y
 
 instance Cbpv f g => Stack (Stk f g) where
 
@@ -46,7 +46,7 @@ instance Cbpv f g => Cbpv (Stk f g) (Cde f g) where
   force (C x) = K (force x)
 
   pass (K f) (C x) = K (pass f x)
-  lift (K f) (C x) = K (lift f x)
+  push (K f) (C x) = K (push f x)
 
   zeta f = K $ zeta $ \x -> case f (C x) of
     K y -> y
@@ -71,7 +71,7 @@ doAdd =
   pop $ \tuple -> (
   (pop $ \x -> (
   (pop $ \y ->
-  lift id (addi . (x &&& y))) .
+  push id (lift addi x . y)) .
   force (snd . tuple))) .
   force (fst . tuple))
 

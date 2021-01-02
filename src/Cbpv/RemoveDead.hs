@@ -40,15 +40,14 @@ instance Stack (Expr f) where
 instance Code (Expr g) where
   unit = Unit
 
-  fst = into fst
-  snd = into snd
-  x &&& y = into (out x &&& out y)
+  lift f x = into (lift (out f) (out x))
+  kappa f = into (kappa $ \x -> out (f (into x)))
 
 instance Cbpv (Expr f) (Expr f) where
   thunk f = into (thunk $ \x -> out (f (into x)))
   force x = into (force (out x))
 
-  lift f x = into (lift (out f) (out x))
+  push f x = into (push (out f) (out x))
   pop f = into (pop $ \x -> out (f (into x)))
 
   pass f x = into (pass (out f) (out x))

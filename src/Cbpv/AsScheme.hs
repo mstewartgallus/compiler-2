@@ -28,7 +28,7 @@ import Pretty
 import Control.Monad.State hiding (lift)
 
 toScheme :: Hom.Closed (U (F Unit)) (U (F U64)) -> Doc Style
-toScheme x = toScheme' $ Hom.Closed (force (Hom.fold x . thunk (\_ -> lift id unit)))
+toScheme x = toScheme' $ Hom.Closed (force (Hom.fold x . thunk (\_ -> push id unit)))
 
 toScheme' :: Hom.Closed Empty (F U64) -> Doc Style
 toScheme' x = case Hom.foldK x of
@@ -70,7 +70,7 @@ val x = case x of
   U64Val n -> pure $ pretty n
   ThunkVal a -> do
     a' <- act a
-    pure $ parens $ sep [pretty "delay", a']
+    pure $ parens $ dent $ vsep [pretty "delay", a']
   FstVal x -> do
     x' <- val x
     pure $ parens $ sep [pretty "vector-ref", x', pretty "0"]
@@ -117,9 +117,10 @@ instance Category (Prog @AlgebraTag x) where
 
 instance Code (Prog x) where
   unit = C $ \_ -> UnitVal
-  fst = C $ \x -> FstVal x
-  snd = C $ \x -> SndVal x
-  C x &&& C y = C $ \env -> FanoutVal (x env) (y env)
+
+  lift (C f) (C x) = C $ \env -> f (FanoutVal (x UnitVal) env)
+  kappa f = C $ \x -> case f (C $ \_ -> FstVal x) of
+    C y -> y (SndVal x)
 
 instance Stack (Prog x) where
 
@@ -129,7 +130,7 @@ instance Cbpv (Prog x) (Prog x) where
     K y -> ThunkVal (y EmptyAct)
 
   pass (K f) (C x) = K $ \env -> PassAct (f env) (x UnitVal)
-  lift (K f) (C x) = K $ \env -> f (PushAct env (x UnitVal))
+  push (K f) (C x) = K $ \env -> f (PushAct env (x UnitVal))
 
   -- pop f = K $ PopAct $ \x -> case f (C $ \_ -> x) of
   --   K y -> y
