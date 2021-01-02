@@ -66,7 +66,8 @@ instance Pointless f g => Cbpv.Cbpv (K f g) (C f g) where
 
   pass (C x) = K $ do
     x' <- x
-    pure (pass x')
+    let p = lmapStack (x' . unit) . inStack
+    pure (uncurry id . p)
   zeta = zeta' inferSort
 
   u64 n = C $ pure (u64 n)
@@ -141,7 +142,7 @@ instance Pointless f g => Category (CS f g) where
     CS
       { outC = outC f . outC g,
         removeVarC = \v -> case (removeVarC f v, removeVarC g v) of
-          (Just f', Just g') -> Just undefined
+          (Just f', Just g') -> Just (f' . (fst &&& g'))
           (Nothing, Just g') -> Just (f . g')
           (Just f', Nothing) -> Just (f' . (fst &&& (g . snd)))
           (Nothing, Nothing) -> Nothing
@@ -153,7 +154,7 @@ instance Pointless f g => Category (KS f g) where
     KS
       { outK = outK f . outK g,
         removeVarK = \v -> case (removeVarK f v, removeVarK g v) of
-          (Just f', Just g') -> Just undefined
+          (Just f', Just g') -> Just (f' . rmapStack g' . push . lmapStack (id &&& id))
           (Nothing, Just g') -> Just (f . g')
           (Just f', Nothing) -> Just (f' . rmapStack g)
           (Nothing, Nothing) -> Nothing
@@ -193,15 +194,7 @@ instance Pointless f g => Pointless (KS f g) (CS f g) where
     KS
       { outK = rmapStack (outK x),
         removeVarK = \v -> case removeVarK x v of
-          Just x' -> Just undefined
-          Nothing -> Nothing
-      }
-
-  pass x =
-    KS
-      { outK = pass (outC x),
-        removeVarK = \v -> case removeVarC x v of
-          Just x' -> Just undefined
+          Just x' -> Just (rmapStack x' . push . lmapStack (snd &&& fst) . pop)
           Nothing -> Nothing
       }
 
@@ -209,14 +202,14 @@ instance Pointless f g => Pointless (KS f g) (CS f g) where
     KS
       { outK = force (outC f),
         removeVarK = \v -> case removeVarC f v of
-          Just f' -> Just undefined
+          Just f' -> Just (force f' . pop)
           Nothing -> Nothing
       }
   thunk f =
     CS
       { outC = thunk (outK f),
         removeVarC = \v -> case removeVarK f v of
-          Just f' -> Just undefined
+          Just f' -> Just (thunk (f' . push))
           Nothing -> Nothing
       }
 
@@ -224,14 +217,14 @@ instance Pointless f g => Pointless (KS f g) (CS f g) where
     KS
       { outK = uncurry (outK f),
         removeVarK = \v -> case removeVarK f v of
-          Just f' -> Just undefined
+          Just f' -> Just (uncurry f' . push . lmapStack (snd &&& fst) . pop)
           Nothing -> Nothing
       }
   curry f =
     KS
       { outK = curry (outK f),
         removeVarK = \v -> case removeVarK f v of
-          Just f' -> Just undefined
+          Just f' -> Just (curry (f' . push . lmapStack (snd &&& fst) . pop))
           Nothing -> Nothing
       }
 

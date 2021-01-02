@@ -40,8 +40,6 @@ class (Stack stack, Code code) => Pointless stack code | stack -> code, code -> 
 
   drop :: (KnownSort a, KnownSort b) => stack (a & b) b
 
-  pass :: (KnownSort a, KnownSort b) => code Unit a -> stack (a ~> b) b
-
   uncurry :: (KnownSort a, KnownSort b, KnownSort c) => stack b (a ~> c) -> stack (a & b) c
   curry :: (KnownSort a, KnownSort b, KnownSort c) => stack (a & b) c -> stack b (a ~> c)
 

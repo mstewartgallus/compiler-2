@@ -127,10 +127,6 @@ act x = case x of
     let t = parens $ sep [pretty "cdr", v]
     body <- act (f (VarVal (V h)) (VarAct (V t)))
     pure $ parens $ dent $ vsep [sep [pretty "let", parens $ brackets $ sep [v, x']], body]
-  PassAct f x -> do
-    f' <- act f
-    x' <- val x
-    pure $ parens $ sep [f', x']
   CallAct _ pkg name -> do
     pure $ parens $ sep [pretty "call", pretty pkg, pretty name]
 
@@ -162,7 +158,6 @@ instance Pointless (Prog x y) (Prog x y) where
   inStack = K (PushAct UnitVal)
   lmapStack (C x) = K (PopAct (\h -> PushAct (x h)))
   rmapStack (K x) = K (PopAct (\h t -> PushAct h (x t)))
-  pass (C x) = K $ \env -> PassAct env (x UnitVal)
 
   push = K (PopAct (\h t -> PushAct (FstVal h) (PushAct (SndVal h) t)))
   pop = K (PopAct (\x -> PopAct (\y -> PushAct (FanoutVal x y))))

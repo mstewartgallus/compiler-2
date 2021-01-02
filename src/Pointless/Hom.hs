@@ -60,8 +60,6 @@ goK x = case x of
   LmapStack x -> lmapStack (goC x)
   RmapStack x -> rmapStack (goK x)
 
-  Pass x -> pass (goC x)
-
   Constant pkg name -> constant pkg name
 
 data Hom (a :: Sort t) (b :: Sort t) where
@@ -118,8 +116,6 @@ instance Pointless Hom Hom where
 
   lmapStack = LmapStack
   rmapStack = RmapStack
-
-  pass = Pass
 
   u64 = U64
   constant = Constant
@@ -192,10 +188,6 @@ instance Pointless View View where
   thunk x = V $ \p -> let
     x' = view x (appPrec + 1)
     in paren (p > appPrec) $ sep [keyword $ pretty "thunk", x']
-
-  pass x = V $ \p -> let
-    x' = view x (appPrec + 1)
-    in paren (p > appPrec) $ sep [keyword $ pretty "pass", x']
 
   u64 n = V $ \_ -> pretty n
   constant pkg name = V $ \p -> paren (p > appPrec) $ sep [keyword $ pretty "call", pretty (pkg ++ "/" ++ name)]
