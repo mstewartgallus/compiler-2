@@ -33,7 +33,7 @@ toScheme x = case fold x of
   C y ->
     pretty rt
       <> hardline
-      <> evalState (val (y (ThunkVal (PushAct UnitVal)))) 0
+      <> evalState (val (y (ThunkVal (PushAct UnitVal EmptyAct)))) 0
 
 rt :: String
 rt =
@@ -47,7 +47,7 @@ data Val x y a where
   SndVal :: Val x y (a * b) -> Val x y b
   FanoutVal :: Val x y a -> Val x y b -> Val x y (a * b)
   LetVal :: (Val x y a -> Val x y b) -> Val x y a -> Val x y b
-  ThunkVal :: (Act x y Empty -> Act x y b) -> Val x y (U b)
+  ThunkVal :: Act x y b -> Val x y (U b)
   U64Val :: Word64 -> Val x y U64
   IntrinsicVal :: Intrinsic a b -> Val x y a -> Val x y b
 
@@ -89,13 +89,19 @@ val x = case x of
             [ sep [pretty "let", parens (brackets $ sep [v, x'])],
               body
             ]
-  ThunkVal f -> do
-    body <- act (f EmptyAct)
+  ThunkVal x -> do
+    body <- act x
     pure $ parens $ dent $ vsep [pretty "delay", body]
   FanoutVal x y -> do
     x' <- val x
     y' <- val y
     pure $ parens $ sep [pretty "cons", x', y']
+  IntrinsicVal intrins (FanoutVal x y) -> do
+    x' <- val x
+    y' <- val y
+    case intrins of
+      AddIntrinsic -> pure $ parens $ sep [pretty "+", x', y']
+      MulIntrinsic -> pure $ parens $ sep [pretty "*", x', y']
   IntrinsicVal intrins arg -> do
     arg' <- val arg
     case intrins of
@@ -141,7 +147,7 @@ instance Pointless (Prog x y) (Prog x y) where
   thunk (K f) = C $ \env ->
     LetVal
       ( \env' ->
-          ThunkVal (\t -> f (PushAct env' t))
+          ThunkVal (f (PushAct env' EmptyAct))
       )
       env
 
