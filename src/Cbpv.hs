@@ -45,9 +45,8 @@ class Category code => Code code where
   lift :: (KnownSort a, KnownSort b) => code Unit a -> code b (a * b)
 
 class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack where
-  -- It's pretty obvious this should be generalized but idk precisely how
-  thunk :: (KnownSort a, KnownSort c) => (code Unit a -> stack Empty c) -> code a (U c)
-  force :: KnownSort a => code Unit (U a) -> stack Empty a
+  thunk :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> code a (b ~. c)
+  force :: (KnownSort a, KnownSort b) => code Unit (b ~. a) -> stack b a
 
   pop :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> stack (a & b) c
   push :: (KnownSort a, KnownSort b) => code Unit a -> stack b (a & b)

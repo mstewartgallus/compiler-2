@@ -93,7 +93,7 @@ go :: Int -> Cbpv.SSort t a -> Doc Style
 go p x = case x of
   Cbpv.SUnit -> unitType
   Cbpv.SU64 -> u64Type
-  Cbpv.SU x -> paren (p > appPrec) $ sep [keyword $ pretty "U", go (appPrec + 1) x]
+  x Cbpv.:-. y -> paren (p > appPrec) $ sep [go (expPrec + 1) x, keyword $ pretty "⊸", go (expPrec + 1) y]
   x Cbpv.:*: y -> paren (p > andPrec) $ sep [go (andPrec + 1) x, keyword $ pretty "×", go (andPrec + 1) y]
   Cbpv.SEmpty -> keyword $ pretty "i"
   x Cbpv.:&: y -> paren (p > asymPrec) $ sep [go (asymPrec + 1) x, keyword $ pretty "⊗", go (asymPrec + 1) y]
@@ -235,7 +235,7 @@ instance Cbpv.Cbpv View View where
   cccIntrinsic x = V $ \p -> pure $ paren (p > appPrec) $ sep [keyword $ pretty "ccc", pretty $ show x]
   cbpvIntrinsic x = V $ \p -> pure $ paren (p > appPrec) $ sep [keyword $ pretty "cbpv", pretty $ show x]
 
-thunk' :: Cbpv.SSet a -> (View Cbpv.Unit a -> View Cbpv.Empty c) -> View a (Cbpv.U c)
+thunk' :: Cbpv.SSet a -> (View Cbpv.Unit a -> View b c) -> View a (b Cbpv.~. c)
 thunk' t f =
   V $ \p -> do
     v <- fresh

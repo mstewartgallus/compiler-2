@@ -54,10 +54,10 @@ instance Pointless f g => Cbpv.Code (C f g) where
     pure ((x' . unit) &&& id)
 
 instance Pointless f g => Cbpv.Cbpv (K f g) (C f g) where
-  thunk = thunk' inferSort
-  force (C x) = K $ do
-    x' <- x
-    pure (force x' . inStack)
+  -- thunk = thunk' inferSort
+  -- force (C x) = K $ do
+  --   x' <- x
+  --   pure (force x' . inStack)
 
   push (C x) = K $ do
     x' <- x
@@ -74,15 +74,15 @@ instance Pointless f g => Cbpv.Cbpv (K f g) (C f g) where
   constant pkg name = C $ pure (constant pkg name)
   cbpvIntrinsic x = C $ pure (cbpvIntrinsic x)
 
-thunk' :: (Pointless f g, KnownSort a, KnownSort b) => SSet a -> (C f g Unit a -> K f g Empty b) -> C f g a (U b)
-thunk' t f = C $ do
-  v <- fresh t
-  y <- case f (C $ pure $ var v) of
-    K x -> x
-  pure $
-    thunk $ case removeVarK y v of
-      Nothing -> y . drop
-      Just x -> x
+-- thunk' :: (Pointless f g, KnownSort a, KnownSort b, KnownSort c) => SSet a -> (C f g Unit a -> K f g b c) -> C f g a (b ~. c)
+-- thunk' t f = C $ do
+--   v <- fresh t
+--   y <- case f (C $ pure $ var v) of
+--     K x -> x
+--   pure $
+--     thunk $ case removeVarK y v of
+--       Nothing -> y . drop
+--       Just x -> x
 
 kappa' :: (Pointless f g, KnownSort a, KnownSort b, KnownSort c) => SSet a -> (C f g Unit a -> C f g b c) -> C f g (a * b) c
 kappa' t f = C $ do

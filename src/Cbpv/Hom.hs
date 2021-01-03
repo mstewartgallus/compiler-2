@@ -66,8 +66,8 @@ data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   Id :: KnownSort a => Hom x a a
   (:.:) :: (KnownSort a, KnownSort b, KnownSort c) => Hom x b c -> Hom x a b -> Hom x a c
 
-  Thunk :: (KnownSort a, KnownSort c) => (x Unit a -> Hom x Empty c) -> Hom x a (U c)
-  Force :: KnownSort a => Hom x Unit (U a) -> Hom x Empty a
+  Thunk :: (KnownSort a, KnownSort b, KnownSort c) => (x Unit a -> Hom x b c) -> Hom x a (b ~. c)
+  Force :: (KnownSort a, KnownSort b) => Hom x Unit (b ~. a) -> Hom x b a
 
   UnitHom :: KnownSort a => Hom x a Unit
 

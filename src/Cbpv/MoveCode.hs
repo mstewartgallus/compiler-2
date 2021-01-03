@@ -38,7 +38,7 @@ data Expr (k :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   Zeta :: (KnownSort a, KnownSort b, KnownSort c) => (Expr f Unit a -> Expr f b c) -> Expr f b (a ~> c)
   Pop :: (KnownSort a, KnownSort b, KnownSort c) => (Expr f Unit a -> Expr f b c) -> Expr f (a & b) c
   Kappa :: (KnownSort a, KnownSort b, KnownSort c) => (Expr k Unit a -> Expr k b c) -> Expr k (a * b) c
-  Thunk :: (KnownSort a, KnownSort b) => (Expr k Unit a -> Expr k Empty b) -> Expr k a (U b)
+  Thunk :: (KnownSort a, KnownSort b, KnownSort c) => (Expr k Unit a -> Expr k b c) -> Expr k a (b ~. c)
 
 instance Category (Expr f) where
   id = into id

@@ -38,7 +38,7 @@ newtype instance Prog (a :: Sort AlgebraTag) (b :: Sort AlgebraTag) = S (Action 
 
 data family Data (a :: Set)
 
-data instance Data (U a) = Thunk (Action Empty -> Action a)
+data instance Data (b ~. a) = Thunk (Action b -> Action a)
 
 data instance Data Unit = Unit
 
