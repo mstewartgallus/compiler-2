@@ -19,6 +19,7 @@ import qualified Cbpv.Hom as Hom
 import Cbpv.Sort
 import qualified Ccc as Ccc
 import qualified Ccc.Type as Ccc
+import Control.Monad.ST hiding (lift)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Typeable ((:~:) (..))

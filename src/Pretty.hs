@@ -20,6 +20,8 @@ import Data.Text.Prettyprint.Doc
 import qualified Lam
 import qualified Lam.Term as Lam
 import qualified Lam.Type as Lam
+import qualified Pointless
+import qualified Pointless.Hom as Pointless
 
 data Style = None | Keyword | Variable
 
@@ -98,6 +100,10 @@ go p x = case x of
   Cbpv.SEmpty -> keyword $ pretty "i"
   x Cbpv.:&: y -> paren (p > asymPrec) $ sep [go (asymPrec + 1) x, keyword $ pretty "⊗", go (asymPrec + 1) y]
   x Cbpv.:-> y -> paren (p > expPrec) $ sep [go (expPrec + 1) x, keyword $ pretty "→", go (expPrec + 1) y]
+
+-- shit!
+instance PrettyProgram (Pointless.Hom @Cbpv.SetTag a b) where
+  prettyProgram x = viewP (Pointless.fold x) 0
 
 appPrec :: Int
 appPrec = 10
@@ -261,3 +267,50 @@ zetaCbpv t f = V $ \p -> do
   v <- fresh
   body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
   pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "ζ") v (prettyProgram t) body
+
+newtype ViewP (a :: Cbpv.Sort t) (b :: Cbpv.Sort t) = VP {viewP :: Int -> Doc Style}
+
+instance Pointless.Category ViewP where
+  id = VP $ \_ -> keyword $ pretty "id"
+  f . g = VP $ \p ->
+    let g' = viewP g (composePrec + 1)
+        f' = viewP f (composePrec + 1)
+     in paren (p > composePrec) $ vsep [g', keyword $ pretty ">>>", f']
+
+instance Pointless.Code ViewP where
+  unit = VP $ \_ -> keyword $ pretty "!"
+  x &&& y = VP $ \p ->
+    let x' = viewP x (appPrec + 1)
+        y' = viewP x (appPrec + 1)
+     in paren (p > appPrec) $ sep [x', keyword $ pretty "&&&", y']
+  fst = VP $ \_ -> keyword $ pretty "fst"
+  snd = VP $ \_ -> keyword $ pretty "snd"
+
+instance Pointless.Stack ViewP
+
+instance Pointless.Pointless ViewP ViewP where
+  inStack = VP $ \_ -> keyword $ pretty "inStack"
+  push = VP $ \_ -> keyword $ pretty "push"
+  pop = VP $ \_ -> keyword $ pretty "pop"
+
+  drop = VP $ \_ -> keyword $ pretty "drop"
+
+  lmapStack x = VP $ \p ->
+    let x' = viewP x (appPrec + 1)
+     in paren (p > appPrec) $ sep [keyword $ pretty "lmapStack", x']
+
+  rmapStack x = VP $ \p ->
+    let x' = viewP x (appPrec + 1)
+     in paren (p > appPrec) $ sep [keyword $ pretty "rmapStack", x']
+
+  force x = VP $ \p ->
+    let x' = viewP x (appPrec + 1)
+     in paren (p > appPrec) $ sep [keyword $ pretty "force", x']
+  thunk x = VP $ \p ->
+    let x' = viewP x (appPrec + 1)
+     in paren (p > appPrec) $ sep [keyword $ pretty "thunk", x']
+
+  u64 n = VP $ \_ -> pretty n
+  constant pkg name = VP $ \p -> paren (p > appPrec) $ sep [keyword $ pretty "call", pretty (pkg ++ "/" ++ name)]
+  cccIntrinsic x = VP $ \p -> paren (p > appPrec) $ sep [keyword $ pretty "ccc", pretty $ show x]
+  cbpvIntrinsic x = VP $ \p -> paren (p > appPrec) $ sep [keyword $ pretty "intrinsic", pretty $ show x]
