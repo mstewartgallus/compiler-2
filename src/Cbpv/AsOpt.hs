@@ -5,7 +5,7 @@ module Cbpv.AsOpt (opt) where
 
 import Cbpv
 import Cbpv.Hom
-import Cbpv.AsIntrinsified
+import Cbpv.Intrinsify
 import Cbpv.MoveCode
 import Cbpv.ZetaToPop
 import Cbpv.Inline

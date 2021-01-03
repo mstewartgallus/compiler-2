@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 60113f8d8974a660daebb22e902d173f51165392655bd52eb388747255265b00
+-- hash: 5996fb467a3ebc2ca9928c1cfbdbe91006fcc007294bbd39459e73774f32a8ef
 
 name:           hoas
 version:        0.1.0.0
@@ -40,6 +40,7 @@ library
       Cbpv.ElimThunkForce
       Cbpv.Hom
       Cbpv.Inline
+      Cbpv.Intrinsify
       Cbpv.MoveCode
       Cbpv.RemoveDead
       Cbpv.Sort
