@@ -32,8 +32,6 @@ where
 import qualified Ccc.Type as Type
 import Dict
 import Data.Typeable ((:~:) (..))
-import Pretty
-import Data.Text.Prettyprint.Doc hiding (SEmpty)
 
 type Unit = 'Unit
 
@@ -119,35 +117,6 @@ instance (KnownSort a, KnownSort b) => KnownSort ('Asym a b) where
   inferSort = inferSort :&: inferSort
 instance (KnownSort a, KnownSort b) => KnownSort ('Exp a b) where
   inferSort = inferSort :-> inferSort
-
-instance PrettyProgram (SSort t a) where
-  prettyProgram = go 0
-
-paren :: Bool -> Doc Style -> Doc Style
-paren x y = if x then parens y else y
-
-appPrec :: Int
-appPrec = 10
-
-andPrec :: Int
-andPrec = 4
-
-asymPrec :: Int
-asymPrec = 3
-
-expPrec :: Int
-expPrec = 9
-
-go :: Int -> SSort t a -> Doc Style
-go p x = case x of
-    SU64 -> keyword $ pretty "u64"
-    SUnit -> keyword $ pretty "1"
-    SU x -> paren (p > appPrec) $ sep [keyword $ pretty "U", go (appPrec +1 ) x]
-    x :*: y -> paren (p > andPrec) $ sep [go (andPrec + 1) x, keyword $ pretty "×", go (andPrec + 1) y]
-
-    SEmpty -> keyword $ pretty "i"
-    x :&: y -> paren (p > asymPrec) $ sep [go (asymPrec + 1) x, keyword $ pretty "⊗", go (asymPrec + 1) y]
-    x :-> y -> paren (p > expPrec) $ sep [go (expPrec + 1) x, keyword $ pretty "→", go (expPrec + 1) y]
 
 toKnownSort :: SSort t a -> Dict (KnownSort a)
 toKnownSort x = case x of

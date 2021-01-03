@@ -16,10 +16,8 @@ import qualified Ccc
 import qualified Ccc.Type as Ccc
 import Control.Monad.State hiding (lift)
 import Cbpv.Sort
-import Pretty
 import Data.Word
 import Data.Kind
-import Data.Text.Prettyprint.Doc
 import Prelude hiding ((.), id, fst, snd)
 
 newtype Closed (a :: Sort t) (b :: Sort t) = Closed (forall x. Hom x a b)
@@ -116,101 +114,3 @@ instance Cbpv (Hom x) (Hom x) where
   constant = Constant
   cccIntrinsic = CccIntrinsic
   cbpvIntrinsic = CbpvIntrinsic
-
--- shit!
-instance PrettyProgram (Closed @SetTag a b) where
-  prettyProgram x = evalState (view (fold x) 0) 0
-
-appPrec :: Int
-appPrec = 10
-
-whereIsPrec :: Int
-whereIsPrec = 11
-
-kappaPrec :: Int
-kappaPrec = 2
-
-zetaPrec :: Int
-zetaPrec = 5
-
-composePrec :: Int
-composePrec = 9
-
-paren :: Bool -> Doc Style -> Doc Style
-paren x y = if x then parens y else y
-
-newtype View (a :: Sort t) (b :: Sort t) = V { view :: Int -> State Int (Doc Style) }
-
-dent :: Doc a -> Doc a
-dent = nest 3
-
-instance Category View where
-  id = V $ \_ -> pure $ keyword $ pretty "id"
-  f . g = V $ \p -> do
-    g' <- view g (composePrec + 1)
-    f' <- view f (composePrec + 1)
-    pure $ paren (p > composePrec) $ vsep [g', keyword $ pretty ">>>", f']
-
-instance Code View where
-  unit = V $ \_ -> pure $ keyword $ pretty "!"
-
-  lift x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", x']) <*> view x (appPrec + 1)
-  kappa = kappa' inferSort
-
-instance Stack View where
-
-instance Cbpv View View where
-  force x = V $  \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "force", x']) <*> view x (appPrec + 1)
-  thunk = thunk' inferSort
-
-  push x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "push", x']) <*> view x (appPrec + 1)
-  pop = pop' inferSort
-
-  pass x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "pass", x']) <*> view x (appPrec + 1)
-  zeta = zeta' inferSort
-
-  u64 n = V $ \_ -> pure (pretty n)
-  constant pkg name = V $ \p -> pure $ paren (p > appPrec) $ sep [keyword $ pretty "call", pretty (pkg ++ "/" ++ name)]
-  cccIntrinsic x = V $ \p -> pure $ paren (p > appPrec) $ sep [keyword $ pretty "ccc", pretty $ show x]
-  cbpvIntrinsic x = V $ \p -> pure $ paren (p > appPrec) $ sep [keyword $ pretty "intrinsic", pretty $ show x]
-
-thunk' :: SSet a -> (View Unit a -> View Empty c) -> View a (U c)
-thunk' t f =
-  V $ \p -> do
-    v <- fresh
-    body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
-    pure $ paren (p > zetaPrec) $ dent $ vsep [
-      sep [keyword $ pretty "thunk" , v, keyword $ pretty ":", prettyProgram t, keyword $ pretty "⇒"],
-           body]
-
-kappa' :: SSet a -> (View Unit a -> View b c) -> View (a * b) c
-kappa' t f =
-  V $ \p -> do
-    v <- fresh
-    body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
-    pure $ paren (p > kappaPrec) $ dent $ vsep [
-      sep [keyword $ pretty "κ" , v, keyword $ pretty ":", prettyProgram t, keyword $ pretty "⇒"],
-      body]
-
-pop' :: SSet a -> (View Unit a -> View b c) -> View (a & b) c
-pop' t f =
-  V $ \p -> do
-    v <- fresh
-    body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
-    pure $ paren (p > kappaPrec) $ dent $ vsep [
-      sep [keyword $ pretty "pop" , v, keyword $ pretty ":", prettyProgram t, keyword $ pretty "⇒"],
-      body]
-
-zeta' :: SSet a -> (View Unit a -> View b c) -> View b (a ~> c)
-zeta' t f = V $ \p -> do
-    v <- fresh
-    body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
-    pure $ paren (p > zetaPrec) $ dent $ vsep [
-      sep [keyword $ pretty "ζ" , v, keyword $ pretty ":", prettyProgram t, keyword $ pretty "⇒"],
-      body]
-
-fresh :: State Int (Doc Style)
-fresh = do
-  n <- get
-  put (n + 1)
-  pure $ variable (pretty "v" <> pretty n)
