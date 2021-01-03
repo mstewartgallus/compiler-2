@@ -76,8 +76,8 @@ data Hom (a :: Sort t) (b :: Sort t) where
   LmapStack :: (KnownSort a, KnownSort b, KnownSort x) => Hom a b -> Hom (a & x) (b & x)
   RmapStack :: (KnownSort a, KnownSort b, KnownSort x) => Hom a b -> Hom (x & a) (x & b)
 
-  Push :: (KnownSort a, KnownSort b) => Hom ((a * b) & c) (a & b & c)
-  Pop :: (KnownSort a, KnownSort b) => Hom (a & b & c) ((a * b) & c)
+  Push :: (KnownSort a, KnownSort b, KnownSort c) => Hom ((a * b) & c) (a & b & c)
+  Pop :: (KnownSort a, KnownSort b, KnownSort c) => Hom (a & b & c) ((a * b) & c)
 
   Pass :: (KnownSort a, KnownSort b) => Hom Unit a -> Hom (a ~> b) b
 

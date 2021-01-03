@@ -15,6 +15,7 @@ import Lam
 import qualified Lam.Term as Lam
 import Lam.Type
 import qualified Pointless
+import qualified Pointless.AsOpt as Pointless
 import Pretty
 import Prettyprinter.Render.Terminal
 import Prelude hiding ((<*>))
@@ -99,7 +100,16 @@ main = do
       <> hardline
       <> hardline
 
-  let scheme = AsScheme.toScheme pointless
+  let optPointless = Pointless.opt pointless
+
+  putDoc $
+    annotate header (pretty "Optimized Pointless:")
+      <> hardline
+      <> reAnnotate toAnsi (prettyProgram optPointless)
+      <> hardline
+      <> hardline
+
+  let scheme = AsScheme.toScheme optPointless
 
   putDoc $
     annotate header (pretty "Scheme Prototype:")
