@@ -47,6 +47,7 @@ instance Code Expr where
 
 instance Pointless Expr Expr where
   lmapStack x = into (lmapStack (out x))
+  rmapStack x = into (rmapStack (out x))
 
   thunk x = into (thunk (out x))
   force x = into (force (out x))

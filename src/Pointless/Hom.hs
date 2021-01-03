@@ -17,7 +17,7 @@ import qualified Ccc.Type as Ccc
 import Cbpv.Sort
 import Data.Word
 import Data.Kind
-import Prelude hiding ((.), id, fst, snd, drop)
+import Prelude hiding ((.), id, fst, snd, drop, uncurry, curry)
 
 fold :: Pointless c d => Hom a b -> d a b
 fold x = goC x
@@ -49,6 +49,9 @@ goK x = case x of
   Drop -> drop
   Force x -> force (goC x)
 
+  Curry x -> curry (goK x)
+  Uncurry x -> uncurry (goK x)
+
   CccIntrinsic x -> cccIntrinsic x
 
   Push -> push
@@ -79,6 +82,9 @@ data Hom (a :: Sort t) (b :: Sort t) where
   Push :: (KnownSort a, KnownSort b, KnownSort c) => Hom ((a * b) & c) (a & b & c)
   Pop :: (KnownSort a, KnownSort b, KnownSort c) => Hom (a & b & c) ((a * b) & c)
 
+  Curry :: (KnownSort a, KnownSort b, KnownSort c) => Hom (a & b) c -> Hom b (a ~> c)
+  Uncurry :: (KnownSort a, KnownSort b, KnownSort c) => Hom b (a ~> c) -> Hom (a & b) c
+
   Pass :: (KnownSort a, KnownSort b) => Hom Unit a -> Hom (a ~> b) b
 
   U64 :: Word64 -> Hom  Unit U64
@@ -104,6 +110,9 @@ instance Stack Hom where
 instance Pointless Hom Hom where
   drop = Drop
   inStack = InStack
+
+  curry = Curry
+  uncurry = Uncurry
 
   force = Force
   thunk = Thunk

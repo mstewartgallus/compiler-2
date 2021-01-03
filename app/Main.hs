@@ -2,6 +2,7 @@ module Main where
 
 import qualified AsCallByName
 import qualified AsCcc
+import qualified AsPointed
 import qualified AsPointless
 import qualified AsScheme
 import qualified Cbpv.AsOpt as Cbpv
@@ -24,7 +25,7 @@ program :: Lam.Term U64
 program =
   Lam.mkTerm $
     u64 3 `be` \z ->
-      (z * z) + (z + z)
+      (z - z) + (z + z)
 
 header :: AnsiStyle
 header = underlined <> bold
@@ -106,6 +107,15 @@ main = do
     annotate header (pretty "Optimized Pointless:")
       <> hardline
       <> reAnnotate toAnsi (prettyProgram optPointless)
+      <> hardline
+      <> hardline
+
+  let pointed = AsPointed.asPointed optPointless
+
+  putDoc $
+    annotate header (pretty "Pointed:")
+      <> hardline
+      <> reAnnotate toAnsi (prettyProgram pointed)
       <> hardline
       <> hardline
 

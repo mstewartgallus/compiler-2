@@ -46,24 +46,25 @@ instance Cbpv f g => Pointless.Code (C f g) where
   snd = C snd
   C x &&& C y = C (x &&& y)
 
-instance Cbpv f g => Pointless.Pointless (K f g) (C f g)
+instance Cbpv f g => Pointless.Pointless (K f g) (C f g) where
+  uncurry (K f) = K (pop (\x -> pass x . f))
+  force (C x) = K (pop (\env -> force (x . env)))
 
--- thunk = thunk' inferSort
--- force (C x) = K $ do
---   x' <- x
---   pure (force x' . inStack)
+  thunk (K x) = C (thunk $ \env -> x . push env)
+  inStack = K (push unit)
+  drop = K (pop (\_ -> id))
+  lmapStack (C f) = K (pop (\x -> push (f . x)))
+  rmapStack (K f) = K (pop (\x -> push x . f))
 
--- push (C x) = K $ do
---   x' <- x
---   pure (lmapStack (x' . unit) . inStack)
--- pop = pop' inferSort
+  push = K $
+    pop $ \x ->
+      push (fst . x)
+        . push (snd . x)
+  pop = K $
+    pop $ \x ->
+      pop $ \y ->
+        push (x &&& y)
 
--- pass (C x) = K $ do
---   x' <- x
---   let p = lmapStack (x' . unit) . inStack
---   pure (uncurry id . p)
--- zeta = zeta' inferSort
-
--- u64 n = C $ pure (u64 n)
--- constant pkg name = C $ pure (constant pkg name)
--- cbpvIntrinsic x = C $ pure (cbpvIntrinsic x)
+  u64 n = C (u64 n)
+  constant pkg name = C (constant pkg name)
+  cbpvIntrinsic x = C (cbpvIntrinsic x)

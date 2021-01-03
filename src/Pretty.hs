@@ -324,6 +324,13 @@ instance Pointless.Pointless ViewP ViewP where
     let x' = viewP x (appPrec + 1)
      in paren (p > appPrec) $ sep [keyword $ pretty "thunk", x']
 
+  curry x = VP $ \p ->
+    let x' = viewP x (appPrec + 1)
+     in paren (p > appPrec) $ sep [keyword $ pretty "curry", x']
+  uncurry x = VP $ \p ->
+    let x' = viewP x (appPrec + 1)
+     in paren (p > appPrec) $ sep [keyword $ pretty "uncurry", x']
+
   u64 n = VP $ \_ -> pretty n
   constant pkg name = VP $ \p -> paren (p > appPrec) $ sep [keyword $ pretty "call", pretty (pkg ++ "/" ++ name)]
   cccIntrinsic x = VP $ \p -> paren (p > appPrec) $ sep [keyword $ pretty "ccc", pretty $ show x]

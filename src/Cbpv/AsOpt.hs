@@ -7,6 +7,7 @@ import Cbpv
 import Cbpv.Hom
 import Cbpv.Intrinsify
 import Cbpv.MoveCode
+import Cbpv.Tuples
 import Cbpv.ZetaToPop
 import Cbpv.Inline
 import Cbpv.AsLeft
@@ -31,6 +32,7 @@ round =
 
 dopass :: Closed @SetTag a b -> Closed @SetTag a b
 dopass =
+  tuples >>>
   moveCode >>>
   zetaToPop >>>
   elimThunkForce >>>
