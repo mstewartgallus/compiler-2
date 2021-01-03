@@ -26,14 +26,21 @@ into x = Pure x
 out :: Expr a b -> Hom a b
 out x = case x of
   Pure x -> x
+  Fst -> fst
+  Snd -> snd
   Fanout x y -> out x &&& out y
 
 data Expr (a :: Sort t) (b :: Sort t) where
   Fanout :: (KnownSort a, KnownSort b, KnownSort c) => Expr c a -> Expr c b -> Expr c (a * b)
+  Fst :: (KnownSort a, KnownSort b) => Expr (a * b) a
+  Snd :: (KnownSort a, KnownSort b) => Expr (a * b) b
   Pure :: Hom a b -> Expr a b
 
 instance Category Expr where
   id = into id
+
+  Fst . Fanout x _ = x
+  Snd . Fanout _ x = x
   Fanout x y . f = (x . f) &&& (y . f)
   f . g = into (out f . out g)
 
@@ -41,9 +48,11 @@ instance Stack Expr where
 
 instance Code Expr where
   unit = into unit
-  fst = into fst
-  snd = into snd
-  (&&&) = Fanout
+  fst = Fst
+  snd = Snd
+
+  Fst &&& Snd = id
+  x &&& y = Fanout x y
 
 instance Pointless Expr Expr where
   lmapStack x = into (lmapStack (out x))
