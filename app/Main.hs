@@ -20,9 +20,9 @@ import Pretty
 import Prettyprinter.Render.Terminal
 import Prelude hiding ((<*>))
 
-program :: Lam.Closed U64
+program :: Lam.Term U64
 program =
-  Lam.Closed $
+  Lam.mkTerm $
     u64 3 `be` \z ->
       (z * z) + (z + z)
 

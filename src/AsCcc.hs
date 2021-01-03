@@ -11,7 +11,7 @@ import qualified Lam.Term as Lam
 import qualified Lam.Type as Lam
 import Prelude hiding (id, (.))
 
-asCcc :: Lam.Closed a -> Closed Unit (AsObject a)
+asCcc :: Lam.Term a -> Closed Unit (AsObject a)
 asCcc x = Closed (go (Lam.fold x))
 
 newtype V k a = V {go :: Hom k Unit (AsObject a)}
