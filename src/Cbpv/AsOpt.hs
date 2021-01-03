@@ -23,10 +23,10 @@ opt = intrinsify >>>
 
 round :: Closed @SetTag a b -> Closed @SetTag a b
 round =
-  asRight >>>
+  asLeft >>>
   dopass >>>
 
-  asLeft >>>
+  asRight >>>
   dopass
 
 dopass :: Closed @SetTag a b -> Closed @SetTag a b

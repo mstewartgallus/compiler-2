@@ -41,6 +41,7 @@ goC x = case x of
 
   U64 n -> u64 n
   PointlessIntrinsic x -> cbpvIntrinsic x
+  Constant pkg name -> constant pkg name
 
 goK :: Pointless c d => Hom a b -> c a b
 goK x = case x of
@@ -59,8 +60,6 @@ goK x = case x of
 
   LmapStack x -> lmapStack (goC x)
   RmapStack x -> rmapStack (goK x)
-
-  Constant pkg name -> constant pkg name
 
 data Hom (a :: Sort t) (b :: Sort t) where
   Id :: KnownSort a => Hom a a
@@ -86,7 +85,7 @@ data Hom (a :: Sort t) (b :: Sort t) where
 
   U64 :: Word64 -> Hom  Unit U64
 
-  Constant :: Lam.KnownT a => String -> String -> Hom  (F Unit) (AsAlgebra (Ccc.AsObject a))
+  Constant :: Lam.KnownT a => String -> String -> Hom Unit (U (AsAlgebra (Ccc.AsObject a)))
   CccIntrinsic :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.Intrinsic a b -> Hom (AsAlgebra a) (AsAlgebra b)
   PointlessIntrinsic :: (KnownSort a, KnownSort b) => Intrinsic a b -> Hom a b
 

@@ -88,19 +88,21 @@ instance Cbpv Prog Prog where
     S y -> y t
 
   u64 x = C $ const (U64 x)
-  constant = constant' Lam.inferT
+  constant pkg name =
+    let k = constant' Lam.inferT pkg name
+     in C $ \Unit -> k
   cccIntrinsic x = case x of
     Ccc.AddIntrinsic -> undefined
   cbpvIntrinsic x = case x of
     AddIntrinsic -> addCbpvImpl
     MulIntrinsic -> mulCbpvImpl
 
-constant' :: Lam.ST a -> String -> String -> Prog (F Unit) (AsAlgebra (Ccc.AsObject a))
+constant' :: Lam.ST a -> String -> String -> Data (U (AsAlgebra (Ccc.AsObject a)))
 constant' t pkg name = case maybeK t pkg name of
   Nothing -> undefined
   Just x -> x
 
-maybeK :: Lam.ST a -> String -> String -> Maybe (Prog (F Unit) (AsAlgebra (Ccc.AsObject a)))
+maybeK :: Lam.ST a -> String -> String -> Maybe (Data (U (AsAlgebra (Ccc.AsObject a))))
 maybeK t pkgName name = do
   pkg <- Map.lookup pkgName constants
   Constant t' k <- Map.lookup name pkg
@@ -113,7 +115,7 @@ addCbpvImpl = C $ \(Pair (U64 x) (U64 y)) -> U64 (x + y)
 mulCbpvImpl :: Prog (U64 * U64) U64
 mulCbpvImpl = C $ \(Pair (U64 x) (U64 y)) -> U64 (x * y)
 
-data Constant = forall a. Constant (Lam.ST a) (Prog (F Unit) (AsAlgebra (Ccc.AsObject a)))
+data Constant = forall a. Constant (Lam.ST a) (Data (U (AsAlgebra (Ccc.AsObject a))))
 
 constants :: Map String (Map String Constant)
 constants =
@@ -127,20 +129,20 @@ constants =
       )
     ]
 
-addImpl :: Prog (F Unit) (AsAlgebra (Ccc.AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64)))
-addImpl = S $ \(Unit :& w0) ->
+addImpl :: Data (U (AsAlgebra (Ccc.AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))))
+addImpl = Thunk $ \w0 ->
   Lam $ \(Thunk x) -> Lam $ \(Thunk y) -> case x w0 of
     U64 x' :& w1 -> case y w1 of
       U64 y' :& w2 -> U64 (x' + y') :& w2
 
-multiplyImpl :: Prog (F Unit) (AsAlgebra (Ccc.AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64)))
-multiplyImpl = S $ \(Unit :& w0) ->
+multiplyImpl :: Data (U (AsAlgebra (Ccc.AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))))
+multiplyImpl = Thunk $ \w0 ->
   Lam $ \(Thunk x) -> Lam $ \(Thunk y) -> case x w0 of
     U64 x' :& w1 -> case y w1 of
       U64 y' :& w2 -> U64 (x' * y') :& w2
 
-subtractImpl :: Prog (F Unit) (AsAlgebra (Ccc.AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64)))
-subtractImpl = S $ \(Unit :& w0) ->
+subtractImpl :: Data (U (AsAlgebra (Ccc.AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))))
+subtractImpl = Thunk $ \w0 ->
   Lam $ \(Thunk x) -> Lam $ \(Thunk y) -> case x w0 of
     U64 x' :& w1 -> case y w1 of
       U64 y' :& w2 -> U64 (x' - y') :& w2

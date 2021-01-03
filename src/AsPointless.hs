@@ -71,7 +71,7 @@ instance Pointless f g => Cbpv.Cbpv (K f g) (C f g) where
   zeta = zeta' inferSort
 
   u64 n = C $ pure (u64 n)
-  constant pkg name = K $ pure (constant pkg name)
+  constant pkg name = C $ pure (constant pkg name)
   cbpvIntrinsic x = C $ pure (cbpvIntrinsic x)
 
 thunk' :: (Pointless f g, KnownSort a, KnownSort b) => SSet a -> (C f g Unit a -> K f g Empty b) -> C f g a (U b)
@@ -229,7 +229,7 @@ instance Pointless f g => Pointless (KS f g) (CS f g) where
       }
 
   u64 n = inC (u64 n)
-  constant pkg name = inK (constant pkg name)
+  constant pkg name = inC (constant pkg name)
   cbpvIntrinsic x = inC (cbpvIntrinsic x)
 
 data Var a = Var (SSet a) Int

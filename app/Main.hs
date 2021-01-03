@@ -24,7 +24,7 @@ program :: Lam.Term U64
 program =
   Lam.mkTerm $
     u64 3 `be` \z ->
-      (z * z) + (z + z)
+      (z - z) + (z + z)
 
 header :: AnsiStyle
 header = underlined <> bold

@@ -74,4 +74,4 @@ cccIntrinsic' a b intrins = case (toKnownSort (asAlgebra a), toKnownSort (asAlge
 
 constant' :: Lam.KnownT a => Lam.ST a -> String -> String -> V k Ccc.Unit (Ccc.AsObject a)
 constant' t pkg name = case toKnownSort (asAlgebra (Ccc.asObject t)) of
-  Dict -> V $ thunk (\_ -> constant pkg name . push unit)
+  Dict -> V (constant pkg name . unit)

@@ -198,12 +198,19 @@ zeta' t f = V $ \p -> do
   body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
   pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "ζ") v (prettyProgram t) body
 
-instance Cbpv.Category View where
+instance Cbpv.Category (View @Cbpv.Set) where
   id = V $ \_ -> pure $ keyword $ pretty "id"
+  f . g = V $ \p -> do
+    f' <- view f (composePrec + 1)
+    g' <- view g (composePrec + 1)
+    pure $ paren (p > composePrec) $ sep [sep [f', keyword $ pretty "∘"], g']
+
+instance Cbpv.Category (View @Cbpv.Algebra) where
+  id = V $ \_ -> pure $ keyword $ pretty "skip"
   f . g = V $ \p -> do
     g' <- view g (composePrec + 1)
     f' <- view f (composePrec + 1)
-    pure $ paren (p > composePrec) $ vsep [g', keyword $ pretty ">>>", f']
+    pure $ paren (p > composePrec) $ vsep [sep [g', keyword $ pretty ";"], f']
 
 instance Cbpv.Code View where
   unit = V $ \_ -> pure $ keyword $ pretty "!"
@@ -226,7 +233,7 @@ instance Cbpv.Cbpv View View where
   u64 n = V $ \_ -> pure (pretty n)
   constant pkg name = V $ \p -> pure $ paren (p > appPrec) $ sep [keyword $ pretty "call", pretty (pkg ++ "/" ++ name)]
   cccIntrinsic x = V $ \p -> pure $ paren (p > appPrec) $ sep [keyword $ pretty "ccc", pretty $ show x]
-  cbpvIntrinsic x = V $ \p -> pure $ paren (p > appPrec) $ sep [keyword $ pretty "intrinsic", pretty $ show x]
+  cbpvIntrinsic x = V $ \p -> pure $ paren (p > appPrec) $ sep [keyword $ pretty "cbpv", pretty $ show x]
 
 thunk' :: Cbpv.SSet a -> (View Cbpv.Unit a -> View Cbpv.Empty c) -> View a (Cbpv.U c)
 thunk' t f =

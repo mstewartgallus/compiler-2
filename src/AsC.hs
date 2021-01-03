@@ -171,7 +171,7 @@ instance Pointless (Prog x y) (Prog x y) where
   pop = K (PopAct (\x -> PopAct (\y -> PushAct (FanoutVal x y))))
 
   u64 n = C $ \_ -> U64Val n
-  constant pkg name = K $ \_ -> CallAct Lam.inferT pkg name
+  constant pkg name = C $ \_ -> ThunkVal (CallAct Lam.inferT pkg name)
   cbpvIntrinsic x = C (IntrinsicVal x)
 
 fresh :: State Int (Doc Style)

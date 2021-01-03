@@ -43,6 +43,7 @@ goC x = case x of
 
   U64 n -> u64 n
   CbpvIntrinsic x -> cbpvIntrinsic x
+  Constant pkg name -> constant pkg name
 
 goK :: Cbpv c d => Hom d a b -> c a b
 goK x = case x of
@@ -58,8 +59,6 @@ goK x = case x of
 
   Pass x -> pass (goC x)
   Zeta f -> zeta (\x -> goK (f x))
-
-  Constant pkg name -> constant pkg name
 
 data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   Var :: (KnownSort a, KnownSort b) => x a b -> Hom x a b
@@ -83,7 +82,7 @@ data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
 
   U64 :: Word64 -> Hom x Unit U64
 
-  Constant :: Lam.KnownT a => String -> String -> Hom x (F Unit) (AsAlgebra (Ccc.AsObject a))
+  Constant :: Lam.KnownT a => String -> String -> Hom x  Unit (U (AsAlgebra (Ccc.AsObject a)))
   CccIntrinsic :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.Intrinsic a b -> Hom x (AsAlgebra a) (AsAlgebra b)
   CbpvIntrinsic :: (KnownSort a, KnownSort b) => Intrinsic a b -> Hom x a b
 

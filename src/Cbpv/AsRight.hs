@@ -59,7 +59,7 @@ instance Cbpv f g => Cbpv (Path f) (Path g) where
   cccIntrinsic = cccIntrinsic' Ccc.inferT Ccc.inferT
   cbpvIntrinsic x = into (cbpvIntrinsic x)
 
-constant' :: (Lam.KnownT a, Cbpv f g) => Lam.ST a -> String -> String -> Path f (F Unit) (AsAlgebra (Ccc.AsObject a))
+constant' :: (Lam.KnownT a, Cbpv f g) => Lam.ST a -> String -> String -> Path g Unit (U (AsAlgebra (Ccc.AsObject a)))
 constant' a pkg name = case toKnownSort (asAlgebra (Ccc.asObject a)) of
   Dict -> into (constant pkg name)
 

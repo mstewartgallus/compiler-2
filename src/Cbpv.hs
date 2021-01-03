@@ -57,7 +57,7 @@ class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack
 
   u64 :: Word64 -> code Unit U64
 
-  constant :: Lam.KnownT a => String -> String -> stack (F Unit) (AsAlgebra (Ccc.AsObject a))
+  constant :: Lam.KnownT a => String -> String -> code Unit (U (AsAlgebra (Ccc.AsObject a)))
   cccIntrinsic :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.Intrinsic a b -> stack (AsAlgebra a) (AsAlgebra b)
   cbpvIntrinsic :: (KnownSort a, KnownSort b) => Intrinsic a b -> code a b
 
