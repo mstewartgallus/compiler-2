@@ -33,7 +33,7 @@ toScheme x = case fold x of
   C y ->
     pretty rt
       <> hardline
-      <> evalState (val (y (ThunkVal (PushAct UnitVal)))) 0
+      <> evalState (val (y (ThunkVal (\_ -> PushAct UnitVal) UnitVal))) 0
 
 rt :: String
 rt =
@@ -46,8 +46,7 @@ data Val x y a where
   FstVal :: Val x y (a * b) -> Val x y a
   SndVal :: Val x y (a * b) -> Val x y b
   FanoutVal :: Val x y a -> Val x y b -> Val x y (a * b)
-  LetVal :: (Val x y a -> Val x y b) -> Val x y a -> Val x y b
-  ThunkVal :: (Act x y a -> Act x y b) -> Val x y (a ~. b)
+  ThunkVal :: (Val x y c -> Act x y a -> Act x y b) -> Val x y c -> Val x y (a ~. b)
   U64Val :: Word64 -> Val x y U64
   IntrinsicVal :: Intrinsic a b -> Val x y a -> Val x y b
 
@@ -58,7 +57,7 @@ data Act x y a where
   PopAct :: (Val x y a -> Act x y b -> Act x y c) -> Act x y (a & b) -> Act x y c
   PushAct :: Val x y a -> Act x y b -> Act x y (a & b)
   PassAct :: Act x y (a ~> c) -> Val x y a -> Act x y c
-  CallAct :: Lam.ST a -> String -> String -> Act x y (AsAlgebra (Ccc.AsObject a))
+  CallAct :: Lam.ST a -> String -> String -> Act x y Empty -> Act x y (AsAlgebra (Ccc.AsObject a))
 
 data family Prog (x :: Set -> Type) (y :: Algebra -> Type) (a :: Sort t) (b :: Sort t)
 
@@ -79,21 +78,17 @@ val x = case x of
   SndVal x -> do
     x' <- val x
     pure $ parens $ sep [pretty "cdr", x']
-  LetVal f x -> do
+  ThunkVal f x -> do
     x' <- val x
-    v <- fresh
-    body <- val (f (VarVal (V v)))
+    h <- fresh
+    body <- act (f (VarVal (V h)) (VarAct (V $ pretty "'()")))
     pure $
       parens $
         dent $
           vsep
-            [ sep [pretty "let", parens (brackets $ sep [v, x'])],
-              body
+            [ sep [pretty "let", parens (brackets $ sep [h, x'])],
+              parens $ dent $ vsep [pretty "delay", body]
             ]
-  ThunkVal f -> do
-    v <- fresh
-    body <- act (f (VarAct (V v)))
-    pure $ parens $ dent $ vsep [pretty "delay", body]
   FanoutVal x y -> do
     x' <- val x
     y' <- val y
@@ -116,19 +111,39 @@ act x = case x of
   EmptyAct -> pure $ pretty "'()"
   DropAct x -> do
     x' <- act x
-    pure $ parens $ sep [pretty "cdr", x']
+    v <- fresh
+    pure $
+      parens $
+        dent $
+          vsep
+            [ sep [pretty "let", parens (brackets $ sep [v, x'])],
+              parens $ sep [pretty "cdr", v]
+            ]
   PushAct h t -> do
     h' <- val h
     t' <- act t
-    pure $ parens $ sep [pretty "cons", h', t']
-  PopAct f x -> do
     v <- fresh
+    pure $
+      parens $
+        dent $
+          vsep
+            [ sep [pretty "let", parens (brackets $ sep [v, t'])],
+              parens $ sep [pretty "cons", h', v]
+            ]
+  PopAct f x -> do
     x' <- act x
+    v <- fresh
     let h = parens $ sep [pretty "car", v]
     let t = parens $ sep [pretty "cdr", v]
     body <- act (f (VarVal (V h)) (VarAct (V t)))
-    pure $ parens $ dent $ vsep [sep [pretty "let", parens $ brackets $ sep [v, x']], body]
-  CallAct _ pkg name -> do
+    pure $
+      parens $
+        dent $
+          vsep
+            [ sep [pretty "let", parens $ brackets $ sep [v, x']],
+              body
+            ]
+  CallAct _ pkg name _ -> do
     pure $ parens $ sep [pretty "call", pretty pkg, pretty name]
 
 instance Category (Prog @SetTag x y) where
@@ -149,12 +164,7 @@ instance Stack (Prog x y)
 
 instance Pointless (Prog x y) (Prog x y) where
   drop = K $ \x -> DropAct x
-  thunk (K f) = C $ \env ->
-    LetVal
-      ( \env' ->
-          ThunkVal (\t -> f (PushAct env' t))
-      )
-      env
+  thunk (K f) = C (ThunkVal (\h t -> f (PushAct h t)))
 
   inStack = K (PushAct UnitVal)
   lmapStack (C x) = K (PopAct (\h -> PushAct (x h)))
@@ -164,7 +174,7 @@ instance Pointless (Prog x y) (Prog x y) where
   pop = K (PopAct (\x -> PopAct (\y -> PushAct (FanoutVal x y))))
 
   u64 n = C $ \_ -> U64Val n
-  constant pkg name = C $ \_ -> ThunkVal (\_ -> CallAct Lam.inferT pkg name)
+  constant pkg name = C (ThunkVal (\_ t -> CallAct Lam.inferT pkg name t))
   cbpvIntrinsic x = C (IntrinsicVal x)
 
 fresh :: State Int (Doc Style)
