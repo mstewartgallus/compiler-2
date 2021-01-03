@@ -1,5 +1,6 @@
 module Main where
 
+import qualified AsC
 import qualified AsCallByName
 import qualified AsCcc
 import qualified AsPointless
@@ -103,4 +104,14 @@ main = do
     annotate header (pretty "Scheme Prototype:")
       <> hardline
       <> reAnnotate toAnsi scheme
+      <> hardline
+      <> hardline
+
+  let cprog = AsC.toC pointless
+
+  putDoc $
+    annotate header (pretty "C Prototype:")
+      <> hardline
+      <> reAnnotate toAnsi cprog
+      <> hardline
       <> hardline
