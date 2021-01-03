@@ -5,13 +5,13 @@ import qualified AsCallByName
 import qualified AsCcc
 import qualified AsPointless
 import qualified AsScheme
-import qualified Cbpv.AsEval as Cbpv
 import qualified Cbpv.AsOpt as Cbpv
 import qualified Cbpv.Hom as Cbpv
 import qualified Ccc.Hom as Ccc
 import qualified Ccc.Optimize as Ccc
 import qualified Ccc.Type
 import Data.Text.Prettyprint.Doc
+import qualified Interpreter
 import Lam
 import qualified Lam.Term as Lam
 import Lam.Type
@@ -80,7 +80,9 @@ main = do
       <> hardline
       <> hardline
 
-  let result = Cbpv.reify optCbpv
+  let result = case Interpreter.interpret optCbpv (Interpreter.Thunk (Interpreter.Unit Interpreter.:&)) of
+        Interpreter.Thunk y -> case y (Interpreter.Effect 0) of
+          Interpreter.U64 x Interpreter.:& _ -> x
 
   putDoc $
     annotate header (pretty "Result:")

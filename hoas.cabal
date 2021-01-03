@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3f3099785a6b8fef9ed5a9b3210ae403011574f079333e3c71d6060e05cf8a1a
+-- hash: fcd68f7f427502c4f525ec74d5d2336cdff87dafb0a099874dcb35a8d4658b3e
 
 name:           hoas
 version:        0.1.0.0
@@ -33,7 +33,6 @@ library
       AsPointless
       AsScheme
       Cbpv
-      Cbpv.AsEval
       Cbpv.AsIntrinsified
       Cbpv.AsLeft
       Cbpv.AsOpt
@@ -53,6 +52,7 @@ library
       Ccc.Type
       Ccc.ZetaToKappa
       Dict
+      Interpreter
       Lam
       Lam.Term
       Lam.Type
