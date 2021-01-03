@@ -119,7 +119,6 @@ optK expr = case expr of
   ComposeK (Zeta f) g -> Just $ zeta $ \x -> f x . g
 
   ComposeK (Pop f) (Push x) -> Just (f x)
-  ComposeK (Pass x) (Zeta f) -> Just (f x)
 
   Force (Thunk f) -> Just (f Unit)
 

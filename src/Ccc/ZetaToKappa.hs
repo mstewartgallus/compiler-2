@@ -2,7 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
 
--- | Convert pass x . zeta t f to kappa t f . push x
+-- | Convert pass x . zeta f to kappa f . push x
 module Ccc.ZetaToKappa (zetaToKappa) where
 
 import Ccc

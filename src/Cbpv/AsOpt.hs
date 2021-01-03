@@ -7,6 +7,7 @@ import Cbpv
 import Cbpv.Hom
 import Cbpv.AsIntrinsified
 import Cbpv.AsSimplified
+import Cbpv.ZetaToPop
 import Cbpv.AsLeft
 import Cbpv.AsRight
 import Cbpv.RemoveDead
@@ -29,4 +30,5 @@ round =
 dopass :: Closed @SetTag a b -> Closed @SetTag a b
 dopass =
   simplify >>>
+  zetaToPop >>>
   removeDead
