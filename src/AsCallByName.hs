@@ -51,11 +51,8 @@ lift' a b (V x) = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b)) of
   (Dict, Dict) ->
     V
       ( thunk $ \env ->
-          push (fanout (x . thunk (\_ -> push unit)) env)
+          push ((x . thunk (\_ -> push unit)) &&& env)
       )
-
-fanout :: (KnownSort a, KnownSort b) => Hom k Unit a -> Hom k Unit b -> Hom k Unit (a * b)
-fanout x y = lift x . y
 
 pass' :: Ccc.ST a -> Ccc.ST b -> V k Ccc.Unit a -> V k (a Ccc.~> b) b
 pass' a b (V x) = case (toKnownSort (asAlgebra a), toKnownSort (asAlgebra b)) of

@@ -224,9 +224,12 @@ instance Cbpv.Category (View @Cbpv.Algebra) where
 
 instance Cbpv.Code View where
   unit = V $ \_ -> pure $ keyword $ pretty "!"
-
-  lift x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "lift", x']) <*> view x (appPrec + 1)
-  kappa = kappaCbpv Cbpv.inferSort
+  fst = V $ \_ -> pure $ keyword $ pretty "π₁"
+  snd = V $ \_ -> pure $ keyword $ pretty "π₁"
+  f &&& g = V $ \p -> do
+    f' <- view f (composePrec + 1)
+    g' <- view g (composePrec + 1)
+    pure $ iff (p > composePrec) angles $ sep [f', keyword $ pretty ",", g']
 
 instance Cbpv.Stack View
 

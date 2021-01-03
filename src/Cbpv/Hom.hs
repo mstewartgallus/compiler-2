@@ -38,8 +38,9 @@ goC x = case x of
   Thunk f -> thunk (\x -> goK (f x))
 
   UnitHom -> unit
-  Kappa f -> kappa (\x -> goC (f x))
-  Lift x -> lift (goC x)
+  Fst -> fst
+  Snd -> snd
+  Fanout x y -> goC x &&& goC y
 
   U64 n -> u64 n
   CbpvIntrinsic x -> cbpvIntrinsic x
@@ -71,8 +72,9 @@ data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
 
   UnitHom :: KnownSort a => Hom x a Unit
 
-  Lift :: (KnownSort a, KnownSort b) => Hom x Unit a -> Hom x b (a * b)
-  Kappa :: (KnownSort a, KnownSort b, KnownSort c) => (x Unit a -> Hom x b c) -> Hom x (a * b) c
+  Fst :: (KnownSort a, KnownSort b) => Hom x (a * b) a
+  Snd :: (KnownSort a, KnownSort b) => Hom x (a * b) b
+  Fanout :: (KnownSort a, KnownSort b, KnownSort c) => Hom x c a -> Hom x c b -> Hom x c (a * b)
 
   Push :: (KnownSort a, KnownSort b) => Hom x Unit a -> Hom x b (a & b)
   Pop :: (KnownSort a, KnownSort b, KnownSort c) => (x Unit a -> Hom x b c) -> Hom x (a & b) c
@@ -94,8 +96,9 @@ instance Category (Hom x) where
 
 instance Code (Hom x) where
   unit = UnitHom
-  lift = Lift
-  kappa f = Kappa (\x -> f (Var x))
+  fst = Fst
+  snd = Snd
+  (&&&) = Fanout
 
 instance Stack (Hom x) where
 

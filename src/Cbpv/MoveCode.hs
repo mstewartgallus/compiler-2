@@ -28,7 +28,6 @@ out x = case x of
   Pure x -> x
 
   Thunk f -> thunk (\x -> out (f (into x)))
-  Kappa f -> kappa (\x -> out (f (into x)))
   Pop f -> pop (\x -> out (f (into x)))
   Zeta f -> zeta (\x -> out (f (into x)))
 
@@ -37,13 +36,11 @@ data Expr (k :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
 
   Zeta :: (KnownSort a, KnownSort b, KnownSort c) => (Expr f Unit a -> Expr f b c) -> Expr f b (a ~> c)
   Pop :: (KnownSort a, KnownSort b, KnownSort c) => (Expr f Unit a -> Expr f b c) -> Expr f (a & b) c
-  Kappa :: (KnownSort a, KnownSort b, KnownSort c) => (Expr k Unit a -> Expr k b c) -> Expr k (a * b) c
   Thunk :: (KnownSort a, KnownSort b, KnownSort c) => (Expr k Unit a -> Expr k b c) -> Expr k a (b ~. c)
 
 instance Category (Expr f) where
   id = into id
 
-  y . Kappa f = kappa (\x -> y . f x)
   y . Pop f = pop (\x -> y . f x)
   Zeta f . y = zeta (\x -> f x . y)
   Thunk f . y = thunk (\x -> f (y . x))
@@ -53,9 +50,9 @@ instance Stack (Expr f) where
 
 instance Code (Expr g) where
   unit = into unit
-
-  lift x = into (lift (out x))
-  kappa = Kappa
+  fst = into fst
+  snd = into snd
+  x &&& y = into (out x &&& out y)
 
 instance Cbpv (Expr f) (Expr f) where
   thunk = Thunk

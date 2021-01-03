@@ -41,8 +41,9 @@ instance Cbpv f g => Stack (Path f) where
 
 instance Cbpv f g => Code (Path g) where
   unit = into unit
-  kappa f = into (kappa $ \x -> (out (f (into x))))
-  lift x = into (lift (out x))
+  fst = into fst
+  snd = into snd
+  x &&& y = into (out x &&& out y)
 
 instance Cbpv f g => Cbpv (Path f) (Path g) where
   thunk f = into (thunk $ \x -> out (f (into x)))

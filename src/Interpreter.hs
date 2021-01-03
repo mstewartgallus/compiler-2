@@ -68,9 +68,9 @@ instance Category (Prog @AlgebraTag) where
 
 instance Code Prog where
   unit = C $ const Unit
-  lift (C x) = C $ \env -> Pair (x Unit) env
-  kappa f = C $ \(Pair h t) -> case f (C $ const h) of
-    C y -> y t
+  C x &&& C y = C $ \env -> Pair (x env) (y env)
+  fst = C $ \(Pair x _) -> x
+  snd = C $ \(Pair _ x) -> x
 
 instance Stack Prog
 

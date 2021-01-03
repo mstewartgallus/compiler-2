@@ -35,14 +35,9 @@ class Category stack => Stack (stack :: Algebra -> Algebra -> Type)
 class Category code => Code code where
   unit :: KnownSort a => code a Unit
 
+  (&&&) :: (KnownSort a, KnownSort b, KnownSort c) => code c a -> code c b -> code c (a * b)
   fst :: (KnownSort a, KnownSort b) => code (a * b) a
-  fst = kappa (\x -> x . unit)
-
   snd :: (KnownSort a, KnownSort b) => code (a * b) b
-  snd = kappa (\_ -> id)
-
-  kappa :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> code b c) -> code (a * b) c
-  lift :: (KnownSort a, KnownSort b) => code Unit a -> code b (a * b)
 
 class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack where
   thunk :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> code a (b ~. c)

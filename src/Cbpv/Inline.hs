@@ -30,33 +30,25 @@ out x = case x of
   Push x -> push (out x)
   Pop f -> pop (\x -> out (f (into x)))
 
-  Lift x -> lift (out x)
-  Kappa f -> kappa (\x -> out (f (into x)))
-
 data Expr (k :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   Pure :: Hom k a b -> Expr k a b
 
   Push :: (KnownSort a, KnownSort b) => Expr k Unit a -> Expr k b (a & b)
   Pop :: (KnownSort a, KnownSort b, KnownSort c) => (Expr f Unit a -> Expr f b c) -> Expr f (a & b) c
 
-  Kappa :: (KnownSort a, KnownSort b, KnownSort c) => (Expr k Unit a -> Expr k b c) -> Expr k (a * b) c
-  Lift :: (KnownSort a, KnownSort b) => Expr k Unit a -> Expr k b (a * b)
-
 instance Category (Expr f) where
   id = into id
 
-  Kappa f . Lift x = f x
   Pop f . Push x = f x
-
   f . g = into (out f . out g)
 
 instance Stack (Expr f) where
 
 instance Code (Expr g) where
   unit = into unit
-
-  lift = Lift
-  kappa = Kappa
+  fst = into fst
+  snd = into snd
+  x &&& y = into (out x &&& out y)
 
 instance Cbpv (Expr f) (Expr f) where
   thunk f = into (thunk $ \x -> out (f (into x)))

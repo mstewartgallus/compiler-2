@@ -26,7 +26,7 @@ binop intrins =
   pop $ \tuple -> (
   (pop $ \x -> (
   (pop $ \y ->
-  push (cbpvIntrinsic intrins . lift x . y)) .
+  push (cbpvIntrinsic intrins . (x &&& y))) .
   force (snd . tuple))) .
   force (fst . tuple))
 
@@ -46,9 +46,9 @@ instance Stack (Expr f) where
 
 instance Code (Expr g) where
   unit = into unit
-
-  lift x = into (lift (out x))
-  kappa f = into (kappa $ \x -> out (f (into x)))
+  fst = into fst
+  snd = into snd
+  x &&& y = into (out x &&& out y)
 
 instance Cbpv (Expr f) (Expr f) where
   cccIntrinsic Ccc.AddIntrinsic = binop AddIntrinsic

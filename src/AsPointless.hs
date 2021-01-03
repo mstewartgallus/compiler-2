@@ -48,10 +48,12 @@ instance Pointless f g => Cbpv.Stack (K f g)
 
 instance Pointless f g => Cbpv.Code (C f g) where
   unit = C $ pure unit
-  kappa = kappa' inferSort
-  lift (C x) = C $ do
+  fst = C $ pure fst
+  snd = C $ pure snd
+  C x &&& C y = C $ do
     x' <- x
-    pure ((x' . unit) &&& id)
+    y' <- y
+    pure (x' &&& y')
 
 instance Pointless f g => Cbpv.Cbpv (K f g) (C f g) where
   thunk = thunk' inferSort

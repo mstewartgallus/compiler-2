@@ -42,10 +42,9 @@ instance Cbpv f g => Pointless.Stack (K f g)
 
 instance Cbpv f g => Pointless.Code (C f g) where
   unit = C unit
-  fst = C $ kappa (\x -> x . unit)
-  snd = C $ kappa (\_ -> id)
-
--- C x &&& C y = C (lift unit)
+  fst = C fst
+  snd = C snd
+  C x &&& C y = C (x &&& y)
 
 instance Cbpv f g => Pointless.Pointless (K f g) (C f g)
 
