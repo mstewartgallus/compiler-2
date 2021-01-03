@@ -1,6 +1,5 @@
 module Main where
 
-import qualified AsC
 import qualified AsCallByName
 import qualified AsCcc
 import qualified AsPointless
@@ -24,7 +23,7 @@ program :: Lam.Term U64
 program =
   Lam.mkTerm $
     u64 3 `be` \z ->
-      (z - z) + (z + z)
+      (z * z) + (z + z)
 
 header :: AnsiStyle
 header = underlined <> bold
@@ -106,14 +105,4 @@ main = do
     annotate header (pretty "Scheme Prototype:")
       <> hardline
       <> reAnnotate toAnsi scheme
-      <> hardline
-      <> hardline
-
-  let cprog = AsC.toC pointless
-
-  putDoc $
-    annotate header (pretty "C Prototype:")
-      <> hardline
-      <> reAnnotate toAnsi cprog
-      <> hardline
       <> hardline

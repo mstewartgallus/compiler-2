@@ -63,8 +63,8 @@ data Hom (a :: Sort t) (b :: Sort t) where
   Id :: KnownSort a => Hom a a
   (:.:) :: (KnownSort a, KnownSort b, KnownSort c) => Hom b c -> Hom a b -> Hom a c
 
-  Thunk :: (KnownSort a, KnownSort b) => Hom (F a) b -> Hom a (U b)
-  Force :: (KnownSort a, KnownSort b) => Hom a (U b) -> Hom (F a) b
+  Thunk :: (KnownSort a, KnownSort b, KnownSort c) => Hom (a & b) c -> Hom a (b ~. c)
+  Force :: (KnownSort a, KnownSort b, KnownSort c) => Hom a (b ~. c) -> Hom (a & b) c
 
   UnitHom :: KnownSort a => Hom a Unit
   Fst :: (KnownSort a, KnownSort b) => Hom (a * b) a

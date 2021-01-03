@@ -33,7 +33,7 @@ toScheme x = case fold x of
   C y ->
     pretty rt
       <> hardline
-      <> evalState (val (y (ThunkVal (PushAct UnitVal EmptyAct)))) 0
+      <> evalState (val (y (ThunkVal (PushAct UnitVal)))) 0
 
 rt :: String
 rt =
@@ -47,7 +47,7 @@ data Val x y a where
   SndVal :: Val x y (a * b) -> Val x y b
   FanoutVal :: Val x y a -> Val x y b -> Val x y (a * b)
   LetVal :: (Val x y a -> Val x y b) -> Val x y a -> Val x y b
-  ThunkVal :: Act x y b -> Val x y (U b)
+  ThunkVal :: (Act x y a -> Act x y b) -> Val x y (a ~. b)
   U64Val :: Word64 -> Val x y U64
   IntrinsicVal :: Intrinsic a b -> Val x y a -> Val x y b
 
@@ -90,8 +90,9 @@ val x = case x of
             [ sep [pretty "let", parens (brackets $ sep [v, x'])],
               body
             ]
-  ThunkVal x -> do
-    body <- act x
+  ThunkVal f -> do
+    v <- fresh
+    body <- act (f (VarAct (V v)))
     pure $ parens $ dent $ vsep [pretty "delay", body]
   FanoutVal x y -> do
     x' <- val x
@@ -151,7 +152,7 @@ instance Pointless (Prog x y) (Prog x y) where
   thunk (K f) = C $ \env ->
     LetVal
       ( \env' ->
-          ThunkVal (f (PushAct env' EmptyAct))
+          ThunkVal (\t -> f (PushAct env' t))
       )
       env
 
@@ -163,7 +164,7 @@ instance Pointless (Prog x y) (Prog x y) where
   pop = K (PopAct (\x -> PopAct (\y -> PushAct (FanoutVal x y))))
 
   u64 n = C $ \_ -> U64Val n
-  constant pkg name = C $ \_ -> ThunkVal (CallAct Lam.inferT pkg name)
+  constant pkg name = C $ \_ -> ThunkVal (\_ -> CallAct Lam.inferT pkg name)
   cbpvIntrinsic x = C (IntrinsicVal x)
 
 fresh :: State Int (Doc Style)

@@ -35,8 +35,8 @@ class (Stack stack, Code code) => Pointless stack code | stack -> code, code -> 
   push :: (KnownSort a, KnownSort b) => stack ((a * b) & c) (a & (b & c))
   pop :: (KnownSort a, KnownSort b) => stack (a & (b & c)) ((a * b) & c)
 
-  thunk :: (KnownSort a, KnownSort b) => stack (F a) b -> code a (U b)
-  force :: (KnownSort a, KnownSort b) => code a (U b) -> stack (F a) b
+  thunk :: (KnownSort a, KnownSort b, KnownSort c) => stack (a & b) c -> code a (b ~. c)
+  force :: (KnownSort a, KnownSort b, KnownSort c) => code a (b ~. c) -> stack (a & b) c
 
   drop :: (KnownSort a, KnownSort b) => stack (a & b) b
 

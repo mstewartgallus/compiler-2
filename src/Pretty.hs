@@ -62,6 +62,49 @@ bind q v t body =
         body
       ]
 
+appPrec :: Int
+appPrec = 10
+
+andPrec :: Int
+andPrec = 4
+
+asymPrec :: Int
+asymPrec = 3
+
+expPrec :: Int
+expPrec = 9
+
+kappaPrec :: Int
+kappaPrec = 2
+
+zetaPrec :: Int
+zetaPrec = 5
+
+composePrec :: Int
+composePrec = 9
+
+lamPrec :: Int
+lamPrec = 9
+
+bePrec :: Int
+bePrec = 8
+
+dent :: Doc a -> Doc a
+dent = nest 3
+
+paren :: Bool -> Doc Style -> Doc Style
+paren x = iff x parens
+
+iff :: Bool -> (a -> a) -> (a -> a)
+iff True f y = f y
+iff _ _ y = y
+
+fresh :: State Int (Doc Style)
+fresh = do
+  n <- get
+  put (n + 1)
+  pure $ variable (pretty "v" <> pretty n)
+
 class PrettyProgram p where
   prettyProgram :: p -> Doc Style
 
@@ -104,45 +147,6 @@ go p x = case x of
 -- shit!
 instance PrettyProgram (Pointless.Hom @Cbpv.SetTag a b) where
   prettyProgram x = viewP (Pointless.fold x) 0
-
-appPrec :: Int
-appPrec = 10
-
-andPrec :: Int
-andPrec = 4
-
-asymPrec :: Int
-asymPrec = 3
-
-expPrec :: Int
-expPrec = 9
-
-kappaPrec :: Int
-kappaPrec = 2
-
-zetaPrec :: Int
-zetaPrec = 5
-
-composePrec :: Int
-composePrec = 9
-
-lamPrec :: Int
-lamPrec = 9
-
-bePrec :: Int
-bePrec = 8
-
-dent :: Doc a -> Doc a
-dent = nest 3
-
-paren :: Bool -> Doc Style -> Doc Style
-paren x = if x then parens else id
-
-fresh :: State Int (Doc Style)
-fresh = do
-  n <- get
-  put (n + 1)
-  pure $ variable (pretty "v" <> pretty n)
 
 newtype ViewLam (a :: Lam.T) = VL {viewLam :: Int -> State Int (Doc Style)}
 
@@ -270,21 +274,28 @@ zetaCbpv t f = V $ \p -> do
 
 newtype ViewP (a :: Cbpv.Sort t) (b :: Cbpv.Sort t) = VP {viewP :: Int -> Doc Style}
 
-instance Pointless.Category ViewP where
+instance Pointless.Category (ViewP @Cbpv.SetTag) where
   id = VP $ \_ -> keyword $ pretty "id"
+  f . g = VP $ \p ->
+    let f' = viewP f (composePrec + 1)
+        g' = viewP g (composePrec + 1)
+     in paren (p > composePrec) $ sep [sep [f', keyword $ pretty "∘"], g']
+
+instance Pointless.Category (ViewP @Cbpv.AlgebraTag) where
+  id = VP $ \_ -> keyword $ pretty "skip"
   f . g = VP $ \p ->
     let g' = viewP g (composePrec + 1)
         f' = viewP f (composePrec + 1)
-     in paren (p > composePrec) $ vsep [g', keyword $ pretty ">>>", f']
+     in paren (p > composePrec) $ vsep [sep [g', keyword $ pretty ";"], f']
 
 instance Pointless.Code ViewP where
   unit = VP $ \_ -> keyword $ pretty "!"
   x &&& y = VP $ \p ->
-    let x' = viewP x (appPrec + 1)
-        y' = viewP x (appPrec + 1)
-     in paren (p > appPrec) $ sep [x', keyword $ pretty "&&&", y']
-  fst = VP $ \_ -> keyword $ pretty "fst"
-  snd = VP $ \_ -> keyword $ pretty "snd"
+    let x' = viewP x 0
+        y' = viewP x 0
+     in angles $ sep $ punctuate (keyword (pretty ",")) [x', y']
+  fst = VP $ \_ -> keyword $ pretty "π₁"
+  snd = VP $ \_ -> keyword $ pretty "π₂"
 
 instance Pointless.Stack ViewP
 
