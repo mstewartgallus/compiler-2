@@ -89,7 +89,7 @@ recurseK expr = case expr of
 
 optC :: Cde f g a b -> Maybe (Cde f g a b)
 optC expr = case expr of
-  ComposeC (Kappa f) (Lift x) -> Just (f x)
+  ComposeC g (Kappa f) -> Just $ kappa $ \x -> g . f x
   ComposeC (Thunk f) x -> Just (thunk (\env -> f (x . env)))
   _ -> Nothing
 
