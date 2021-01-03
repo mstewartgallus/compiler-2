@@ -12,6 +12,7 @@ import Cbpv.Inline
 import Cbpv.AsLeft
 import Cbpv.AsRight
 import Cbpv.RemoveDead
+import Cbpv.ElimThunkForce
 import Control.Category
 import Cbpv.Sort
 import Prelude hiding ((.), id, round)
@@ -32,5 +33,6 @@ dopass :: Closed @SetTag a b -> Closed @SetTag a b
 dopass =
   simplify >>>
   zetaToPop >>>
+  elimThunkForce >>>
   inline >>>
   removeDead

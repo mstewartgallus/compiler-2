@@ -98,8 +98,6 @@ optK expr = case expr of
   ComposeK g (Pop f) -> Just $ pop $ \x -> g . f x
   ComposeK (Zeta f) g -> Just $ zeta $ \x -> f x . g
 
-  Force (Thunk f) -> Just (f unit)
-
   _ -> Nothing
 
 simpC :: Cde f g a b -> Cde f g a b
