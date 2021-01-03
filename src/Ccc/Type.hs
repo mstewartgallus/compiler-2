@@ -7,7 +7,6 @@
 
 module Ccc.Type (ST (..), T, Unit, type (~>), type (*), type U64, AsObject, asObject, toKnownT, KnownT (..)) where
 import qualified Lam.Type as Type
-import Data.Text.Prettyprint.Doc
 import Dict
 
 type Unit = 'Unit
@@ -41,13 +40,6 @@ asObject t = case t of
   Type.SU64 -> SU64
   Type.SUnit -> SUnit
   a Type.:-> b -> asObject a :-> asObject b
-
-instance Pretty (ST a) where
-  pretty expr = case expr of
-    SUnit -> pretty "1"
-    SU64 -> pretty "u64"
-    x :*: y -> parens $ sep [pretty x, pretty "×", pretty y]
-    x :-> y -> parens $ sep [pretty x, pretty "→", pretty y]
 
 class KnownT t where
   inferT :: ST t

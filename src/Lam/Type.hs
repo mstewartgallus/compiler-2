@@ -7,8 +7,6 @@
 module Lam.Type (eqT, KnownT, inferT, toKnownT, ST (..), T, type (~>), type Unit, type U64) where
 
 import Dict
-import Pretty
-import Data.Text.Prettyprint.Doc
 import Data.Typeable ((:~:) (..))
 
 type (~>) = 'Exp
@@ -36,12 +34,6 @@ instance KnownT 'U64 where
 
 instance (KnownT a, KnownT b) => KnownT ('Exp a b) where
   inferT = inferT :-> inferT
-
-instance PrettyProgram (ST a) where
-  prettyProgram expr = case expr of
-    SUnit -> keyword $ pretty "1"
-    SU64 -> keyword $ pretty "u64"
-    x :-> y -> parens $ sep [prettyProgram x, keyword $ pretty "→", prettyProgram y]
 
 toKnownT :: ST a -> Dict (KnownT a)
 toKnownT x = case x of
