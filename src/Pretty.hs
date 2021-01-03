@@ -23,35 +23,61 @@ import qualified Lam.Type as Lam
 
 data Style = None | Keyword | Variable
 
+instance Semigroup Style
+
+instance Monoid Style where
+  mempty = None
+
 keyword :: Doc Style -> Doc Style
 keyword = annotate Keyword
 
 variable :: Doc Style -> Doc Style
 variable = annotate Variable
 
-instance Semigroup Style
+unitType :: Doc Style
+unitType = keyword (pretty "1")
 
-instance Monoid Style where
-  mempty = None
+u64Type :: Doc Style
+u64Type = keyword (pretty "u64")
+
+fnType :: Doc Style -> Doc Style -> Doc Style
+fnType a b = parens $ sep [a, keyword $ pretty "→", b]
+
+tupleType :: Doc Style -> Doc Style -> Doc Style
+tupleType a b = parens $ sep [a, keyword $ pretty "×", b]
+
+ofType :: Doc Style
+ofType = keyword (pretty ":")
+
+bounds :: Doc Style
+bounds = keyword (pretty "⇒")
+
+bind :: Doc Style -> Doc Style -> Doc Style -> Doc Style -> Doc Style
+bind q v t body =
+  dent $
+    vsep
+      [ sep [q, v, ofType, t, bounds],
+        body
+      ]
 
 class PrettyProgram p where
   prettyProgram :: p -> Doc Style
 
 instance PrettyProgram (Lam.ST a) where
   prettyProgram expr = case expr of
-    Lam.SUnit -> keyword $ pretty "1"
-    Lam.SU64 -> keyword $ pretty "u64"
-    x Lam.:-> y -> parens $ sep [prettyProgram x, keyword $ pretty "→", prettyProgram y]
+    Lam.SUnit -> unitType
+    Lam.SU64 -> u64Type
+    a Lam.:-> b -> fnType (prettyProgram a) (prettyProgram b)
 
 instance PrettyProgram (Lam.Term a) where
   prettyProgram x = evalState (viewLam (Lam.fold x) 0) 0
 
-instance Pretty (Ccc.ST a) where
-  pretty expr = case expr of
-    Ccc.SUnit -> pretty "1"
-    Ccc.SU64 -> pretty "u64"
-    x Ccc.:*: y -> parens $ sep [pretty x, pretty "×", pretty y]
-    x Ccc.:-> y -> parens $ sep [pretty x, pretty "→", pretty y]
+instance PrettyProgram (Ccc.ST a) where
+  prettyProgram expr = case expr of
+    Ccc.SUnit -> unitType
+    Ccc.SU64 -> u64Type
+    x Ccc.:*: y -> tupleType (prettyProgram x) (prettyProgram y)
+    x Ccc.:-> y -> fnType (prettyProgram x) (prettyProgram y)
 
 instance PrettyProgram (Ccc.Closed a b) where
   prettyProgram x = evalState (view (Ccc.fold x) 0) 0
@@ -62,6 +88,16 @@ instance PrettyProgram (Cbpv.SSort t a) where
 -- shit!
 instance PrettyProgram (Cbpv.Closed @Cbpv.SetTag a b) where
   prettyProgram x = evalState (view (Cbpv.fold x) 0) 0
+
+go :: Int -> Cbpv.SSort t a -> Doc Style
+go p x = case x of
+  Cbpv.SUnit -> unitType
+  Cbpv.SU64 -> u64Type
+  Cbpv.SU x -> paren (p > appPrec) $ sep [keyword $ pretty "U", go (appPrec + 1) x]
+  x Cbpv.:*: y -> paren (p > andPrec) $ sep [go (andPrec + 1) x, keyword $ pretty "×", go (andPrec + 1) y]
+  Cbpv.SEmpty -> keyword $ pretty "i"
+  x Cbpv.:&: y -> paren (p > asymPrec) $ sep [go (asymPrec + 1) x, keyword $ pretty "⊗", go (asymPrec + 1) y]
+  x Cbpv.:-> y -> paren (p > expPrec) $ sep [go (expPrec + 1) x, keyword $ pretty "→", go (expPrec + 1) y]
 
 appPrec :: Int
 appPrec = 10
@@ -74,22 +110,6 @@ asymPrec = 3
 
 expPrec :: Int
 expPrec = 9
-
-go :: Int -> Cbpv.SSort t a -> Doc Style
-go p x = case x of
-  Cbpv.SU64 -> keyword $ pretty "u64"
-  Cbpv.SUnit -> keyword $ pretty "1"
-  Cbpv.SU x -> paren (p > appPrec) $ sep [keyword $ pretty "U", go (appPrec + 1) x]
-  x Cbpv.:*: y -> paren (p > andPrec) $ sep [go (andPrec + 1) x, keyword $ pretty "×", go (andPrec + 1) y]
-  Cbpv.SEmpty -> keyword $ pretty "i"
-  x Cbpv.:&: y -> paren (p > asymPrec) $ sep [go (asymPrec + 1) x, keyword $ pretty "⊗", go (asymPrec + 1) y]
-  x Cbpv.:-> y -> paren (p > expPrec) $ sep [go (expPrec + 1) x, keyword $ pretty "→", go (expPrec + 1) y]
-
-whereIsPrec :: Int
-whereIsPrec = 11
-
-dent :: Doc a -> Doc a
-dent = nest 3
 
 kappaPrec :: Int
 kappaPrec = 2
@@ -105,6 +125,9 @@ lamPrec = 9
 
 bePrec :: Int
 bePrec = 8
+
+dent :: Doc a -> Doc a
+dent = nest 3
 
 paren :: Bool -> Doc Style -> Doc Style
 paren x = if x then parens else id
@@ -134,14 +157,13 @@ be' t x f = VL $ \p -> do
   x' <- viewLam x (bePrec + 1)
   v <- fresh
   body <- viewLam (f (VL $ \_ -> pure v)) (bePrec + 1)
-  let binder = sep [v, keyword (pretty ":"), prettyProgram t]
-  pure $ paren (p > bePrec) $ vsep [sep [x', keyword (pretty "be"), binder, keyword (pretty "⇒")], body]
+  pure $ paren (p > bePrec) $ bind (sep [x', keyword (pretty "be")]) v (prettyProgram t) body
 
 lam' :: Lam.ST a -> (ViewLam a -> ViewLam b) -> ViewLam (a Lam.~> b)
 lam' t f = VL $ \p -> do
   v <- fresh
   body <- viewLam (f (VL $ \_ -> pure v)) (lamPrec + 1)
-  pure $ paren (p > lamPrec) $ sep [keyword (pretty "λ"), v, keyword (pretty ":"), prettyProgram t, keyword (pretty "⇒"), body]
+  pure $ paren (p > lamPrec) $ bind (keyword (pretty "λ")) v (prettyProgram t) body
 
 newtype View (a :: k) (b :: k) = V {view :: Int -> State Int (Doc Style)}
 
@@ -168,13 +190,13 @@ kappa' :: Ccc.ST a -> (View Ccc.Unit a -> View b c) -> View (a Ccc.* b) c
 kappa' t f = V $ \p -> do
   v <- fresh
   body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
-  pure $ paren (p > kappaPrec) $ sep [keyword $ pretty "κ", v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
+  pure $ paren (p > kappaPrec) $ bind (keyword $ pretty "κ") v (prettyProgram t) body
 
 zeta' :: Ccc.ST a -> (View Ccc.Unit a -> View b c) -> View b (a Ccc.~> c)
 zeta' t f = V $ \p -> do
   v <- fresh
   body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
-  pure $ paren (p > zetaPrec) $ sep [keyword $ pretty "ζ", v, keyword $ pretty ":", pretty t, keyword $ pretty "⇒", body]
+  pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "ζ") v (prettyProgram t) body
 
 instance Cbpv.Category View where
   id = V $ \_ -> pure $ keyword $ pretty "id"
@@ -211,48 +233,24 @@ thunk' t f =
   V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
-    pure $
-      paren (p > zetaPrec) $
-        dent $
-          vsep
-            [ sep [keyword $ pretty "thunk", v, keyword $ pretty ":", prettyProgram t, keyword $ pretty "⇒"],
-              body
-            ]
+    pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "thunk") v (prettyProgram t) body
 
 kappaCbpv :: Cbpv.SSet a -> (View Cbpv.Unit a -> View b c) -> View (a Cbpv.* b) c
 kappaCbpv t f =
   V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
-    pure $
-      paren (p > kappaPrec) $
-        dent $
-          vsep
-            [ sep [keyword $ pretty "κ", v, keyword $ pretty ":", prettyProgram t, keyword $ pretty "⇒"],
-              body
-            ]
+    pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "κ") v (prettyProgram t) body
 
 pop' :: Cbpv.SSet a -> (View Cbpv.Unit a -> View b c) -> View (a Cbpv.& b) c
 pop' t f =
   V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
-    pure $
-      paren (p > kappaPrec) $
-        dent $
-          vsep
-            [ sep [keyword $ pretty "pop", v, keyword $ pretty ":", prettyProgram t, keyword $ pretty "⇒"],
-              body
-            ]
+    pure $ paren (p > kappaPrec) $ bind (keyword $ pretty "pop") v (prettyProgram t) body
 
 zetaCbpv :: Cbpv.SSet a -> (View Cbpv.Unit a -> View b c) -> View b (a Cbpv.~> c)
 zetaCbpv t f = V $ \p -> do
   v <- fresh
   body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
-  pure $
-    paren (p > zetaPrec) $
-      dent $
-        vsep
-          [ sep [keyword $ pretty "ζ", v, keyword $ pretty ":", prettyProgram t, keyword $ pretty "⇒"],
-            body
-          ]
+  pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "ζ") v (prettyProgram t) body
