@@ -6,7 +6,7 @@ module Cbpv.AsOpt (opt) where
 import Cbpv
 import Cbpv.Hom
 import Cbpv.AsIntrinsified
-import Cbpv.AsSimplified
+import Cbpv.MoveCode
 import Cbpv.ZetaToPop
 import Cbpv.Inline
 import Cbpv.AsLeft
@@ -31,7 +31,7 @@ round =
 
 dopass :: Closed @SetTag a b -> Closed @SetTag a b
 dopass =
-  simplify >>>
+  moveCode >>>
   zetaToPop >>>
   elimThunkForce >>>
   inline >>>

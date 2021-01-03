@@ -8,8 +8,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
--- | Inline pop f . push x to f x (always so far)
-module Cbpv.Inline (inline) where
+-- | Move Code
+module Cbpv.MoveCode (moveCode) where
 
 import Cbpv
 import Cbpv.Hom
@@ -17,8 +17,8 @@ import Cbpv.Sort
 import Data.Kind
 import Prelude hiding ((.), id, fst, snd)
 
-inline :: Closed @SetTag a b -> Closed a b
-inline x = Closed (out (fold x))
+moveCode :: Closed @SetTag a b -> Closed a b
+moveCode x = Closed (out (fold x))
 
 into :: Hom k a b -> Expr k a b
 into x = Pure x
@@ -27,27 +27,26 @@ out :: Expr k a b -> Hom k a b
 out x = case x of
   Pure x -> x
 
-  Push x -> push (out x)
-  Pop f -> pop (\x -> out (f (into x)))
-
-  Lift x -> lift (out x)
+  Thunk f -> thunk (\x -> out (f (into x)))
   Kappa f -> kappa (\x -> out (f (into x)))
+  Pop f -> pop (\x -> out (f (into x)))
+  Zeta f -> zeta (\x -> out (f (into x)))
 
 data Expr (k :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
   Pure :: Hom k a b -> Expr k a b
 
-  Push :: (KnownSort a, KnownSort b) => Expr k Unit a -> Expr k b (a & b)
+  Zeta :: (KnownSort a, KnownSort b, KnownSort c) => (Expr f Unit a -> Expr f b c) -> Expr f b (a ~> c)
   Pop :: (KnownSort a, KnownSort b, KnownSort c) => (Expr f Unit a -> Expr f b c) -> Expr f (a & b) c
-
   Kappa :: (KnownSort a, KnownSort b, KnownSort c) => (Expr k Unit a -> Expr k b c) -> Expr k (a * b) c
-  Lift :: (KnownSort a, KnownSort b) => Expr k Unit a -> Expr k b (a * b)
+  Thunk :: (KnownSort a, KnownSort b) => (Expr k Unit a -> Expr k Empty b) -> Expr k a (U b)
 
 instance Category (Expr f) where
   id = into id
 
-  Kappa f . Lift x = f x
-  Pop f . Push x = f x
-
+  y . Kappa f = kappa (\x -> y . f x)
+  y . Pop f = pop (\x -> y . f x)
+  Zeta f . y = zeta (\x -> f x . y)
+  Thunk f . y = thunk (\x -> f (y . x))
   f . g = into (out f . out g)
 
 instance Stack (Expr f) where
@@ -55,18 +54,17 @@ instance Stack (Expr f) where
 instance Code (Expr g) where
   unit = into unit
 
-  lift = Lift
+  lift x = into (lift (out x))
   kappa = Kappa
 
 instance Cbpv (Expr f) (Expr f) where
-  thunk f = into (thunk $ \x -> out (f (into x)))
-  force x = into (force (out x))
-
-  push = Push
+  thunk = Thunk
   pop = Pop
+  zeta = Zeta
 
+  force x = into (force (out x))
+  push x = into (push (out x))
   pass x = into (pass (out x))
-  zeta f = into (zeta $ \x -> out (f (into x)))
 
   u64 n = into (u64 n)
   constant pkg name = into (constant pkg name)
