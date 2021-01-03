@@ -22,7 +22,6 @@ simplify x = Hom.Closed (outC (simpC (Hom.fold x)))
 data Stk f g (a :: Algebra) (b :: Algebra) where
   K :: f a b -> Stk f g a b
 
-  IdK :: (KnownSort a, Category f) => Stk f g a a
   ComposeK :: (KnownSort a, KnownSort b, KnownSort c, Category f) => Stk f g b c -> Stk f g a b -> Stk f g a c
 
   Force :: (KnownSort a, Cbpv f g) => Cde f g Unit (U a) -> Stk f g Empty a
@@ -35,7 +34,6 @@ data Stk f g (a :: Algebra) (b :: Algebra) where
 
 data Cde f g (a :: Set) (b :: Set) where
   C :: g a b -> Cde f g a b
-  IdC :: (KnownSort a, Category g) => Cde f g a a
   ComposeC ::  (KnownSort a, KnownSort b, KnownSort c, Category g) => Cde f g b c -> Cde f g a b -> Cde f g a c
 
   Kappa :: (KnownSort a, KnownSort b, KnownSort c, Code g) => (Cde f g Unit a -> Cde f g b c) -> Cde f g (a * b) c
@@ -43,12 +41,9 @@ data Cde f g (a :: Set) (b :: Set) where
 
   Thunk :: (KnownSort a, KnownSort b, Cbpv f g) => (Cde f g Unit a -> Stk f g Empty b) -> Cde f g a (U b)
 
-  Unit :: (KnownSort a, Code g) => Cde f g a Unit
-
 outC :: Cde f g a b -> g a b
 outC expr = case expr of
   C x -> x
-  IdC -> id
   ComposeC f g -> outC f . outC g
 
   Kappa f -> kappa (\x -> outC (f (C x)))
@@ -56,12 +51,9 @@ outC expr = case expr of
 
   Thunk f -> thunk (\x -> outK (f (C x)))
 
-  Unit -> unit
-
 outK :: Stk f g a b -> f a b
 outK expr = case expr of
   K x -> x
-  IdK -> id
   ComposeK f g -> outK f . outK g
 
   Force x -> force (outC x)
@@ -75,12 +67,9 @@ outK expr = case expr of
 recurseC :: Cde f g a b -> Cde f g a b
 recurseC expr = case expr of
   C x -> C x
-  IdC -> id
   ComposeC f g -> simpC f . simpC g
 
   Thunk f -> thunk (\x -> simpK (f x))
-
-  Unit -> unit
 
   Kappa f -> kappa (\x -> simpC (f x))
   Lift x -> lift (simpC x)
@@ -88,7 +77,6 @@ recurseC expr = case expr of
 recurseK :: Stk f g a b -> Stk f g a b
 recurseK expr = case expr of
   K x -> K x
-  IdK -> id
   ComposeK f g -> simpK f . simpK g
 
   Force x -> force (simpC x)
@@ -101,26 +89,16 @@ recurseK expr = case expr of
 
 optC :: Cde f g a b -> Maybe (Cde f g a b)
 optC expr = case expr of
-  ComposeC IdC f -> Just f
-  ComposeC f IdC -> Just f
-
-  ComposeC Unit _ -> Just unit
-
   ComposeC (Kappa f) (Lift x) -> Just (f x)
   ComposeC (Thunk f) x -> Just (thunk (\env -> f (x . env)))
   _ -> Nothing
 
 optK :: Stk f g a b -> Maybe (Stk f g a b)
 optK expr = case expr of
-  ComposeK IdK f -> Just f
-  ComposeK f IdK -> Just f
-
   ComposeK g (Pop f) -> Just $ pop $ \x -> g . f x
   ComposeK (Zeta f) g -> Just $ zeta $ \x -> f x . g
 
-  ComposeK (Pop f) (Push x) -> Just (f x)
-
-  Force (Thunk f) -> Just (f Unit)
+  Force (Thunk f) -> Just (f unit)
 
   _ -> Nothing
 
@@ -135,17 +113,17 @@ simpK expr = case optK expr of
   Nothing -> recurseK expr
 
 instance Category f => Category (Stk f g) where
-  id = IdK
+  id = K id
   (.) = ComposeK
 
 instance Category g => Category (Cde f g) where
-  id = IdC
+  id = C id
   (.) = ComposeC
 
 instance Stack f => Stack (Stk f g) where
 
 instance Code g => Code (Cde f g) where
-  unit = Unit
+  unit = C unit
   lift = Lift
   kappa = Kappa
 
