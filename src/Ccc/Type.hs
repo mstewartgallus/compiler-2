@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Ccc.Type (ST (..), T, Unit, type (~>), type (*), type U64, AsObject, asObject, toKnownT, KnownT (..)) where
+module Ccc.Type (ST (..), T, Unit, type (~>), type (*), type U64, AsObject, asObject, toKnownT, Tagged (..), KnownT (..)) where
 import qualified Lam.Type as Type
 import Dict
 
@@ -23,38 +23,55 @@ infixl 0 *
 
 data T = U64 | Unit | Product T T | Exp T T
 
+class Tagged t where
+  u64Tag :: t U64
+  unitTag :: t Unit
+  tupleTag :: t a -> t b -> t (a * b)
+  expTag :: t a -> t b -> t (a ~> b)
+
+class KnownT a where
+  inferT :: Tagged t => t a
+
+instance KnownT 'Unit where
+  inferT = unitTag
+
+instance KnownT 'U64 where
+  inferT = u64Tag
+
+instance (KnownT a, KnownT b) => KnownT ('Product a b) where
+  inferT = tupleTag inferT inferT
+
+instance (KnownT a, KnownT b) => KnownT ('Exp a b) where
+  inferT = expTag inferT inferT
+
+instance Tagged ST where
+  unitTag = SUnit
+  u64Tag = SU64
+  tupleTag = (:*:)
+  expTag = (:->)
+
 data ST a where
   SU64 :: ST U64
   SUnit :: ST Unit
   (:*:) :: ST a -> ST b -> ST (a * b)
   (:->) :: ST a -> ST b -> ST (a ~> b)
 
-
 type family AsObject a = r | r -> a where
   AsObject (a Type.~> b) = AsObject a ~> AsObject b
   AsObject Type.U64 = U64
   AsObject Type.Unit = Unit
+
+newtype ObjectOf (a :: Type.T) = O (ST (AsObject a))
+instance Type.Tagged ObjectOf where
+  unitTag = O SUnit
+  u64Tag = O SU64
+  expTag (O a) (O b) = O (a :-> b)
 
 asObject :: Type.ST a -> ST (AsObject a)
 asObject t = case t of
   Type.SU64 -> SU64
   Type.SUnit -> SUnit
   a Type.:-> b -> asObject a :-> asObject b
-
-class KnownT t where
-  inferT :: ST t
-
-instance KnownT 'Unit where
-  inferT = SUnit
-
-instance KnownT 'U64 where
-  inferT = SU64
-
-instance (KnownT a, KnownT b) => KnownT ('Product a b) where
-  inferT = inferT :*: inferT
-
-instance (KnownT a, KnownT b) => KnownT ('Exp a b) where
-  inferT = inferT :-> inferT
 
 toKnownT :: ST a -> Dict (KnownT a)
 toKnownT x = case x of

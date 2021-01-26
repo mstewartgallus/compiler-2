@@ -108,12 +108,6 @@ fresh = do
 class PrettyProgram p where
   prettyProgram :: p -> Doc Style
 
-instance PrettyProgram (Lam.ST a) where
-  prettyProgram expr = case expr of
-    Lam.SUnit -> unitType
-    Lam.SU64 -> u64Type
-    a Lam.:-> b -> fnType (prettyProgram a) (prettyProgram b)
-
 instance PrettyProgram (Lam.Term a) where
   prettyProgram x = evalState (viewLam (Lam.fold x) 0) 0
 
@@ -162,18 +156,25 @@ instance Lam.Lam ViewLam where
   u64 n = VL $ \_ -> pure (pretty n)
   constant pkg name = VL $ \_ -> pure $ pretty (pkg ++ "/" ++ name)
 
-be' :: Lam.ST a -> ViewLam a -> (ViewLam a -> ViewLam b) -> ViewLam b
-be' t x f = VL $ \p -> do
+newtype ViewLamT (a :: Lam.T) = VLT (Doc Style)
+
+instance Lam.Tagged ViewLamT where
+  unitTag = VLT unitType
+  u64Tag = VLT u64Type
+  expTag (VLT a) (VLT b) = VLT (fnType a b)
+
+be' :: ViewLamT a -> ViewLam a -> (ViewLam a -> ViewLam b) -> ViewLam b
+be' (VLT t) x f = VL $ \p -> do
   x' <- viewLam x (bePrec + 1)
   v <- fresh
   body <- viewLam (f (VL $ \_ -> pure v)) (bePrec + 1)
-  pure $ paren (p > bePrec) $ bind (sep [x', keyword (pretty "be")]) v (prettyProgram t) body
+  pure $ paren (p > bePrec) $ bind (sep [x', keyword (pretty "be")]) v t body
 
-lam' :: Lam.ST a -> (ViewLam a -> ViewLam b) -> ViewLam (a Lam.~> b)
-lam' t f = VL $ \p -> do
+lam' :: ViewLamT a -> (ViewLam a -> ViewLam b) -> ViewLam (a Lam.~> b)
+lam' (VLT t) f = VL $ \p -> do
   v <- fresh
   body <- viewLam (f (VL $ \_ -> pure v)) (lamPrec + 1)
-  pure $ paren (p > lamPrec) $ bind (keyword (pretty "λ")) v (prettyProgram t) body
+  pure $ paren (p > lamPrec) $ bind (keyword (pretty "λ")) v t body
 
 newtype View (a :: k) (b :: k) = V {view :: Int -> State Int (Doc Style)}
 
