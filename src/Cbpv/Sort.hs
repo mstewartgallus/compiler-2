@@ -80,14 +80,15 @@ type family AsAlgebra a = r | r -> a where
   AsAlgebra (a Type.~> b) = U (AsAlgebra a) ~> AsAlgebra b
   AsAlgebra Type.U64 = F U64
 
-thunk = (:-.) SEmpty
+thunk :: Tagged set alg => alg a -> set (Empty ~. a)
+thunk = thunkTag emptyTag
 
-asAlgebra :: Type.ST a -> SAlgebra (AsAlgebra a)
+asAlgebra :: Tagged set alg => Type.ST a -> alg (AsAlgebra a)
 asAlgebra t = case t of
-  a Type.:*: b -> (thunk (asAlgebra a) :*: thunk (asAlgebra b)) :&: SEmpty
-  a Type.:-> b -> thunk (asAlgebra a) :-> asAlgebra b
-  Type.SU64 -> SU64 :&: SEmpty
-  Type.SUnit -> SUnit :&: SEmpty
+  a Type.:*: b -> (thunk (asAlgebra a) `tupleTag` thunk (asAlgebra b)) `asymTag` emptyTag
+  a Type.:-> b -> thunk (asAlgebra a) `expTag` asAlgebra b
+  Type.SU64 -> u64Tag `asymTag` emptyTag
+  Type.SUnit -> unitTag `asymTag` emptyTag
 
 class KnownSet a where
   inferSet :: Tagged set alg => set a

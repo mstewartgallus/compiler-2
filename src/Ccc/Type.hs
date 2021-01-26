@@ -61,17 +61,11 @@ type family AsObject a = r | r -> a where
   AsObject Type.U64 = U64
   AsObject Type.Unit = Unit
 
-newtype ObjectOf (a :: Type.T) = O (ST (AsObject a))
-instance Type.Tagged ObjectOf where
-  unitTag = O SUnit
-  u64Tag = O SU64
-  expTag (O a) (O b) = O (a :-> b)
-
-asObject :: Type.ST a -> ST (AsObject a)
+asObject :: Tagged t => Type.ST a -> t (AsObject a)
 asObject t = case t of
-  Type.SU64 -> SU64
-  Type.SUnit -> SUnit
-  a Type.:-> b -> asObject a :-> asObject b
+  Type.SU64 -> u64Tag
+  Type.SUnit -> unitTag
+  a Type.:-> b -> asObject a `expTag` asObject b
 
 toKnownT :: ST a -> Dict (KnownT a)
 toKnownT x = case x of
