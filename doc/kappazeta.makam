@@ -1,0 +1,266 @@
+(* A simple model of the Kappa Zeta intermediate representation *)
+%open syntax.
+
+%extend kz.
+
+obj : type.
+terminal : obj.
+fn : obj -> obj -> obj.
+tuple : obj -> obj -> obj.
+
+typ : type.
+mp : obj -> obj -> typ.
+
+var : type.
+v : string -> var.
+
+binder : type.
+bind : var -> typ -> binder.
+
+term : type.
+id : term.
+compose : term -> term -> term.
+bang : term.
+load : var -> term.
+kappa : binder -> term -> term.
+lift : term -> term.
+zeta : binder -> term -> term.
+pass : term -> term.
+
+%end.
+
+%extend kz.
+
+typeof : term -> typ -> prop.
+typeof_ : map var typ -> term -> typ -> prop.
+typeof F T :-
+    map.empty Env,
+    typeof_ Env F T.
+
+typeof_ _ id (mp A A).
+typeof_ Env (compose F G) (mp A C) :-
+    typeof_ Env F (mp B C),
+    typeof_ Env G (mp A B).
+typeof_ _ bang (mp _ terminal).
+typeof_ Env (pass X) (mp (fn A B) B) :-
+    typeof_ Env X (mp terminal A).
+typeof_ Env (lift X) (mp B (tuple A B)) :-
+    typeof_ Env X (mp terminal A).
+(* FIXME deal with nonunique variables *)
+typeof_ Env (load Var) T :-
+    map.find Env Var T.
+typeof_ Env0 (kappa (bind Var (mp terminal A)) Body) (mp (tuple A B) C) :-
+    map.add_new Env0 (Var, mp terminal A) Env1,
+    typeof_ Env1 Body (mp B C).
+typeof_ Env0 (zeta (bind Var (mp terminal A)) Body) (mp B (fn A C)) :-
+    map.add_new Env0 (Var, mp terminal A) Env1,
+    typeof_ Env1 Body (mp B C).
+
+%end.
+
+%extend kz.
+
+val : type.
+bangval : val.
+tupleval : val -> val -> val.
+fnval : map var val -> var -> term -> val -> val.
+
+(* Define a big step semantics *)
+big : term -> val -> val -> prop.
+big_ : map var val -> term -> val -> val -> prop.
+
+big F X Y :-
+    map.empty Env,
+    big_ Env F X Y.
+
+big_ _ id X X.
+big_ Env (compose F G) X Z :-
+    big_ Env G X Y,
+    big_ Env F Y Z.
+big_ _ bang _ bangval.
+big_ Env (load Var) bangval Val :-
+    map.find Env Var Val.
+big_ Env (lift F) B (tupleval A B) :-
+   big_ Env F bangval A.
+big_ Env0 (kappa (bind Var _) F) (tupleval H T) Y :-
+   map.add_new Env0 (Var, H) Env1,
+   big_ Env1 F T Y.
+big_ Env (zeta (bind Var _) F) X (fnval Env Var F X).
+big_ Env (pass X) (fnval FnEnv Var F Y) Z :-
+    big_ Env X bangval Val,
+    map.add_new FnEnv (Var, Val) Env1,
+    big_ Env1 F Y Z.
+%end.
+
+%extend kz.
+
+state : type.
+
+store : type.
+store : map var val -> store.
+
+empty_store : store -> prop.
+empty_store (store []).
+
+st : prop -> store -> state.
+
+(* Give a meta semantics to our big step program. *)
+meta : prop -> (bool * map var val) -> prop.
+meta_ : state -> state -> prop.
+
+inject : prop -> state -> prop.
+inject X (st X S) :-
+    empty_store S.
+
+solution : prop -> bool -> prop.
+
+halt : (bool * map var val) -> state -> prop.
+halt (Sus, S) (st P (store S)) :-
+    solution P Sus.
+
+solution success true.
+solution failure false.
+
+step : state -> state -> prop.
+
+meta X Y :-
+    inject X S0,
+    halt Y S1,
+    meta_ S0 S1.
+
+meta_ A A.
+meta_ P R :-
+    step P Q,
+    meta_ Q R.
+
+prim : state -> state -> prop.
+search : state -> state -> prop.
+
+step Head Tail :-
+    demand.case_otherwise (prim Head Tail) (search Head Tail).
+
+prim (st (or A _) S) (st A S).
+prim (st (or _ B) S) (st B S).
+
+prim (st (and success X) S) (st X S).
+prim (st (and failure _) S) (st failure S).
+prim (st (and A X) S0) (st (and B X) S1) :-
+    step (st A S0) (st B S1).
+
+prim (st (newvar F) S) (st (F X) S).
+
+prim (st (ifte success P _) S) (st P S).
+prim (st (ifte failure _ P) S) (st P S).
+prim (st (ifte A P Q) S0) (st (ifte B P Q) S1) :-
+    step (st A S0) (st B S1).
+
+(* FIXME I might want to reify/reflect *)
+simplify : clause -> (prop * prop) -> prop.
+
+search (st Head (store S)) (st Tail (store S)) :-
+    refl.rules_get Head Rules,
+    map simplify Rules Simp,
+    contains (Head, Tail) Simp.
+
+simplify (clause Head Tail) (Head, Tail).
+simplify (whenclause Head P Q) (Head, and P Q).
+
+%end.
+
+%extend kz.
+
+(* Integer Extras *)
+integer : obj.
+
+z : int -> term.
+add : term.
+
+typeof_ _ (z _) (mp terminal integer).
+typeof_ _ add (mp (tuple integer (tuple integer terminal)) integer).
+
+zval : int -> val.
+
+big_ Env (z N) bangval (zval N).
+big_ Env add (tupleval (zval X) (tupleval (zval Y) bangval)) (zval Z) :-
+   plus X Y Z.
+%end.
+
+%extend kz.
+
+(* Syntax *)
+compound_obj_syn, obj_syn : syntax obj.
+ty_syn : syntax typ.
+
+binder_syn : syntax binder.
+var_syn : syntax var.
+expr, base : syntax term.
+
+base_val, val_syn : syntax val.
+
+`(syntax_rules <<
+  compound_obj_syn ->
+      fn { <obj_syn> "⇒" <compound_obj_syn> }
+      / tuple { <obj_syn> "×" <compound_obj_syn> }
+      / obj_syn ;
+  obj_syn ->
+      integer { "Z" }
+      / terminal { "1" }
+      / { "(" <compound_obj_syn> ")" } ;
+
+  ty_syn ->
+      mp { <obj_syn> "→" <obj_syn> } ;
+
+  var_syn -> v { <makam.string_literal> } ;
+  binder_syn -> bind { <var_syn> ":" <ty_syn> } ;
+
+  expr ->
+      compose { <base> "∘" <expr> }
+      / kappa { "κ" <binder_syn> "." <expr> }
+      / zeta { "ζ" <binder_syn> "." <expr> }
+      / lift { "lift" <expr> }
+      / pass { "pass" <expr> }
+      / base ;
+
+  base ->
+      id { "id" }
+      / bang { "!" }
+      / add { "add" }
+      / z { <makam.int_literal> }
+      / load { <var_syn> }
+      / { "(" <expr> ")" } ;
+
+  val_syn ->
+      fnval _ { "map" <var_syn> <base> <val_syn> }
+      / base_val ;
+  base_val ->
+      bangval { "!" }
+      / zval { <makam.int_literal> }
+      / tupleval { "⟨" <base_val> "," <val_syn> "⟩" }
+      / { "(" <val_syn> ")" }
+
+ >>).
+%end.
+
+run : (_ : string) -> prop.
+run Input :-
+    print_string "\n",
+    print_string Input,
+    print_string "\n",
+    syntax.run kz.expr Input Term,
+    kz.typeof Term Ty,
+    syntax.run kz.ty_syn TyStr Ty,
+    print_string ": ",
+    print_string TyStr,
+    print_string "\n",
+    kz.meta (kz.big Term kz.bangval Y) R,
+    print R,
+    syntax.run kz.val_syn YStr Y,
+    print_string "⇒ ",
+    print_string YStr,
+    print_string "\n".
+
+run <<id>> ?
+run <<1>> ?
+run <<lift 1>> ?
+run << (κ "x" : 1 → Z . "x") ∘ lift 1 >> ?
+run << (ζ "x" : 1 → Z . add ∘ (lift "x") ∘ lift "x") >> ?
