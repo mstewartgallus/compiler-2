@@ -1,14 +1,12 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE NoStarIsType #-}
 
 module Lam.Type (eqT, KnownT, Tagged (..), inferT, toKnownT, ST (..), T, type (~>), type Unit, type U64) where
 
 import Dict
 import Type.Reflection
+import Data.Type.Equality
 import Data.Typeable ((:~:) (..))
 
 type (~>) = 'Exp
@@ -37,28 +35,23 @@ class Tagged t where
   u64Tag :: t U64
   expTag :: t a -> t b -> t (a ~> b)
 
-data ST a where
-  SUnit :: ST Unit
-  SU64 :: ST U64
-  (:->) :: ST a -> ST b -> ST (a ~> b)
+data ST a = KnownT a => ST
 
 instance Tagged ST where
-  unitTag = SUnit
-  u64Tag = SU64
-  expTag = (:->)
+  unitTag = ST
+  u64Tag = ST
+  expTag ST ST = ST
 
 toKnownT :: ST a -> Dict (KnownT a)
-toKnownT x = case x of
-  SU64 -> Dict
-  SUnit -> Dict
-  x :-> y -> case (toKnownT x, toKnownT y) of
-    (Dict, Dict) -> Dict
+toKnownT ST = Dict
+
+instance Tagged TypeRep where
+  unitTag = typeRep
+  u64Tag = typeRep
+  expTag a b = a `withTypeable` (b `withTypeable` typeRep)
+
+trep :: ST a -> TypeRep a
+trep ST = inferT
 
 eqT :: ST a -> ST b -> Maybe (a :~: b)
-eqT x y = case (x, y) of
-  (SU64, SU64) -> pure Refl
-  (SUnit, SUnit) -> pure Refl
-  (a :-> b, a' :-> b') -> do
-    Refl <- eqT a a'
-    Refl <- eqT b b'
-    pure Refl
+eqT x y = testEquality (trep x) (trep y)
