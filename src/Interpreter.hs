@@ -87,7 +87,7 @@ instance Cbpv Prog Prog where
 
   u64 x = C $ const (U64 x)
   constant pkg name =
-    let k = constant' Lam.inferT pkg name
+    let k = constant' pkg name
      in C $ \Unit -> k
   cccIntrinsic x = case x of
     Ccc.AddIntrinsic -> undefined
@@ -95,17 +95,22 @@ instance Cbpv Prog Prog where
     AddIntrinsic -> addCbpvImpl
     MulIntrinsic -> mulCbpvImpl
 
-constant' :: Lam.ST a -> String -> String -> Data (U (AsAlgebra (Ccc.AsObject a)))
-constant' t pkg name = case maybeK t pkg name of
+constant' :: Lam.KnownT a => String -> String -> Data (U (AsAlgebra (Ccc.AsObject a)))
+constant' pkg name = case maybeK Lam.inferT pkg name of
   Nothing -> undefined
   Just x -> x
 
-maybeK :: Lam.ST a -> String -> String -> Maybe (Data (U (AsAlgebra (Ccc.AsObject a))))
+maybeK :: Lam.KnownT a => Lam.ST a -> String -> String -> Maybe (Data (U (AsAlgebra (Ccc.AsObject a))))
 maybeK t pkgName name = do
   pkg <- Map.lookup pkgName constants
-  Constant t' k <- Map.lookup name pkg
+  Constant k <- Map.lookup name pkg
+  k' <- cast k Lam.inferT t
+  pure k'
+
+cast :: Data (U (AsAlgebra (Ccc.AsObject a))) -> Lam.ST a -> Lam.ST b -> Maybe (Data (U (AsAlgebra (Ccc.AsObject b))))
+cast x t t' = do
   Refl <- Lam.eqT t t'
-  pure k
+  pure x
 
 addCbpvImpl :: Prog (U64 * U64) U64
 addCbpvImpl = C $ \(Pair (U64 x) (U64 y)) -> U64 (x + y)
@@ -113,16 +118,16 @@ addCbpvImpl = C $ \(Pair (U64 x) (U64 y)) -> U64 (x + y)
 mulCbpvImpl :: Prog (U64 * U64) U64
 mulCbpvImpl = C $ \(Pair (U64 x) (U64 y)) -> U64 (x * y)
 
-data Constant = forall a. Constant (Lam.ST a) (Data (U (AsAlgebra (Ccc.AsObject a))))
+data Constant = forall a. Lam.KnownT a => Constant (Data (U (AsAlgebra (Ccc.AsObject a))))
 
 constants :: Map String (Map String Constant)
 constants =
   Map.fromList
     [ ( "core",
         Map.fromList
-          [ ("add", Constant Lam.inferT addImpl),
-            ("multiply", Constant Lam.inferT multiplyImpl),
-            ("subtract", Constant Lam.inferT subtractImpl)
+          [ ("add", Constant addImpl),
+            ("multiply", Constant multiplyImpl),
+            ("subtract", Constant subtractImpl)
           ]
       )
     ]

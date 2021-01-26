@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
@@ -7,6 +8,7 @@
 module Lam.Type (eqT, KnownT, Tagged (..), inferT, toKnownT, ST (..), T, type (~>), type Unit, type U64) where
 
 import Dict
+import Type.Reflection
 import Data.Typeable ((:~:) (..))
 
 type (~>) = 'Exp
@@ -18,7 +20,7 @@ infixr 9 ~>
 
 data T = Unit | U64 | Exp T T
 
-class KnownT a where
+class Typeable a => KnownT a where
   inferT :: Tagged t => t a
 
 instance KnownT 'Unit where
@@ -34,7 +36,6 @@ class Tagged t where
   unitTag :: t Unit
   u64Tag :: t U64
   expTag :: t a -> t b -> t (a ~> b)
-
 
 data ST a where
   SUnit :: ST Unit
