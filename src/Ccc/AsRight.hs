@@ -42,6 +42,6 @@ instance Ccc (Path k) where
   constant = constant' Lam.inferT
   cccIntrinsic x = into (cccIntrinsic x)
 
-constant' :: Lam.KnownT a => Lam.ST a -> String -> String -> Path k Unit (AsObject a)
+constant' :: Lam.KnownT a => ObjectOf KnownDict a -> String -> String -> Path k Unit (AsObject a)
 constant' a pkg name = case toKnownT (asObject a) of
   Dict -> into (constant pkg name)

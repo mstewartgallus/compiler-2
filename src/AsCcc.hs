@@ -24,14 +24,14 @@ instance Lam.Lam (V k) where
   u64 n = V (u64 n)
   constant pkg name = V (constant pkg name)
 
-be' :: Lam.ST a -> Lam.ST b -> V k a -> (V k a -> V k b) -> V k b
+be' :: ObjectOf KnownDict a -> ObjectOf KnownDict b -> V k a -> (V k a -> V k b) -> V k b
 be' a b (V x) f = case (toKnownT (asObject a), toKnownT (asObject b)) of
   (Dict, Dict) -> V $ kappa (\x' -> go (f (V x'))) . lift x
 
-lam' :: Lam.ST a -> Lam.ST b -> (V k a -> V k b) -> V k (a Lam.~> b)
+lam' :: ObjectOf KnownDict a -> ObjectOf KnownDict b -> (V k a -> V k b) -> V k (a Lam.~> b)
 lam' a b f = case (toKnownT (asObject a), toKnownT (asObject b)) of
   (Dict, Dict) -> V $ zeta (\x -> go (f (V x)))
 
-pass' :: Lam.ST a -> Lam.ST b -> V k (a Lam.~> b) -> V k a -> V k b
+pass' :: ObjectOf KnownDict a -> ObjectOf KnownDict b -> V k (a Lam.~> b) -> V k a -> V k b
 pass' a b (V f) (V x) = case (toKnownT (asObject a), toKnownT (asObject b)) of
   (Dict, Dict) -> V (pass x . f)

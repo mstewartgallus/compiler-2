@@ -69,6 +69,6 @@ cccIntrinsic' :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.ST a -> Ccc.ST b -> Ccc.Int
 cccIntrinsic' a b intrins = case (toKnownAlgebra (asAlgebra a), toKnownAlgebra (asAlgebra b)) of
   (Dict, Dict) -> V $ thunk (\x -> cccIntrinsic intrins <<< force x)
 
-constant' :: Lam.KnownT a => Lam.ST a -> String -> String -> V k Ccc.Unit (Ccc.AsObject a)
+constant' :: Lam.KnownT a => Ccc.ObjectOf Ccc.ST a -> String -> String -> V k Ccc.Unit (Ccc.AsObject a)
 constant' t pkg name = case toKnownAlgebra (asAlgebra (Ccc.asObject t)) of
   Dict -> V (constant pkg name . unit)
