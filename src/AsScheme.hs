@@ -54,9 +54,10 @@ data Act x y a where
   VarAct :: y a -> Act x y a
   EmptyAct :: Act x y Empty
   DropAct :: Act x y (a & b) -> Act x y b
-  PopAct :: (Val x y a -> Act x y b -> Act x y c) -> Act x y (a & b) -> Act x y c
+  ForceAct :: Val x y (a ~. b) -> Act x y a -> Act x y b
+  PassAct :: Val x y a -> Act x y (a ~> b) -> Act x y b
   PushAct :: Val x y a -> Act x y b -> Act x y (a & b)
-  PassAct :: Act x y (a ~> c) -> Val x y a -> Act x y c
+  PopAct :: (Val x y a -> Act x y b -> Act x y c) -> Act x y (a & b) -> Act x y c
   CallAct :: Lam.ST a -> String -> String -> Act x y Empty -> Act x y (AsAlgebra (Ccc.AsObject a))
 
 data family Prog (x :: Set -> Type) (y :: Algebra -> Type) (a :: Sort t) (b :: Sort t)
@@ -80,13 +81,13 @@ val x = case x of
     pure $ parens $ sep [pretty "cdr", x']
   ThunkVal f x -> do
     x' <- val x
-    h <- fresh
-    body <- act (f (VarVal (V h)) (VarAct (V $ pretty "'()")))
+    k <- fresh
+    body <- act (f (VarVal (V k)) (VarAct (V $ pretty "'()")))
     pure $
       parens $
         dent $
           vsep
-            [ sep [pretty "let", parens (brackets $ sep [h, x'])],
+            [ sep [pretty "let", parens (brackets $ sep [k, x'])],
               parens $ dent $ vsep [pretty "delay", body]
             ]
   FanoutVal x y -> do
@@ -119,32 +120,32 @@ act x = case x of
             [ sep [pretty "let", parens (brackets $ sep [v, x'])],
               parens $ sep [pretty "cdr", v]
             ]
+  ForceAct f t -> do
+    t' <- act t
+    f' <- val f
+    pure $ parens $ sep [t', parens $ sep [pretty "force", f']]
   PushAct h t -> do
     h' <- val h
     t' <- act t
+    pure $ parens $ sep [t', h']
+  PassAct x f -> do
+    x' <- val x
+    f' <- act f
+    pure $ parens $ sep [f', x']
+  PopAct f t -> do
+    t' <- act t
     v <- fresh
+    k <- fresh
+    body <- act (f (VarVal (V v)) (VarAct (V k)))
     pure $
       parens $
-        dent $
-          vsep
-            [ sep [pretty "let", parens (brackets $ sep [v, t'])],
-              parens $ sep [pretty "cons", h', v]
-            ]
-  PopAct f x -> do
-    x' <- act x
-    v <- fresh
-    let h = parens $ sep [pretty "car", v]
-    let t = parens $ sep [pretty "cdr", v]
-    body <- act (f (VarVal (V h)) (VarAct (V t)))
-    pure $
-      parens $
-        dent $
-          vsep
-            [ sep [pretty "let", parens $ brackets $ sep [v, x']],
-              body
-            ]
-  CallAct _ pkg name _ -> do
-    pure $ parens $ sep [pretty "call", pretty pkg, pretty name]
+        sep
+          [ t',
+            parens $ dent $ vsep [pretty "lambda", parens $ sep [v, k], body]
+          ]
+  CallAct _ pkg name t -> do
+    t' <- act t
+    pure $ parens $ sep [t', parens $ sep [pretty "call", pretty pkg, pretty name]]
 
 instance Category (Prog @SetTag x y) where
   id = C (\x -> x)
@@ -165,10 +166,12 @@ instance Stack (Prog x y)
 instance Pointless (Prog x y) (Prog x y) where
   drop = K $ \x -> DropAct x
   thunk (K f) = C (ThunkVal (\h t -> f (PushAct h t)))
+  force (C f) = K $ PopAct $ \h t -> ForceAct (f h) t
 
   inStack = K (PushAct UnitVal)
   lmapStack (C x) = K (PopAct (\h -> PushAct (x h)))
   rmapStack (K x) = K (PopAct (\h t -> PushAct h (x t)))
+  uncurry (K x) = K (PopAct (\h t -> PassAct h (x t)))
 
   push = K (PopAct (\h t -> PushAct (FstVal h) (PushAct (SndVal h) t)))
   pop = K (PopAct (\x -> PopAct (\y -> PushAct (FanoutVal x y))))
