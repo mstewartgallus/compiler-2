@@ -1,7 +1,9 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
@@ -25,6 +27,7 @@ module Cbpv.Sort
     toKnownSet,
 toKnownAlgebra,
 -- eqSort,
+Tagged (..),
     KnownSet (..),
 KnownAlgebra (..)
   )
@@ -87,29 +90,49 @@ asAlgebra t = case t of
   Type.SUnit -> SUnit :&: SEmpty
 
 class KnownSet a where
-  inferSet :: SSet a
+  inferSet :: Tagged set alg => set a
 class KnownAlgebra a where
-  inferAlgebra :: SAlgebra a
+  inferAlgebra :: Tagged set alg => alg a
+
+class Tagged set alg | set -> alg, alg -> set where
+  unitTag :: set Unit
+  u64Tag :: set U64
+  tupleTag :: set a -> set b -> set (a * b)
+  thunkTag :: alg a -> alg b -> set (a ~. b)
+
+  emptyTag :: alg Empty
+  asymTag :: set a -> alg b -> alg (a & b)
+  expTag :: set a -> alg b -> alg (a ~> b)
+
+instance Tagged SSet SAlgebra where
+  unitTag = SUnit
+  u64Tag = SU64
+  tupleTag = (:*:)
+  thunkTag = (:-.)
+
+  emptyTag = SEmpty
+  asymTag = (:&:)
+  expTag = (:->)
 
 instance KnownSet 'Unit where
-  inferSet = SUnit
+  inferSet = unitTag
 
 instance KnownSet 'U64 where
-  inferSet = SU64
+  inferSet = u64Tag
 
 instance (KnownSet a, KnownSet b) => KnownSet ('Product a b) where
-  inferSet = inferSet :*: inferSet
+  inferSet = tupleTag inferSet inferSet
 
 instance (KnownAlgebra a, KnownAlgebra b) => KnownSet ('Thunk a b) where
-  inferSet = inferAlgebra :-. inferAlgebra
+  inferSet = thunkTag inferAlgebra inferAlgebra
 
 instance KnownAlgebra 'Empty where
-  inferAlgebra = SEmpty
+  inferAlgebra = emptyTag
 
 instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Asym a b) where
-  inferAlgebra = inferSet :&: inferAlgebra
+  inferAlgebra = asymTag inferSet inferAlgebra
 instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Exp a b) where
-  inferAlgebra = inferSet :-> inferAlgebra
+  inferAlgebra = expTag inferSet inferAlgebra
 
 toKnownSet :: SSet a -> Dict (KnownSet a)
 toKnownSet x = case x of
@@ -127,26 +150,3 @@ toKnownAlgebra x = case x of
     (Dict, Dict) -> Dict
   x :-> y -> case (toKnownSet x, toKnownAlgebra y) of
     (Dict, Dict) -> Dict
-
--- eqSort :: SSort t a -> SSort t b -> Maybe (a :~: b)
--- eqSort x y = case (x, y) of
---   (SU64, SU64) -> pure Refl
---   (SUnit, SUnit) -> pure Refl
---   (a :*: b, a' :*: b') -> do
---     Refl <- eqSort a a'
---     Refl <- eqSort b b'
---     pure Refl
---   (a :-. b, a' :-. b') -> do
---     Refl <- eqSort a a'
---     Refl <- eqSort b b'
---     pure Refl
-
---   (SEmpty, SEmpty) -> pure Refl
---   (a :&: b, a' :&: b') -> do
---     Refl <- eqSort a a'
---     Refl <- eqSort b b'
---     pure Refl
---   (a :-> b, a' :-> b') -> do
---     Refl <- eqSort a a'
---     Refl <- eqSort b b'
---     pure Refl
