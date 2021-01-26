@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Lam.Type (eqT, KnownT, inferT, toKnownT, ST (..), T, type (~>), type Unit, type U64) where
+module Lam.Type (eqT, KnownT, Tagged (..), inferT, toKnownT, ST (..), T, type (~>), type Unit, type U64) where
 
 import Dict
 import Data.Typeable ((:~:) (..))
@@ -18,22 +18,33 @@ infixr 9 ~>
 
 data T = Unit | U64 | Exp T T
 
+class KnownT a where
+  inferT :: Tagged t => t a
+
+instance KnownT 'Unit where
+  inferT = unitTag
+
+instance KnownT 'U64 where
+  inferT = u64Tag
+
+instance (KnownT a, KnownT b) => KnownT ('Exp a b) where
+  inferT = expTag inferT inferT
+
+class Tagged t where
+  unitTag :: t Unit
+  u64Tag :: t U64
+  expTag :: t a -> t b -> t (a ~> b)
+
+
 data ST a where
   SUnit :: ST Unit
   SU64 :: ST U64
   (:->) :: ST a -> ST b -> ST (a ~> b)
 
-class KnownT t where
-  inferT :: ST t
-
-instance KnownT 'Unit where
-  inferT = SUnit
-
-instance KnownT 'U64 where
-  inferT = SU64
-
-instance (KnownT a, KnownT b) => KnownT ('Exp a b) where
-  inferT = inferT :-> inferT
+instance Tagged ST where
+  unitTag = SUnit
+  u64Tag = SU64
+  expTag = (:->)
 
 toKnownT :: ST a -> Dict (KnownT a)
 toKnownT x = case x of
