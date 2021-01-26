@@ -20,8 +20,6 @@ import Data.Text.Prettyprint.Doc
 import qualified Lam
 import qualified Lam.Term as Lam
 import qualified Lam.Type as Lam
-import qualified Pointless
-import qualified Pointless.Hom as Pointless
 
 data Style = None | Keyword | Variable
 
@@ -121,26 +119,30 @@ instance PrettyProgram (Ccc.ST a) where
 instance PrettyProgram (Ccc.Closed a b) where
   prettyProgram x = evalState (view (Ccc.fold x) 0) 0
 
-instance PrettyProgram (Cbpv.SSort t a) where
+instance PrettyProgram (Cbpv.SSet a) where
   prettyProgram = go 0
 
+instance PrettyProgram (Cbpv.SAlgebra a) where
+  prettyProgram = goAlg 0
+
 -- shit!
-instance PrettyProgram (Cbpv.Closed @Cbpv.SetTag a b) where
+instance PrettyProgram (Cbpv.Closed @Cbpv.Set a b) where
   prettyProgram x = evalState (view (Cbpv.fold x) 0) 0
 
-go :: Int -> Cbpv.SSort t a -> Doc Style
+go :: Int -> Cbpv.SSet a -> Doc Style
 go p x = case x of
   Cbpv.SUnit -> unitType
   Cbpv.SU64 -> u64Type
-  x Cbpv.:-. y -> paren (p > appPrec) $ sep [go (expPrec + 1) x, keyword $ pretty "⊸", go (expPrec + 1) y]
+  x Cbpv.:-. y -> paren (p > appPrec) $ sep [goAlg (expPrec + 1) x, keyword $ pretty "⊸", goAlg (expPrec + 1) y]
   x Cbpv.:*: y -> paren (p > andPrec) $ sep [go (andPrec + 1) x, keyword $ pretty "×", go (andPrec + 1) y]
+
+goAlg :: Int -> Cbpv.SAlgebra a -> Doc Style
+goAlg p x = case x of
   Cbpv.SEmpty -> keyword $ pretty "i"
-  x Cbpv.:&: y -> paren (p > asymPrec) $ sep [go (asymPrec + 1) x, keyword $ pretty "⊗", go (asymPrec + 1) y]
-  x Cbpv.:-> y -> paren (p > expPrec) $ sep [go (expPrec + 1) x, keyword $ pretty "→", go (expPrec + 1) y]
+  x Cbpv.:&: y -> paren (p > asymPrec) $ sep [go (asymPrec + 1) x, keyword $ pretty "⊗", goAlg (asymPrec + 1) y]
+  x Cbpv.:-> y -> paren (p > expPrec) $ sep [go (expPrec + 1) x, keyword $ pretty "→", goAlg (expPrec + 1) y]
 
 -- shit!
-instance PrettyProgram (Pointless.Hom @Cbpv.SetTag a b) where
-  prettyProgram x = viewP (Pointless.fold x) 0
 
 newtype ViewLam (a :: Lam.T) = VL {viewLam :: Int -> State Int (Doc Style)}
 
@@ -209,21 +211,13 @@ zeta' t f = V $ \p -> do
   body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
   pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "ζ") v (prettyProgram t) body
 
-instance Cbpv.Category (View @Cbpv.Set) where
+instance Cbpv.Code View where
   id = V $ \_ -> pure $ keyword $ pretty "id"
   f . g = V $ \p -> do
     f' <- view f (composePrec + 1)
     g' <- view g (composePrec + 1)
     pure $ paren (p > composePrec) $ sep [sep [f', keyword $ pretty "∘"], g']
 
-instance Cbpv.Category (View @Cbpv.Algebra) where
-  id = V $ \_ -> pure $ keyword $ pretty "skip"
-  f . g = V $ \p -> do
-    g' <- view g (composePrec + 1)
-    f' <- view f (composePrec + 1)
-    pure $ paren (p > composePrec) $ vsep [sep [g', keyword $ pretty ";"], f']
-
-instance Cbpv.Code View where
   unit = V $ \_ -> pure $ keyword $ pretty "!"
   fst = V $ \_ -> pure $ keyword $ pretty "π₁"
   snd = V $ \_ -> pure $ keyword $ pretty "π₁"
@@ -232,17 +226,22 @@ instance Cbpv.Code View where
     g' <- view g (composePrec + 1)
     pure $ iff (p > composePrec) angles $ sep [f', keyword $ pretty ",", g']
 
-instance Cbpv.Stack View
+instance Cbpv.Stack View where
+  skip = V $ \_ -> pure $ keyword $ pretty "skip"
+  f <<< g = V $ \p -> do
+    g' <- view g (composePrec + 1)
+    f' <- view f (composePrec + 1)
+    pure $ paren (p > composePrec) $ vsep [sep [g', keyword $ pretty ";"], f']
 
 instance Cbpv.Cbpv View View where
   force x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "force", x']) <*> view x (appPrec + 1)
-  thunk = thunk' Cbpv.inferSort
+  thunk = thunk' Cbpv.inferSet
 
   push x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "push", x']) <*> view x (appPrec + 1)
-  pop = pop' Cbpv.inferSort
+  pop = pop' Cbpv.inferSet
 
   pass x = V $ \p -> pure (\x' -> paren (p > appPrec) $ sep [keyword $ pretty "pass", x']) <*> view x (appPrec + 1)
-  zeta = zetaCbpv Cbpv.inferSort
+  zeta = zetaCbpv Cbpv.inferSet
 
   u64 n = V $ \_ -> pure (pretty n)
   constant pkg name = V $ \p -> pure $ paren (p > appPrec) $ sep [keyword $ pretty "call", pretty (pkg ++ "/" ++ name)]
@@ -276,63 +275,4 @@ zetaCbpv t f = V $ \p -> do
   body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
   pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "ζ") v (prettyProgram t) body
 
-newtype ViewP (a :: Cbpv.Sort t) (b :: Cbpv.Sort t) = VP {viewP :: Int -> Doc Style}
-
-instance Pointless.Category (ViewP @Cbpv.SetTag) where
-  id = VP $ \_ -> keyword $ pretty "id"
-  f . g = VP $ \p ->
-    let f' = viewP f (composePrec + 1)
-        g' = viewP g (composePrec + 1)
-     in paren (p > composePrec) $ sep [sep [f', keyword $ pretty "∘"], g']
-
-instance Pointless.Category (ViewP @Cbpv.AlgebraTag) where
-  id = VP $ \_ -> keyword $ pretty "skip"
-  f . g = VP $ \p ->
-    let g' = viewP g (composePrec + 1)
-        f' = viewP f (composePrec + 1)
-     in paren (p > composePrec) $ vsep [sep [g', keyword $ pretty ";"], f']
-
-instance Pointless.Code ViewP where
-  unit = VP $ \_ -> keyword $ pretty "!"
-  x &&& y = VP $ \p ->
-    let x' = viewP x 0
-        y' = viewP x 0
-     in angles $ sep $ punctuate (keyword (pretty ",")) [x', y']
-  fst = VP $ \_ -> keyword $ pretty "π₁"
-  snd = VP $ \_ -> keyword $ pretty "π₂"
-
-instance Pointless.Stack ViewP
-
-instance Pointless.Pointless ViewP ViewP where
-  inStack = VP $ \_ -> keyword $ pretty "inStack"
-  push = VP $ \_ -> keyword $ pretty "push"
-  pop = VP $ \_ -> keyword $ pretty "pop"
-
-  drop = VP $ \_ -> keyword $ pretty "drop"
-
-  lmapStack x = VP $ \p ->
-    let x' = viewP x (appPrec + 1)
-     in paren (p > appPrec) $ sep [keyword $ pretty "lmapStack", x']
-
-  rmapStack x = VP $ \p ->
-    let x' = viewP x (appPrec + 1)
-     in paren (p > appPrec) $ sep [keyword $ pretty "rmapStack", x']
-
-  force x = VP $ \p ->
-    let x' = viewP x (appPrec + 1)
-     in paren (p > appPrec) $ sep [keyword $ pretty "force", x']
-  thunk x = VP $ \p ->
-    let x' = viewP x (appPrec + 1)
-     in paren (p > appPrec) $ sep [keyword $ pretty "thunk", x']
-
-  curry x = VP $ \p ->
-    let x' = viewP x (appPrec + 1)
-     in paren (p > appPrec) $ sep [keyword $ pretty "curry", x']
-  uncurry x = VP $ \p ->
-    let x' = viewP x (appPrec + 1)
-     in paren (p > appPrec) $ sep [keyword $ pretty "uncurry", x']
-
-  u64 n = VP $ \_ -> pretty n
-  constant pkg name = VP $ \p -> paren (p > appPrec) $ sep [keyword $ pretty "call", pretty (pkg ++ "/" ++ name)]
-  cccIntrinsic x = VP $ \p -> paren (p > appPrec) $ sep [keyword $ pretty "ccc", pretty $ show x]
-  cbpvIntrinsic x = VP $ \p -> paren (p > appPrec) $ sep [keyword $ pretty "intrinsic", pretty $ show x]
+newtype ViewP (a :: t) (b :: t) = VP {viewP :: Int -> Doc Style}

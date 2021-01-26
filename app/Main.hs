@@ -2,9 +2,6 @@ module Main where
 
 import qualified AsCallByName
 import qualified AsCcc
-import qualified AsPointed
-import qualified AsPointless
-import qualified AsScheme
 import qualified Cbpv.AsOpt as Cbpv
 import qualified Cbpv.Hom as Cbpv
 import qualified Ccc.Hom as Ccc
@@ -15,8 +12,6 @@ import qualified Interpreter
 import Lam
 import qualified Lam.Term as Lam
 import Lam.Type
-import qualified Pointless
-import qualified Pointless.AsOpt as Pointless
 import Pretty
 import Prettyprinter.Render.Terminal
 import Prelude hiding ((<*>))
@@ -90,39 +85,4 @@ main = do
       <> hardline
       <> pretty (show result)
       <> hardline
-      <> hardline
-
-  let pointless = AsPointless.asPointless optCbpv
-
-  putDoc $
-    annotate header (pretty "Pointless Prototype:")
-      <> hardline
-      <> reAnnotate toAnsi (prettyProgram pointless)
-      <> hardline
-      <> hardline
-
-  let optPointless = Pointless.opt pointless
-
-  putDoc $
-    annotate header (pretty "Optimized Pointless:")
-      <> hardline
-      <> reAnnotate toAnsi (prettyProgram optPointless)
-      <> hardline
-      <> hardline
-
-  let pointed = AsPointed.asPointed optPointless
-
-  putDoc $
-    annotate header (pretty "Pointed:")
-      <> hardline
-      <> reAnnotate toAnsi (prettyProgram pointed)
-      <> hardline
-      <> hardline
-
-  let scheme = AsScheme.toScheme optPointless
-
-  putDoc $
-    annotate header (pretty "Scheme Prototype:")
-      <> hardline
-      <> reAnnotate toAnsi scheme
       <> hardline

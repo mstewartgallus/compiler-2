@@ -18,7 +18,7 @@ import Cbpv.Sort
 import Data.Kind
 import Prelude hiding ((.), id, fst, snd)
 
-intrinsify :: Closed @SetTag a b -> Closed a b
+intrinsify :: Closed @Set a b -> Closed a b
 intrinsify x = Closed (out (fold x))
 
 binop :: Cbpv stack code => Intrinsic (U64 * U64) U64 -> stack (AsAlgebra (Ccc.U64 Ccc.* Ccc.U64)) (AsAlgebra Ccc.U64)
@@ -26,8 +26,8 @@ binop intrins =
   pop $ \tuple -> (
   (pop $ \x -> (
   (pop $ \y ->
-  push (cbpvIntrinsic intrins . (x &&& y))) .
-  force (snd . tuple))) .
+  push (cbpvIntrinsic intrins . (x &&& y))) <<<
+  force (snd . tuple))) <<<
   force (fst . tuple))
 
 into :: Hom k a b -> Expr k a b
@@ -36,15 +36,16 @@ into = Pure
 out :: Expr k a b -> Hom k a b
 out (Pure x) = x
 
-newtype Expr (k :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) = Pure (Hom k a b)
+newtype Expr (k :: Set -> Set -> Type) (a :: t) (b :: t) = Pure (Hom k a b)
 
-instance Category (Expr f) where
+instance Stack (Expr f) where
+  skip = into skip
+  f <<< g = into (out f <<< out g)
+
+instance Code (Expr g) where
   id = into id
   f . g = into (out f . out g)
 
-instance Stack (Expr f) where
-
-instance Code (Expr g) where
   unit = into unit
   fst = into fst
   snd = into snd

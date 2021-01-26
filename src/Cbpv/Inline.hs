@@ -17,7 +17,7 @@ import Cbpv.Sort
 import Data.Kind
 import Prelude hiding ((.), id, fst, snd)
 
-inline :: Closed @SetTag a b -> Closed a b
+inline :: Closed @Set a b -> Closed a b
 inline x = Closed (out (fold x))
 
 into :: Hom k a b -> Expr k a b
@@ -30,21 +30,21 @@ out x = case x of
   Push x -> push (out x)
   Pop f -> pop (\x -> out (f (into x)))
 
-data Expr (k :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
+data Expr (k :: Set -> Set -> Type) (a :: t) (b :: t) where
   Pure :: Hom k a b -> Expr k a b
 
-  Push :: (KnownSort a, KnownSort b) => Expr k Unit a -> Expr k b (a & b)
-  Pop :: (KnownSort a, KnownSort b, KnownSort c) => (Expr f Unit a -> Expr f b c) -> Expr f (a & b) c
-
-instance Category (Expr f) where
-  id = into id
-
-  Pop f . Push x = f x
-  f . g = into (out f . out g)
+  Push :: (KnownSet a, KnownAlgebra b) => Expr k Unit a -> Expr k b (a & b)
+  Pop :: (KnownSet a, KnownAlgebra b, KnownAlgebra c) => (Expr f Unit a -> Expr f b c) -> Expr f (a & b) c
 
 instance Stack (Expr f) where
+  skip = into skip
+  Pop f <<< Push x = f x
+  f <<< g = into (out f <<< out g)
 
 instance Code (Expr g) where
+  id = into id
+  f . g = into (out f . out g)
+
   unit = into unit
   fst = into fst
   snd = into snd

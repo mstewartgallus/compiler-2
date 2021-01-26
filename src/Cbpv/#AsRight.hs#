@@ -5,37 +5,40 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
 
--- | Reassociate (f . g) . h to f . (g . h)
-module Cbpv.AsLeft (asLeft) where
+-- | Reassociate f . (g . h) to (f . g) . h
+module Cbpv.AsRight (asRight) where
 
 import Cbpv
 import Cbpv.Hom
 import Cbpv.Sort
 import Dict
-import qualified Ccc
+import qualified Ccc as Ccc
 import qualified Ccc.Type as Ccc
 import qualified Lam.Type as Lam
 import Prelude hiding ((.), id, fst, snd)
 
-asLeft :: Closed @SetTag a b -> Closed a b
-asLeft x = Closed (out (fold x))
+asRight :: Closed @Set a b -> Closed a b
+asRight x = Closed (out (fold x))
 
 into :: (KnownSort a, KnownSort b) => k a b -> Path k a b
-into x = x :.: Id
+into x = Id :.: x
 
-out :: Category k => Path k a b -> k a b
+out :: Category k => Path k (a :: t) (b :: t) -> k a b
 out x = case x of
   Id -> id
-  f :.: g -> f . out g
+  f :.: g -> out f . g
 
 data Path k a b where
-  Id :: KnownSort a => Path k a a
-  (:.:) :: (KnownSort a, KnownSort b, KnownSort c) => k b c -> Path k a b -> Path k a c
+  Id :: KnownSet a => Path k a a
+  (:.:) :: (KnownSet a, KnownSet b, KnownSet c) => Path k b c -> k a b -> Path k a c
+
+  Skip :: KnownAlgebra a => Path k a a
+  (:<<<:) :: (KnownAlgebra a, KnownAlgebra b, KnownAlgebra c) => Path k b c -> k a b -> Path k a c
 
 instance Category k => Category (Path k) where
   id = Id
-  Id . f = f
-  (f :.: g) . h = f :.: (g . h)
+  f . Id = f
+  f . (g :.: h) = (f . g) :.: h
 
 instance Cbpv f g => Stack (Path f) where
 
@@ -61,9 +64,9 @@ instance Cbpv f g => Cbpv (Path f) (Path g) where
   cbpvIntrinsic x = into (cbpvIntrinsic x)
 
 constant' :: (Lam.KnownT a, Cbpv f g) => Lam.ST a -> String -> String -> Path g Unit (U (AsAlgebra (Ccc.AsObject a)))
-constant' a pkg name = case toKnownSort (asAlgebra (Ccc.asObject a)) of
+constant' a pkg name = case toKnownAlgebra (asAlgebra (Ccc.asObject a)) of
   Dict -> into (constant pkg name)
 
 cccIntrinsic' :: Cbpv f g => Ccc.ST a -> Ccc.ST b -> Ccc.Intrinsic a b -> Path f (AsAlgebra a) (AsAlgebra b)
-cccIntrinsic' a b x = case (Ccc.toKnownT a, Ccc.toKnownT b, toKnownSort (asAlgebra a), toKnownSort (asAlgebra b)) of
+cccIntrinsic' a b x = case (Ccc.toKnownT a, Ccc.toKnownT b, toKnownAlgebra (asAlgebra a), toKnownAlgebra (asAlgebra b)) of
   (Dict, Dict, Dict, Dict) -> into (cccIntrinsic x)

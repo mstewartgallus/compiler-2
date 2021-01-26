@@ -7,11 +7,8 @@
 {-# LANGUAGE NoStarIsType #-}
 
 module Cbpv.Sort
-  (SSet,
-   SAlgebra,
-   SSort (..),
-   Tag (..),
-   Sort,
+  (SSet (..),
+   SAlgebra (..),
     Set,
     U,
     Unit,
@@ -25,9 +22,11 @@ module Cbpv.Sort
     type (~.),
     AsAlgebra,
     asAlgebra,
-    toKnownSort,
-eqSort,
-    KnownSort (..)
+    toKnownSet,
+toKnownAlgebra,
+-- eqSort,
+    KnownSet (..),
+KnownAlgebra (..)
   )
 where
 import qualified Ccc.Type as Type
@@ -57,33 +56,20 @@ type U = 'Thunk Empty
 
 type F x = x & Empty
 
-data Tag = SetTag | AlgebraTag
-type Set = Sort SetTag
-type Algebra = Sort AlgebraTag
+data Set = Unit | Thunk Algebra Algebra | Product Set Set | U64
 
-data Sort a where
-  Thunk :: Algebra -> Algebra -> Sort SetTag
-  Unit :: Sort SetTag
-  Product :: Set -> Set -> Sort SetTag
+data Algebra = Empty | Exp Set Algebra | Asym Set Algebra
 
-  Empty :: Sort AlgebraTag
-  Exp :: Set -> Algebra -> Sort AlgebraTag
-  Asym :: Set -> Algebra -> Sort AlgebraTag
+data SSet a where
+  SU64 :: SSet U64
+  SUnit :: SSet Unit
+  (:-.) :: SAlgebra a -> SAlgebra b -> SSet (a ~. b)
+  (:*:) :: SSet a -> SSet b -> SSet (a * b)
 
-  U64 :: Sort SetTag
-
-data SSort t (a :: Sort t) where
-  SU64 :: SSort SetTag U64
-  SUnit :: SSort SetTag Unit
-  (:-.) :: SSort AlgebraTag a -> SSort AlgebraTag b -> SSort SetTag (a ~. b)
-  (:*:) :: SSort SetTag a -> SSort SetTag b -> SSort SetTag (a * b)
-
-  SEmpty :: SSort AlgebraTag Empty
-  (:&:) :: SSort SetTag a -> SSort AlgebraTag b -> SSort AlgebraTag (a & b)
-  (:->) :: SSort SetTag a -> SSort AlgebraTag b -> SSort AlgebraTag (a ~> b)
-
-type SSet = SSort SetTag
-type SAlgebra = SSort AlgebraTag
+data SAlgebra a where
+  SEmpty :: SAlgebra Empty
+  (:&:) :: SSet a -> SAlgebra b -> SAlgebra (a & b)
+  (:->) :: SSet a -> SAlgebra b -> SAlgebra (a ~> b)
 
 type family AsAlgebra a = r | r -> a where
   AsAlgebra Type.Unit = F Unit
@@ -100,63 +86,67 @@ asAlgebra t = case t of
   Type.SU64 -> SU64 :&: SEmpty
   Type.SUnit -> SUnit :&: SEmpty
 
-class KnownSort (a :: Sort t) where
-  inferSort :: SSort t a
+class KnownSet a where
+  inferSet :: SSet a
+class KnownAlgebra a where
+  inferAlgebra :: SAlgebra a
 
-instance KnownSort 'Unit where
-  inferSort = SUnit
+instance KnownSet 'Unit where
+  inferSet = SUnit
 
-instance KnownSort 'U64 where
-  inferSort = SU64
+instance KnownSet 'U64 where
+  inferSet = SU64
 
-instance (KnownSort a, KnownSort b) => KnownSort ('Product a b) where
-  inferSort = inferSort :*: inferSort
+instance (KnownSet a, KnownSet b) => KnownSet ('Product a b) where
+  inferSet = inferSet :*: inferSet
 
-instance (KnownSort a, KnownSort b) => KnownSort ('Thunk a b) where
-  inferSort = inferSort :-. inferSort
+instance (KnownAlgebra a, KnownAlgebra b) => KnownSet ('Thunk a b) where
+  inferSet = inferAlgebra :-. inferAlgebra
 
-instance KnownSort 'Empty where
-  inferSort = SEmpty
+instance KnownAlgebra 'Empty where
+  inferAlgebra = SEmpty
 
-instance (KnownSort a, KnownSort b) => KnownSort ('Asym a b) where
-  inferSort = inferSort :&: inferSort
-instance (KnownSort a, KnownSort b) => KnownSort ('Exp a b) where
-  inferSort = inferSort :-> inferSort
+instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Asym a b) where
+  inferAlgebra = inferSet :&: inferAlgebra
+instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Exp a b) where
+  inferAlgebra = inferSet :-> inferAlgebra
 
-toKnownSort :: SSort t a -> Dict (KnownSort a)
-toKnownSort x = case x of
+toKnownSet :: SSet a -> Dict (KnownSet a)
+toKnownSet x = case x of
   SU64 -> Dict
   SUnit -> Dict
-  x :*: y -> case (toKnownSort x, toKnownSort y) of
+  x :*: y -> case (toKnownSet x, toKnownSet y) of
     (Dict, Dict) -> Dict
-  x :-. y -> case (toKnownSort x, toKnownSort y) of
+  x :-. y -> case (toKnownAlgebra x, toKnownAlgebra y) of
     (Dict, Dict) -> Dict
 
+toKnownAlgebra :: SAlgebra a -> Dict (KnownAlgebra a)
+toKnownAlgebra x = case x of
   SEmpty -> Dict
-  x :&: y -> case (toKnownSort x, toKnownSort y) of
+  x :&: y -> case (toKnownSet x, toKnownAlgebra y) of
     (Dict, Dict) -> Dict
-  x :-> y -> case (toKnownSort x, toKnownSort y) of
+  x :-> y -> case (toKnownSet x, toKnownAlgebra y) of
     (Dict, Dict) -> Dict
 
-eqSort :: SSort t a -> SSort t b -> Maybe (a :~: b)
-eqSort x y = case (x, y) of
-  (SU64, SU64) -> pure Refl
-  (SUnit, SUnit) -> pure Refl
-  (a :*: b, a' :*: b') -> do
-    Refl <- eqSort a a'
-    Refl <- eqSort b b'
-    pure Refl
-  (a :-. b, a' :-. b') -> do
-    Refl <- eqSort a a'
-    Refl <- eqSort b b'
-    pure Refl
+-- eqSort :: SSort t a -> SSort t b -> Maybe (a :~: b)
+-- eqSort x y = case (x, y) of
+--   (SU64, SU64) -> pure Refl
+--   (SUnit, SUnit) -> pure Refl
+--   (a :*: b, a' :*: b') -> do
+--     Refl <- eqSort a a'
+--     Refl <- eqSort b b'
+--     pure Refl
+--   (a :-. b, a' :-. b') -> do
+--     Refl <- eqSort a a'
+--     Refl <- eqSort b b'
+--     pure Refl
 
-  (SEmpty, SEmpty) -> pure Refl
-  (a :&: b, a' :&: b') -> do
-    Refl <- eqSort a a'
-    Refl <- eqSort b b'
-    pure Refl
-  (a :-> b, a' :-> b') -> do
-    Refl <- eqSort a a'
-    Refl <- eqSort b b'
-    pure Refl
+--   (SEmpty, SEmpty) -> pure Refl
+--   (a :&: b, a' :&: b') -> do
+--     Refl <- eqSort a a'
+--     Refl <- eqSort b b'
+--     pure Refl
+--   (a :-> b, a' :-> b') -> do
+--     Refl <- eqSort a a'
+--     Refl <- eqSort b b'
+--     pure Refl

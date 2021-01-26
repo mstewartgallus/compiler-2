@@ -17,7 +17,7 @@ import Cbpv.Sort
 import Data.Kind
 import Prelude hiding ((.), id, fst, snd)
 
-tuples :: Closed @SetTag a b -> Closed a b
+tuples :: Closed @Set a b -> Closed a b
 tuples x = Closed (out (fold x))
 
 into :: Hom k a b -> Expr k a b
@@ -30,14 +30,18 @@ out x = case x of
   Snd -> snd
   Fanout x y -> out x &&& out y
 
-data Expr (k :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
+data Expr (k :: Set -> Set -> Type) (a :: t) (b :: t) where
   Pure :: Hom k a b -> Expr k a b
 
-  Fanout :: (KnownSort a, KnownSort b, KnownSort c) => Expr k c a -> Expr k c b -> Expr k c (a * b)
-  Fst :: (KnownSort a, KnownSort b) => Expr k (a * b) a
-  Snd :: (KnownSort a, KnownSort b) => Expr k (a * b) b
+  Fanout :: (KnownSet a, KnownSet b, KnownSet c) => Expr k c a -> Expr k c b -> Expr k c (a * b)
+  Fst :: (KnownSet a, KnownSet b) => Expr k (a * b) a
+  Snd :: (KnownSet a, KnownSet b) => Expr k (a * b) b
 
-instance Category (Expr f) where
+instance Stack (Expr f) where
+  skip = into skip
+  f <<< g = into (out f <<< out g)
+
+instance Code (Expr g) where
   id = into id
 
   Fanout x y . f = (x . f) &&& (y . f)
@@ -45,9 +49,6 @@ instance Category (Expr f) where
   Snd . Fanout _ x = x
   f . g = into (out f . out g)
 
-instance Stack (Expr f) where
-
-instance Code (Expr g) where
   unit = into unit
   fst = Fst
   snd = Snd

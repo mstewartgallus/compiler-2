@@ -17,7 +17,7 @@ import Cbpv.Sort
 import Data.Kind
 import Prelude hiding ((.), id, fst, snd)
 
-moveCode :: Closed @SetTag a b -> Closed a b
+moveCode :: Closed @Set a b -> Closed a b
 moveCode x = Closed (out (fold x))
 
 into :: Hom k a b -> Expr k a b
@@ -31,24 +31,27 @@ out x = case x of
   Pop f -> pop (\x -> out (f (into x)))
   Zeta f -> zeta (\x -> out (f (into x)))
 
-data Expr (k :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
+data Expr (k :: Set -> Set -> Type) (a :: t) (b :: t) where
   Pure :: Hom k a b -> Expr k a b
 
-  Zeta :: (KnownSort a, KnownSort b, KnownSort c) => (Expr f Unit a -> Expr f b c) -> Expr f b (a ~> c)
-  Pop :: (KnownSort a, KnownSort b, KnownSort c) => (Expr f Unit a -> Expr f b c) -> Expr f (a & b) c
-  Thunk :: (KnownSort a, KnownSort b, KnownSort c) => (Expr k Unit a -> Expr k b c) -> Expr k a (b ~. c)
+  Zeta :: (KnownSet a, KnownAlgebra b, KnownAlgebra c) => (Expr f Unit a -> Expr f b c) -> Expr f b (a ~> c)
+  Pop :: (KnownSet a, KnownAlgebra b, KnownAlgebra c) => (Expr f Unit a -> Expr f b c) -> Expr f (a & b) c
+  Thunk :: (KnownSet a, KnownAlgebra b, KnownAlgebra c) => (Expr k Unit a -> Expr k b c) -> Expr k a (b ~. c)
 
-instance Category (Expr f) where
+
+instance Stack (Expr f) where
+  skip = into skip
+
+  y <<< Pop f = pop (\x -> y <<< f x)
+  Zeta f <<< y = zeta (\x -> f x <<< y)
+  f <<< g = into (out f <<< out g)
+
+instance Code (Expr g) where
   id = into id
 
-  y . Pop f = pop (\x -> y . f x)
-  Zeta f . y = zeta (\x -> f x . y)
   Thunk f . y = thunk (\x -> f (y . x))
   f . g = into (out f . out g)
 
-instance Stack (Expr f) where
-
-instance Code (Expr g) where
   unit = into unit
   fst = into fst
   snd = into snd

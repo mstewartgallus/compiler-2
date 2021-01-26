@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Cbpv (Category (..), Stack (..), Code (..), Cbpv (..), Intrinsic (..)) where
+module Cbpv (Stack (..), Code (..), Cbpv (..), Intrinsic (..)) where
 
 import Cbpv.Sort
 import qualified Ccc as Ccc
@@ -26,34 +26,35 @@ import Prelude hiding (id, (.))
 -- difficult to work with.
 --
 -- Paul Blain Levy. "Call-by-Push-Value: A Subsuming Paradigm".
-class Category hom where
-  id :: KnownSort a => hom a a
-  (.) :: (KnownSort a, KnownSort b, KnownSort c) => hom b c -> hom a b -> hom a c
+class Stack (hom :: Algebra -> Algebra -> Type) where
+  skip :: KnownAlgebra a => hom a a
+  (<<<) :: (KnownAlgebra a, KnownAlgebra b, KnownAlgebra c) => hom b c -> hom a b -> hom a c
 
-class Category stack => Stack (stack :: Algebra -> Algebra -> Type)
+class Code code where
+  id :: KnownSet a => code a a
+  (.) :: (KnownSet a, KnownSet b, KnownSet c) => code b c -> code a b -> code a c
 
-class Category code => Code code where
-  unit :: KnownSort a => code a Unit
+  unit :: KnownSet a => code a Unit
 
-  (&&&) :: (KnownSort a, KnownSort b, KnownSort c) => code c a -> code c b -> code c (a * b)
-  fst :: (KnownSort a, KnownSort b) => code (a * b) a
-  snd :: (KnownSort a, KnownSort b) => code (a * b) b
+  (&&&) :: (KnownSet a, KnownSet b, KnownSet c) => code c a -> code c b -> code c (a * b)
+  fst :: (KnownSet a, KnownSet b) => code (a * b) a
+  snd :: (KnownSet a, KnownSet b) => code (a * b) b
 
 class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack where
-  thunk :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> code a (b ~. c)
-  force :: (KnownSort a, KnownSort b) => code Unit (b ~. a) -> stack b a
+  thunk :: (KnownSet a, KnownAlgebra b, KnownAlgebra c) => (code Unit a -> stack b c) -> code a (b ~. c)
+  force :: (KnownAlgebra a, KnownAlgebra b) => code Unit (b ~. a) -> stack b a
 
-  pop :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> stack (a & b) c
-  push :: (KnownSort a, KnownSort b) => code Unit a -> stack b (a & b)
+  pop :: (KnownSet a, KnownAlgebra b, KnownAlgebra c) => (code Unit a -> stack b c) -> stack (a & b) c
+  push :: (KnownSet a, KnownAlgebra b) => code Unit a -> stack b (a & b)
 
-  zeta :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> stack b (a ~> c)
-  pass :: (KnownSort a, KnownSort b) => code Unit a -> stack (a ~> b) b
+  zeta :: (KnownSet a, KnownAlgebra b, KnownAlgebra c) => (code Unit a -> stack b c) -> stack b (a ~> c)
+  pass :: (KnownSet a, KnownAlgebra b) => code Unit a -> stack (a ~> b) b
 
   u64 :: Word64 -> code Unit U64
 
   constant :: Lam.KnownT a => String -> String -> code Unit (U (AsAlgebra (Ccc.AsObject a)))
   cccIntrinsic :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.Intrinsic a b -> stack (AsAlgebra a) (AsAlgebra b)
-  cbpvIntrinsic :: (KnownSort a, KnownSort b) => Intrinsic a b -> code a b
+  cbpvIntrinsic :: (KnownSet a, KnownSet b) => Intrinsic a b -> code a b
 
   add :: code (U64 * U64) U64
   add = cbpvIntrinsic AddIntrinsic

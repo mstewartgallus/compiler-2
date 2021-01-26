@@ -16,7 +16,7 @@ import Cbpv.Sort
 import Data.Kind
 import Prelude hiding ((.), id, fst, snd)
 
-zetaToPop :: Closed @SetTag a b -> Closed a b
+zetaToPop :: Closed @Set a b -> Closed a b
 zetaToPop x = Closed (out (fold x))
 
 into :: Hom k a b -> Expr k a b
@@ -28,19 +28,20 @@ out x = case x of
   Pass x -> pass (out x)
   Zeta f -> zeta (\x -> out (f (into x)))
 
-data Expr (k :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
+data Expr (k :: Set -> Set -> Type) (a :: t) (b :: t) where
   Pure :: Hom k a b -> Expr k a b
-  Pass :: (KnownSort a, KnownSort b) => Expr k Unit a -> Expr k (a ~> b) b
-  Zeta :: (KnownSort a, KnownSort b, KnownSort c) => (Expr f Unit a -> Expr f b c) -> Expr f b (a ~> c)
-
-instance Category (Expr f) where
-  id = into id
-  Pass x . Zeta f = pop f . push x
-  f . g = into (out f . out g)
+  Pass :: (KnownSet a, KnownAlgebra b) => Expr k Unit a -> Expr k (a ~> b) b
+  Zeta :: (KnownSet a, KnownAlgebra b, KnownAlgebra c) => (Expr f Unit a -> Expr f b c) -> Expr f b (a ~> c)
 
 instance Stack (Expr f) where
+  skip = into skip
+  Pass x <<< Zeta f = pop f <<< push x
+  f <<< g = into (out f <<< out g)
 
 instance Code (Expr g) where
+  id = into id
+  f . g = into (out f . out g)
+
   unit = into unit
   fst = into fst
   snd = into snd

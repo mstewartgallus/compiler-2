@@ -20,7 +20,7 @@ import Data.Word
 import Data.Kind
 import Prelude hiding ((.), id, fst, snd)
 
-newtype Closed (a :: Sort t) (b :: Sort t) = Closed (forall x. Hom x a b)
+newtype Closed (a :: t) (b :: t) = Closed (forall x. Hom x a b)
 
 fold :: Cbpv c d => Closed a b -> d a b
 fold (Closed x) = goC x
@@ -48,8 +48,8 @@ goC x = case x of
 
 goK :: Cbpv c d => Hom d a b -> c a b
 goK x = case x of
-  Id -> id
-  f :.: g -> goK f . goK g
+  Skip -> skip
+  f :<<<: g -> goK f <<< goK g
 
   Force x -> force (goC x)
 
@@ -61,46 +61,52 @@ goK x = case x of
   Pass x -> pass (goC x)
   Zeta f -> zeta (\x -> goK (f x))
 
-data Hom (x :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
-  Var :: (KnownSort a, KnownSort b) => x a b -> Hom x a b
+data Hom (x :: Set -> Set -> Type) (a :: t) (b :: t) where
+  Var :: (KnownSet a, KnownSet b) => x a b -> Hom x a b
 
-  Id :: KnownSort a => Hom x a a
-  (:.:) :: (KnownSort a, KnownSort b, KnownSort c) => Hom x b c -> Hom x a b -> Hom x a c
+  Skip :: KnownAlgebra a => Hom x a a
+  (:<<<:) :: (KnownAlgebra a, KnownAlgebra b, KnownAlgebra c) => Hom x b c -> Hom x a b -> Hom x a c
 
-  Thunk :: (KnownSort a, KnownSort b, KnownSort c) => (x Unit a -> Hom x b c) -> Hom x a (b ~. c)
-  Force :: (KnownSort a, KnownSort b) => Hom x Unit (b ~. a) -> Hom x b a
+  Id :: KnownSet a => Hom x a a
+  (:.:) :: (KnownSet a, KnownSet b, KnownSet c) => Hom x b c -> Hom x a b -> Hom x a c
 
-  UnitHom :: KnownSort a => Hom x a Unit
+  Thunk :: (KnownSet a, KnownAlgebra b, KnownAlgebra c) => (x Unit a -> Hom x b c) -> Hom x a (b ~. c)
+  Force :: (KnownAlgebra a, KnownAlgebra b) => Hom x Unit (b ~. a) -> Hom x b a
 
-  Fst :: (KnownSort a, KnownSort b) => Hom x (a * b) a
-  Snd :: (KnownSort a, KnownSort b) => Hom x (a * b) b
-  Fanout :: (KnownSort a, KnownSort b, KnownSort c) => Hom x c a -> Hom x c b -> Hom x c (a * b)
+  UnitHom :: KnownSet a => Hom x a Unit
 
-  Push :: (KnownSort a, KnownSort b) => Hom x Unit a -> Hom x b (a & b)
-  Pop :: (KnownSort a, KnownSort b, KnownSort c) => (x Unit a -> Hom x b c) -> Hom x (a & b) c
+  Fst :: (KnownSet a, KnownSet b) => Hom x (a * b) a
+  Snd :: (KnownSet a, KnownSet b) => Hom x (a * b) b
+  Fanout :: (KnownSet a, KnownSet b, KnownSet c) => Hom x c a -> Hom x c b -> Hom x c (a * b)
 
-  Pass :: (KnownSort a, KnownSort b) => Hom x Unit a -> Hom x (a ~> b) b
-  Zeta :: (KnownSort a, KnownSort b, KnownSort c) => (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
+  Push :: (KnownSet a, KnownAlgebra b) => Hom x Unit a -> Hom x b (a & b)
+  Pop :: (KnownSet a, KnownAlgebra b, KnownAlgebra c) => (x Unit a -> Hom x b c) -> Hom x (a & b) c
+
+  Pass :: (KnownSet a, KnownAlgebra b) => Hom x Unit a -> Hom x (a ~> b) b
+  Zeta :: (KnownSet a, KnownAlgebra b, KnownAlgebra c) => (x Unit a -> Hom x b c) -> Hom x b (a ~> c)
 
   U64 :: Word64 -> Hom x Unit U64
 
-  Constant :: Lam.KnownT a => String -> String -> Hom x  Unit (U (AsAlgebra (Ccc.AsObject a)))
+  Constant :: Lam.KnownT a => String -> String -> Hom x Unit (U (AsAlgebra (Ccc.AsObject a)))
   CccIntrinsic :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.Intrinsic a b -> Hom x (AsAlgebra a) (AsAlgebra b)
-  CbpvIntrinsic :: (KnownSort a, KnownSort b) => Intrinsic a b -> Hom x a b
+  CbpvIntrinsic :: (KnownSet a, KnownSet b) => Intrinsic a b -> Hom x a b
 
-instance Category (Hom x) where
+instance Code (Hom x) where
   id = Id
   Id . f = f
   f . Id = f
   f . g = f :.: g
 
-instance Code (Hom x) where
   unit = UnitHom
   fst = Fst
   snd = Snd
   (&&&) = Fanout
 
 instance Stack (Hom x) where
+  skip = Skip
+  Skip <<< f = f
+  f <<< Skip = f
+  f <<< g = f :<<<: g
 
 instance Cbpv (Hom x) (Hom x) where
   force = Force

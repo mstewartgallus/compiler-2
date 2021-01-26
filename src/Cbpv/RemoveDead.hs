@@ -15,7 +15,7 @@ import Cbpv.Sort
 import Data.Kind
 import Prelude hiding ((.), id, fst, snd)
 
-removeDead :: Closed @SetTag a b -> Closed a b
+removeDead :: Closed @Set a b -> Closed a b
 removeDead x = Closed (out (fold x))
 
 into :: Hom k a b -> Expr k a b
@@ -26,18 +26,19 @@ out x = case x of
   Pure x -> x
   Unit -> unit
 
-data Expr (k :: Set -> Set -> Type) (a :: Sort t) (b :: Sort t) where
-  Unit :: KnownSort a => Expr k a Unit
+data Expr (k :: Set -> Set -> Type) (a :: t) (b :: t) where
+  Unit :: KnownSet a => Expr k a Unit
   Pure :: Hom k a b -> Expr k a b
 
-instance Category (Expr f) where
+instance Stack (Expr f) where
+  skip = into skip
+  f <<< g = into (out f <<< out g)
+
+instance Code (Expr g) where
   id = into id
   Unit . _ = Unit
   f . g = into (out f . out g)
 
-instance Stack (Expr f) where
-
-instance Code (Expr g) where
   unit = Unit
   fst = into fst
   snd = into snd

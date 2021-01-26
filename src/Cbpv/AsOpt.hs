@@ -10,27 +10,22 @@ import Cbpv.MoveCode
 import Cbpv.Tuples
 import Cbpv.ZetaToPop
 import Cbpv.Inline
-import Cbpv.AsLeft
-import Cbpv.AsRight
 import Cbpv.RemoveDead
 import Cbpv.ElimThunkForce
 import Control.Category
 import Cbpv.Sort
 import Prelude hiding ((.), id, round)
 
-opt :: Closed @SetTag a b -> Closed @SetTag a b
+opt :: Closed @Set a b -> Closed @Set a b
 opt = intrinsify >>>
       (\x -> iterate round x !! 100)
 
-round :: Closed @SetTag a b -> Closed @SetTag a b
+round :: Closed @Set a b -> Closed @Set a b
 round =
-  asLeft >>>
-  dopass >>>
-
-  asRight >>>
+  -- fixme.. implement left/right again
   dopass
 
-dopass :: Closed @SetTag a b -> Closed @SetTag a b
+dopass :: Closed @Set a b -> Closed @Set a b
 dopass =
   tuples >>>
   moveCode >>>

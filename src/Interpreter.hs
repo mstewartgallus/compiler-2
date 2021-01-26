@@ -31,11 +31,11 @@ interpret :: Hom.Closed a b -> Data a -> Data b
 interpret x = case Hom.fold x of
   C y -> y
 
-data family Prog (a :: Sort t) (b :: Sort t)
+data family Prog (a :: t) (b :: t)
 
-newtype instance Prog (a :: Sort SetTag) (b :: Sort SetTag) = C (Data a -> Data b)
+newtype instance Prog (a :: Set) (b :: Set) = C (Data a -> Data b)
 
-newtype instance Prog (a :: Sort AlgebraTag) (b :: Sort AlgebraTag) = S (Action a -> Action b)
+newtype instance Prog (a :: Algebra) (b :: Algebra) = S (Action a -> Action b)
 
 data family Data (a :: Set)
 
@@ -58,21 +58,18 @@ infixr 9 :&
 
 newtype instance Action (a ~> b) = Lam (Data a -> Action b)
 
-instance Category (Prog @SetTag) where
+instance Code Prog where
   id = C $ \x -> x
   C f . C g = C (\x -> f (g x))
 
-instance Category (Prog @AlgebraTag) where
-  id = S $ \x -> x
-  S f . S g = S (\x -> f (g x))
-
-instance Code Prog where
   unit = C $ const Unit
   C x &&& C y = C $ \env -> Pair (x env) (y env)
   fst = C $ \(Pair x _) -> x
   snd = C $ \(Pair _ x) -> x
 
-instance Stack Prog
+instance Stack Prog where
+  skip = S $ \x -> x
+  S f <<< S g = S (\x -> f (g x))
 
 instance Cbpv Prog Prog where
   thunk f = C $ \x -> Thunk $ \w -> case f (C $ \Unit -> x) of
