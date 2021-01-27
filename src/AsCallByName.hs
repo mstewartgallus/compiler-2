@@ -35,19 +35,19 @@ instance Ccc.Ccc (V k) where
   cccIntrinsic = cccIntrinsic' Ccc.inferT Ccc.inferT
 
 id' :: AlgebraOf a -> V k a a
-id' t = case toKnownAlgebra (asAlgebra t) of
+id' (AO t) = case toKnownAlgebra t of
   Dict -> V id
 
 compose :: AlgebraOf a -> AlgebraOf b -> AlgebraOf c -> V k b c -> V k a b -> V k a c
-compose a b c (V f) (V g) = case (toKnownAlgebra (asAlgebra a), toKnownAlgebra (asAlgebra b), toKnownAlgebra (asAlgebra c)) of
+compose (AO a) (AO b) (AO c) (V f) (V g) = case (toKnownAlgebra a, toKnownAlgebra b, toKnownAlgebra c) of
   (Dict, Dict, Dict) -> V (f . g)
 
 unit' :: AlgebraOf a -> V k a Ccc.Unit
-unit' a = case toKnownAlgebra (asAlgebra a) of
+unit' (AO a) = case toKnownAlgebra a of
   Dict -> V (thunk (\_ -> push unit))
 
 lift' :: AlgebraOf a -> AlgebraOf b -> V k Ccc.Unit a -> V k b (a Ccc.* b)
-lift' a b (V x) = case (toKnownAlgebra (asAlgebra a), toKnownAlgebra (asAlgebra b)) of
+lift' (AO a) (AO b) (V x) = case (toKnownAlgebra a, toKnownAlgebra b) of
   (Dict, Dict) ->
     V
       ( thunk $ \env ->
@@ -55,23 +55,23 @@ lift' a b (V x) = case (toKnownAlgebra (asAlgebra a), toKnownAlgebra (asAlgebra 
       )
 
 pass' :: AlgebraOf a -> AlgebraOf b -> V k Ccc.Unit a -> V k (a Ccc.~> b) b
-pass' a b (V x) = case (toKnownAlgebra (asAlgebra a), toKnownAlgebra (asAlgebra b)) of
+pass' (AO a) (AO b) (V x) = case (toKnownAlgebra a, toKnownAlgebra b) of
   (Dict, Dict) -> V $ thunk (\env -> pass (x . thunk (\_ -> push unit)) <<< force env)
 
 zeta' :: AlgebraOf a -> AlgebraOf b -> AlgebraOf c -> (V k Ccc.Unit a -> V k b c) -> V k b (a Ccc.~> c)
-zeta' a b c f = case (toKnownAlgebra (asAlgebra a), toKnownAlgebra (asAlgebra b), toKnownAlgebra (asAlgebra c)) of
+zeta' (AO a) (AO b) (AO c) f = case (toKnownAlgebra a, toKnownAlgebra b, toKnownAlgebra c) of
   (Dict, Dict, Dict) -> V $
     thunk $ \env ->
       zeta $ \x ->
         force (go (f (V (x . unit))) . env)
 
 cccIntrinsic' :: (Ccc.KnownT a, Ccc.KnownT b) => AlgebraOf a -> AlgebraOf b -> Ccc.Intrinsic a b -> V k a b
-cccIntrinsic' a b intrins = case (toKnownAlgebra (asAlgebra a), toKnownAlgebra (asAlgebra b)) of
+cccIntrinsic' (AO a) (AO b) intrins = case (toKnownAlgebra a, toKnownAlgebra b) of
   (Dict, Dict) -> V $ thunk (\x -> cccIntrinsic intrins <<< force x)
 
 constant' :: Lam.KnownT a => Ccc.ObjectOf a -> String -> String -> V k Ccc.Unit (Ccc.AsObject a)
 constant' (Ccc.ObjectOf Dict) = constant'' Ccc.inferT
 
 constant'' :: Lam.KnownT a => AlgebraOf (Ccc.AsObject a) -> String -> String -> V k Ccc.Unit (Ccc.AsObject a)
-constant'' x pkg name = case toKnownAlgebra (asAlgebra x) of
+constant'' (AO x) pkg name = case toKnownAlgebra x of
   Dict -> V (constant pkg name . unit)
