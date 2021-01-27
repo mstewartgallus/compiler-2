@@ -19,9 +19,9 @@ import qualified Cbpv.Hom as Hom
 import Cbpv.Sort
 import qualified Ccc as Ccc
 import qualified Ccc.Type as Ccc
-import Control.Monad.ST hiding (lift)
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Data.Type.Equality
 import Data.Typeable ((:~:) (..))
 import Data.Word
 import qualified Lam.Type as Lam
@@ -109,7 +109,7 @@ maybeK t pkgName name = do
 
 cast :: Data (U (AsAlgebra (Ccc.AsObject a))) -> Lam.ST a -> Lam.ST b -> Maybe (Data (U (AsAlgebra (Ccc.AsObject b))))
 cast x t t' = do
-  Refl <- Lam.eqT t t'
+  Refl <- testEquality t t'
   pure x
 
 addCbpvImpl :: Prog (U64 * U64) U64

@@ -9,8 +9,8 @@
 {-# LANGUAGE NoStarIsType #-}
 
 module Cbpv.Sort
-  (SSet,
-   SAlgebra,
+  (KnownSetDict,
+   KnownAlgebraDict,
     Set,
     U,
     Unit,
@@ -93,16 +93,6 @@ class Tagged set alg | set -> alg, alg -> set where
   asymTag :: set a -> alg b -> alg (a & b)
   expTag :: set a -> alg b -> alg (a ~> b)
 
-instance Tagged SSet SAlgebra where
-  unitTag = SSet
-  u64Tag = SSet
-  tupleTag SSet SSet = SSet
-  thunkTag SAlgebra SAlgebra = SSet
-
-  emptyTag = SAlgebra
-  asymTag SSet SAlgebra = SAlgebra
-  expTag SSet SAlgebra = SAlgebra
-
 instance KnownSet 'Unit where
   inferSet = unitTag
 
@@ -123,11 +113,15 @@ instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Asym a b) where
 instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Exp a b) where
   inferAlgebra = expTag inferSet inferAlgebra
 
-data SSet a = KnownSet a => SSet
-data SAlgebra a = KnownAlgebra a => SAlgebra
+newtype KnownSetDict a = KS { toKnownSet :: Dict (KnownSet a) }
+newtype KnownAlgebraDict a = KA { toKnownAlgebra :: Dict (KnownAlgebra a) }
 
-toKnownSet :: SSet a -> Dict (KnownSet a)
-toKnownSet SSet = Dict
+instance Tagged KnownSetDict KnownAlgebraDict where
+  unitTag = KS Dict
+  u64Tag = KS Dict
+  tupleTag (KS Dict) (KS Dict) = KS Dict
+  thunkTag (KA Dict) (KA Dict) = KS Dict
 
-toKnownAlgebra :: SAlgebra a -> Dict (KnownAlgebra a)
-toKnownAlgebra SAlgebra = Dict
+  emptyTag = KA Dict
+  asymTag (KS Dict) (KA Dict) = KA Dict
+  expTag (KS Dict) (KA Dict) = KA Dict

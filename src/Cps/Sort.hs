@@ -27,7 +27,6 @@ module Cps.Sort
     -- AsAlgebra,
     -- asAlgebra,
     toKnownSort,
-eqSort,
     KnownSort (..)
   )
 where
@@ -91,19 +90,6 @@ type SAlgebra = SSort AlgebraTag
 
 thunk = (:-.) SEmpty
 
--- type family AsAlgebra a = r | r -> a where
---   AsAlgebra Type.Unit = F Unit
---   AsAlgebra (a Type.* b) = F (U (AsAlgebra a) * U (AsAlgebra b))
---   AsAlgebra (a Type.|- b) = U (AsAlgebra a) |- AsAlgebra b
---   AsAlgebra Type.U64 = F U64
-
--- asAlgebra :: Type.ST a -> SAlgebra (AsAlgebra a)
--- asAlgebra t = case t of
---   a Type.:*: b -> (thunk (asAlgebra a) :*: thunk (asAlgebra b)) :&: SEmpty
---   a Type.:- b -> thunk (asAlgebra a) :- asAlgebra b
---   Type.SU64 -> SU64 :&: SEmpty
---   Type.SUnit -> SUnit :&: SEmpty
-
 class KnownSort (a :: Sort t) where
   inferSort :: SSort t a
 
@@ -144,26 +130,3 @@ toKnownSort x = case x of
     (Dict, Dict) -> Dict
   x :- y -> case (toKnownSort x, toKnownSort y) of
     (Dict, Dict) -> Dict
-
-eqSort :: SSort t a -> SSort t b -> Maybe (a :~: b)
-eqSort x y = case (x, y) of
-  (SU64, SU64) -> pure Refl
-  (SUnit, SUnit) -> pure Refl
-  (a :*: b, a' :*: b') -> do
-    Refl <- eqSort a a'
-    Refl <- eqSort b b'
-    pure Refl
-  (a :-. b, a' :-. b') -> do
-    Refl <- eqSort a a'
-    Refl <- eqSort b b'
-    pure Refl
-
-  (SEmpty, SEmpty) -> pure Refl
-  (a :&: b, a' :&: b') -> do
-    Refl <- eqSort a a'
-    Refl <- eqSort b b'
-    pure Refl
-  (a :- b, a' :- b') -> do
-    Refl <- eqSort a a'
-    Refl <- eqSort b b'
-    pure Refl

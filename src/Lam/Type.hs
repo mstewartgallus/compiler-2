@@ -2,7 +2,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Lam.Type (eqT, KnownT, Tagged (..), inferT, toKnownT, ST (..), T, type (~>), type Unit, type U64) where
+module Lam.Type (KnownT, Tagged (..), inferT, toKnownT, ST (..), T, type (~>), type Unit, type U64) where
 
 import Dict
 import Type.Reflection
@@ -53,5 +53,5 @@ instance Tagged TypeRep where
 trep :: ST a -> TypeRep a
 trep ST = inferT
 
-eqT :: ST a -> ST b -> Maybe (a :~: b)
-eqT x y = testEquality (trep x) (trep y)
+instance TestEquality ST where
+    testEquality x y = testEquality (trep x) (trep y)

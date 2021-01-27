@@ -13,6 +13,7 @@ import Ccc.Type
 import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Lam.Type as Lam
+import Data.Type.Equality
 import Prelude hiding ((.), id)
 import Data.Typeable ((:~:) (..))
 
@@ -48,7 +49,7 @@ k t pkg name = E $ case Map.lookup (pkg, name) intrinsics of
 
 cast :: Hom f Unit (AsObject a) -> Lam.ST a -> Lam.ST b -> Maybe (Hom f Unit (AsObject b))
 cast x t t' = do
-  Refl <- Lam.eqT t t'
+  Refl <- testEquality t t'
   pure x
 
 data Constant = forall a. Lam.KnownT a => C (forall f. Hom f Unit (AsObject a))
