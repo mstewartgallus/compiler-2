@@ -1,7 +1,8 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
 
 -- | Reassociate  (f . g) . h to  f . (g . h)
-module Ccc.AsLeft (asLeft) where
+module Ccc.AsLeft (asLeft, AsLeft) where
 
 import Ccc
 import Dict
@@ -10,22 +11,26 @@ import Ccc.Type
 import qualified Lam.Type as Lam
 import Prelude hiding ((.), id)
 
-asLeft :: Term hom => hom a b -> Closed a b
-asLeft x = Closed (out (foldTerm x))
+asLeft :: Term hom => hom a b -> AsLeft a b
+asLeft x = AsLeft (foldTerm x)
 
-into :: (KnownT a, KnownT b) => Hom k a b -> Path k a b
+newtype AsLeft a b = AsLeft (forall k. Ccc k => Path k a b)
+instance Term AsLeft where
+  foldTerm (AsLeft x) = out x
+
+into :: (KnownT a, KnownT b) => k a b -> Path k a b
 into x = x :.: Id
 
-out :: Path k a b -> Hom k a b
+out :: Ccc k => Path k a b -> k a b
 out x = case x of
   Id -> id
   f :.: g -> f . out g
 
 data Path k a b where
   Id :: KnownT a => Path k a a
-  (:.:) :: (KnownT a, KnownT b, KnownT c) => Hom k b c -> Path k a b -> Path k a c
+  (:.:) :: (KnownT a, KnownT b, KnownT c) => k b c -> Path k a b -> Path k a c
 
-instance Ccc (Path k) where
+instance Ccc k => Ccc (Path k) where
   id = Id
   Id . f = f
   (f :.: g) . h = f :.: (g . h)
@@ -42,6 +47,6 @@ instance Ccc (Path k) where
   constant = constant' Lam.inferT
   cccIntrinsic x = into (cccIntrinsic x)
 
-constant' :: Lam.KnownT a => ObjectOf KnownDict a -> String -> String -> Path k Unit (AsObject a)
+constant' :: (Ccc k, Lam.KnownT a) => ObjectOf KnownDict a -> String -> String -> Path k Unit (AsObject a)
 constant' a pkg name = case toKnownT (asObject a) of
   Dict -> into (constant pkg name)
