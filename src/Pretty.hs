@@ -109,13 +109,6 @@ class PrettyProgram p where
 instance PrettyProgram (Lam.Term a) where
   prettyProgram x = evalState (viewLam (Lam.fold x) 0) 0
 
-instance PrettyProgram (Ccc.ST a) where
-  prettyProgram expr = case expr of
-    Ccc.SUnit -> unitType
-    Ccc.SU64 -> u64Type
-    x Ccc.:*: y -> tupleType (prettyProgram x) (prettyProgram y)
-    x Ccc.:-> y -> fnType (prettyProgram x) (prettyProgram y)
-
 instance PrettyProgram (Ccc.Closed a b) where
   prettyProgram x = evalState (view (Ccc.fold x) 0) 0
 
@@ -178,6 +171,14 @@ lam' (VLT t) f = VL $ \p -> do
   body <- viewLam (f (VL $ \_ -> pure v)) (lamPrec + 1)
   pure $ paren (p > lamPrec) $ bind (keyword (pretty "λ")) v t body
 
+newtype ViewLamC (a :: Ccc.T) = VLC (Doc Style)
+
+instance Ccc.Tagged ViewLamC where
+  unitTag = VLC unitType
+  u64Tag = VLC u64Type
+  tupleTag (VLC x) (VLC y) = VLC (tupleType x y)
+  expTag (VLC x) (VLC y) = VLC (fnType x y)
+
 newtype View (a :: k) (b :: k) = V {view :: Int -> State Int (Doc Style)}
 
 instance Ccc.Ccc View where
@@ -199,17 +200,17 @@ instance Ccc.Ccc View where
   constant pkg name = V $ \_ -> pure $ pretty (pkg ++ "/" ++ name)
   cccIntrinsic x = V $ \_ -> pure $ pretty (show x)
 
-kappa' :: Ccc.ST a -> (View Ccc.Unit a -> View b c) -> View (a Ccc.* b) c
-kappa' t f = V $ \p -> do
+kappa' :: ViewLamC a -> (View Ccc.Unit a -> View b c) -> View (a Ccc.* b) c
+kappa' (VLC t) f = V $ \p -> do
   v <- fresh
   body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
-  pure $ paren (p > kappaPrec) $ bind (keyword $ pretty "κ") v (prettyProgram t) body
+  pure $ paren (p > kappaPrec) $ bind (keyword $ pretty "κ") v t body
 
-zeta' :: Ccc.ST a -> (View Ccc.Unit a -> View b c) -> View b (a Ccc.~> c)
-zeta' t f = V $ \p -> do
+zeta' :: ViewLamC a -> (View Ccc.Unit a -> View b c) -> View b (a Ccc.~> c)
+zeta' (VLC t) f = V $ \p -> do
   v <- fresh
   body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
-  pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "ζ") v (prettyProgram t) body
+  pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "ζ") v t body
 
 instance Cbpv.Code View where
   id = V $ \_ -> pure $ keyword $ pretty "id"

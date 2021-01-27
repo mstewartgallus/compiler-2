@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Ccc.Type (ST (..), T, Unit, type (~>), type (*), type U64, AsObject, asObject, ObjectOf (..), KnownDict (..), Tagged (..), KnownT (..)) where
+module Ccc.Type (T, Unit, type (~>), type (*), type U64, AsObject, asObject, ObjectOf (..), KnownDict (..), Tagged (..), KnownT (..)) where
 import qualified Lam.Type as Type
 import Dict
 
@@ -63,15 +63,3 @@ instance Tagged t => Type.Tagged (ObjectOf t) where
   u64Tag = O u64Tag
   unitTag = O unitTag
   expTag (O a) (O b) = O (a `expTag` b)
-
-instance Tagged ST where
-  unitTag = SUnit
-  u64Tag = SU64
-  tupleTag = (:*:)
-  expTag = (:->)
-
-data ST a where
-  SU64 :: ST U64
-  SUnit :: ST Unit
-  (:*:) :: ST a -> ST b -> ST (a * b)
-  (:->) :: ST a -> ST b -> ST (a ~> b)

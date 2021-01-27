@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -23,7 +24,7 @@ module Cbpv.Sort
     type (~>),
     type (~.),
     AsAlgebra,
-    asAlgebra,
+    AlgebraOf (..),
     toKnownSet,
 toKnownAlgebra,
 -- eqSort,
@@ -83,12 +84,13 @@ type family AsAlgebra a = r | r -> a where
 thunk :: Tagged set alg => alg a -> set (Empty ~. a)
 thunk = thunkTag emptyTag
 
-asAlgebra :: Tagged set alg => Type.ST a -> alg (AsAlgebra a)
-asAlgebra t = case t of
-  a Type.:*: b -> (thunk (asAlgebra a) `tupleTag` thunk (asAlgebra b)) `asymTag` emptyTag
-  a Type.:-> b -> thunk (asAlgebra a) `expTag` asAlgebra b
-  Type.SU64 -> u64Tag `asymTag` emptyTag
-  Type.SUnit -> unitTag `asymTag` emptyTag
+newtype AlgebraOf a = AO { asAlgebra :: forall set alg. Tagged set alg => alg (AsAlgebra a) }
+
+instance Type.Tagged AlgebraOf where
+  unitTag = AO (unitTag `asymTag` emptyTag)
+  u64Tag = AO (u64Tag `asymTag` emptyTag)
+  tupleTag (AO a) (AO b) = AO ((thunk a `tupleTag` thunk b) `asymTag` emptyTag)
+  expTag (AO a) (AO b) = AO (thunk a `expTag` b)
 
 class KnownSet a where
   inferSet :: Tagged set alg => set a
