@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ExistentialQuantification #-}
@@ -9,9 +10,7 @@
 {-# LANGUAGE NoStarIsType #-}
 
 module Cbpv.Sort
-  (KnownSetDict,
-   KnownAlgebraDict,
-    Set,
+  ( Set,
     U,
     Unit,
     type (*),
@@ -24,8 +23,6 @@ module Cbpv.Sort
     type (~.),
     AsAlgebra,
     AlgebraOf (..),
-    toKnownSet,
-    toKnownAlgebra,
     Tagged (..),
     KnownSet (..),
     KnownAlgebra (..)
@@ -70,13 +67,13 @@ type family AsAlgebra a = r | r -> a where
 thunk :: Tagged set alg => alg a -> set (Empty ~. a)
 thunk = thunkTag emptyTag
 
-newtype AlgebraOf a = AO { asAlgebra :: forall set alg. Tagged set alg => alg (AsAlgebra a) }
+newtype AlgebraOf a = AlgebraOf (Dict (KnownAlgebra (AsAlgebra a)))
 
 instance Type.Tagged AlgebraOf where
-  unitTag = AO (unitTag `asymTag` emptyTag)
-  u64Tag = AO (u64Tag `asymTag` emptyTag)
-  tupleTag (AO a) (AO b) = AO ((thunk a `tupleTag` thunk b) `asymTag` emptyTag)
-  expTag (AO a) (AO b) = AO (thunk a `expTag` b)
+  unitTag = AlgebraOf Dict
+  u64Tag = AlgebraOf Dict
+  tupleTag (AlgebraOf Dict) (AlgebraOf Dict) = AlgebraOf Dict
+  expTag (AlgebraOf Dict) (AlgebraOf Dict) = AlgebraOf Dict
 
 class KnownSet a where
   inferSet :: Tagged set alg => set a
@@ -112,16 +109,3 @@ instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Asym a b) where
   inferAlgebra = asymTag inferSet inferAlgebra
 instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Exp a b) where
   inferAlgebra = expTag inferSet inferAlgebra
-
-newtype KnownSetDict a = KS { toKnownSet :: Dict (KnownSet a) }
-newtype KnownAlgebraDict a = KA { toKnownAlgebra :: Dict (KnownAlgebra a) }
-
-instance Tagged KnownSetDict KnownAlgebraDict where
-  unitTag = KS Dict
-  u64Tag = KS Dict
-  tupleTag (KS Dict) (KS Dict) = KS Dict
-  thunkTag (KA Dict) (KA Dict) = KS Dict
-
-  emptyTag = KA Dict
-  asymTag (KS Dict) (KA Dict) = KA Dict
-  expTag (KS Dict) (KA Dict) = KA Dict
