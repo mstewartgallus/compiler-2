@@ -10,8 +10,8 @@ import Ccc.Type
 import qualified Lam.Type as Lam
 import Prelude hiding ((.), id)
 
-asLeft :: Closed a b -> Closed a b
-asLeft x = Closed (out (fold x))
+asLeft :: Term hom => hom a b -> Closed a b
+asLeft x = Closed (out (foldTerm x))
 
 into :: (KnownT a, KnownT b) => Hom k a b -> Path k a b
 into x = x :.: Id

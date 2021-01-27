@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Ccc (Intrinsic (..), Ccc (..)) where
+module Ccc (Intrinsic (..), Ccc (..), Term (..)) where
 
 import Ccc.Type
 import Data.Word (Word64)
@@ -36,6 +36,9 @@ class Ccc hom where
   u64 :: Word64 -> hom Unit U64
   constant :: Lam.KnownT a => String -> String -> hom Unit (AsObject a)
   cccIntrinsic :: (KnownT a, KnownT b) => Intrinsic a b -> hom a b
+
+class Term hom where
+  foldTerm :: Ccc v => hom a b -> v a b
 
 data Intrinsic a b where
   AddIntrinsic :: Intrinsic (U64 * U64) U64

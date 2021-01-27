@@ -10,8 +10,8 @@ import Ccc.Hom
 import Ccc.Type
 import Prelude hiding ((.), id)
 
-zetaToKappa :: Closed a b -> Closed a b
-zetaToKappa x = Closed (out (fold x))
+zetaToKappa :: Term hom => hom a b -> Closed a b
+zetaToKappa x = Closed (out (foldTerm x))
 
 data Expr f a b where
   E :: f a b -> Expr f a b

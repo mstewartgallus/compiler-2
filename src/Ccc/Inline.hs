@@ -11,8 +11,8 @@ import Ccc.Hom
 import Ccc.Type
 import Prelude hiding ((.), id)
 
-inline :: Closed a b -> Closed a b
-inline x = Closed (out (fold x))
+inline :: Term hom => hom a b -> Closed a b
+inline x = Closed (out (foldTerm x))
 
 data Expr f a b where
   E :: f a b -> Expr f a b

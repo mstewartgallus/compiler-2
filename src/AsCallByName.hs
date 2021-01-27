@@ -14,8 +14,8 @@ import Dict
 import qualified Lam.Type as Lam
 import Prelude hiding (fst, id, snd, (.))
 
-toCbpv :: Ccc.Closed a b -> Closed (U (AsAlgebra a)) (U (AsAlgebra b))
-toCbpv x = Closed (go (Ccc.fold x))
+toCbpv :: Ccc.Term hom => hom a b -> Closed (U (AsAlgebra a)) (U (AsAlgebra b))
+toCbpv x = Closed (go (Ccc.foldTerm x))
 
 newtype V k a b = V {go :: Hom k (U (AsAlgebra a)) (U (AsAlgebra b))}
 

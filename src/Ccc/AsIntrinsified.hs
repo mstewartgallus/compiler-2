@@ -16,8 +16,8 @@ import qualified Lam.Type as Lam
 import Prelude hiding ((.), id)
 import Data.Typeable ((:~:) (..))
 
-intrinsify :: Closed a b -> Closed a b
-intrinsify x = Closed (go (fold x))
+intrinsify :: Term hom => hom a b -> Closed a b
+intrinsify x = Closed (go (foldTerm x))
 
 newtype Expr f (a :: T) (b :: T) = E { go :: Hom f a b }
 

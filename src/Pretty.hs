@@ -106,7 +106,7 @@ class PrettyProgram p where
   prettyProgram :: p -> Doc Style
 
 instance PrettyProgram (Ccc.Closed a b) where
-  prettyProgram x = evalState (view (Ccc.fold x) 0) 0
+  prettyProgram x = evalState (view (Ccc.foldTerm x) 0) 0
 
 -- shit!
 instance PrettyProgram (Cbpv.Closed @Cbpv.Set a b) where

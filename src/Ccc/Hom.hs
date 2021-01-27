@@ -5,7 +5,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GADTs #-}
 
-module Ccc.Hom (fold, Closed (..), Hom) where
+module Ccc.Hom (Closed (..), Hom) where
 
 import Data.Word
 import Ccc.Type
@@ -14,6 +14,8 @@ import Prelude hiding (id, (.))
 import qualified Lam.Type as Lam
 
 newtype Closed a b = Closed (forall x. Hom x a b)
+instance Term Closed where
+  foldTerm (Closed x) = go x
 
 data Hom x a b where
   Var :: (KnownT a, KnownT b) => x a b -> Hom x a b
@@ -51,9 +53,6 @@ instance Ccc (Hom x) where
   u64 = U64
   constant = Constant
   cccIntrinsic = CccIntrinsic
-
-fold :: Ccc hom => Closed a b -> hom a b
-fold (Closed x) = go x
 
 go :: Ccc hom => Hom hom a b -> hom a b
 go x = case x of

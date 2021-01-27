@@ -9,8 +9,8 @@ import Ccc.Hom
 import Ccc.Type
 import Prelude hiding ((.), id)
 
-removeDead :: Closed a b -> Closed a b
-removeDead x = Closed (out (fold x))
+removeDead :: Term hom => hom a b -> Closed a b
+removeDead x = Closed (out (foldTerm x))
 
 into :: Hom k a b -> Expr k a b
 into = Pure
