@@ -25,11 +25,10 @@ module Cbpv.Sort
     AsAlgebra,
     AlgebraOf (..),
     toKnownSet,
-toKnownAlgebra,
--- eqSort,
-Tagged (..),
+    toKnownAlgebra,
+    Tagged (..),
     KnownSet (..),
-KnownAlgebra (..)
+    KnownAlgebra (..)
   )
 where
 import qualified Ccc.Type as Type

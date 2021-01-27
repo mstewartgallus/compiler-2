@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Pretty (Style (..), PrettyProgram (..), keyword, variable) where
+module Pretty (Style (..), prettyLam, PrettyProgram (..), keyword, variable) where
 
 import qualified Cbpv
 import qualified Cbpv.Hom as Cbpv
@@ -18,7 +18,6 @@ import qualified Ccc.Type as Ccc
 import Control.Monad.State
 import Data.Text.Prettyprint.Doc
 import qualified Lam
-import qualified Lam.Term as Lam
 import qualified Lam.Type as Lam
 
 data Style = None | Keyword | Variable
@@ -106,9 +105,6 @@ fresh = do
 class PrettyProgram p where
   prettyProgram :: p -> Doc Style
 
-instance PrettyProgram (Lam.Term a) where
-  prettyProgram x = evalState (viewLam (Lam.fold x) 0) 0
-
 instance PrettyProgram (Ccc.Closed a b) where
   prettyProgram x = evalState (view (Ccc.fold x) 0) 0
 
@@ -117,6 +113,8 @@ instance PrettyProgram (Cbpv.Closed @Cbpv.Set a b) where
   prettyProgram x = evalState (view (Cbpv.fold x) 0) 0
 
 -- shit!
+prettyLam :: Lam.Term t => t a -> Doc Style
+prettyLam x = evalState (viewLam (Lam.foldTerm x) 0) 0
 
 newtype ViewLam (a :: Lam.T) = VL {viewLam :: Int -> State Int (Doc Style)}
 

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8b2dbf9606c230fb8e11e0a7142fffe07bcf8e5a884f2ae31e341cda8bb94027
+-- hash: 5aa74dde043758efdd16ff009df9ce9da270a7aa7705480e39963269befa54a2
 
 name:           hoas
 version:        0.1.0.0
@@ -55,7 +55,6 @@ library
       Dict
       Interpreter
       Lam
-      Lam.Term
       Lam.Type
       Pretty
   other-modules:

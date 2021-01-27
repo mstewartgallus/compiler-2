@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+
 module Main where
 
 import qualified AsCallByName
@@ -10,15 +12,19 @@ import qualified Ccc.Type
 import Data.Text.Prettyprint.Doc
 import qualified Interpreter
 import Lam
-import qualified Lam.Term as Lam
 import Lam.Type
 import Pretty
 import Prettyprinter.Render.Terminal
-import Prelude hiding ((<*>))
+import Prelude hiding ((*), (+), (-), (<*>))
 
-program :: Lam.Term U64
-program =
-  Lam.mkTerm $
+program :: Program U64
+program = Program
+
+data Program a where
+  Program :: Program U64
+
+instance Lam.Term Program where
+  foldTerm Program =
     u64 3 `be` \z ->
       (z * z) + (z + z)
 
@@ -36,7 +42,7 @@ main = do
   putDoc $
     annotate header (pretty "The Program:")
       <> hardline
-      <> reAnnotate toAnsi (prettyProgram program)
+      <> reAnnotate toAnsi (prettyLam program)
       <> hardline
       <> hardline
 
