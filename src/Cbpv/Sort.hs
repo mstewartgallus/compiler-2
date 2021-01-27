@@ -30,7 +30,6 @@ module Cbpv.Sort
 where
 import qualified Ccc.Type as Type
 import Dict
-import Data.Typeable ((:~:) (..))
 
 type Unit = 'Unit
 

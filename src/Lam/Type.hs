@@ -2,7 +2,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Lam.Type (KnownT, Tagged (..), inferT, toKnownT, ST (..), T, type (~>), type Unit, type U64) where
+module Lam.Type (KnownT, Tagged (..), inferT, ST (..), T, type (~>), type Unit, type U64) where
 
 import Dict
 import Type.Reflection
@@ -41,9 +41,6 @@ instance Tagged ST where
   unitTag = ST
   u64Tag = ST
   expTag ST ST = ST
-
-toKnownT :: ST a -> Dict (KnownT a)
-toKnownT ST = Dict
 
 instance Tagged TypeRep where
   unitTag = typeRep
