@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Ccc.Type (T, Unit, type (~>), type (*), type U64, AsObject, asObject, ObjectOf (..), KnownDict (..), Tagged (..), KnownT (..)) where
+module Ccc.Type (T, Unit, type (~>), type (*), type U64, AsObject, ObjectOf (..), Tagged (..), KnownT (..)) where
 import qualified Lam.Type as Type
 import Dict
 
@@ -44,22 +44,14 @@ instance (KnownT a, KnownT b) => KnownT ('Product a b) where
 instance (KnownT a, KnownT b) => KnownT ('Exp a b) where
   inferT = expTag inferT inferT
 
-newtype KnownDict a = KD { toKnownT :: Dict (KnownT a) }
-
-instance Tagged KnownDict where
-  u64Tag = KD Dict
-  unitTag = KD Dict
-  tupleTag (KD Dict) (KD Dict) = KD Dict
-  expTag (KD Dict) (KD Dict) = KD Dict
-
-newtype ObjectOf t a = O { asObject :: t (AsObject a) }
+newtype ObjectOf a = ObjectOf (Dict (KnownT (AsObject a)))
 
 type family AsObject a = r | r -> a where
   AsObject (a Type.~> b) = AsObject a ~> AsObject b
   AsObject Type.U64 = U64
   AsObject Type.Unit = Unit
 
-instance Tagged t => Type.Tagged (ObjectOf t) where
-  u64Tag = O u64Tag
-  unitTag = O unitTag
-  expTag (O a) (O b) = O (a `expTag` b)
+instance Type.Tagged ObjectOf where
+  u64Tag = ObjectOf Dict
+  unitTag = ObjectOf Dict
+  expTag (ObjectOf Dict) (ObjectOf Dict) = ObjectOf Dict

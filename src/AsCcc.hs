@@ -23,14 +23,11 @@ instance Lam.Lam (V k) where
   u64 n = V (u64 n)
   constant pkg name = V (constant pkg name)
 
-be' :: ObjectOf KnownDict a -> ObjectOf KnownDict b -> V k a -> (V k a -> V k b) -> V k b
-be' a b (V x) f = case (toKnownT (asObject a), toKnownT (asObject b)) of
-  (Dict, Dict) -> V $ kappa (\x' -> go (f (V x'))) . lift x
+be' :: ObjectOf a -> ObjectOf b -> V k a -> (V k a -> V k b) -> V k b
+be' (ObjectOf Dict) (ObjectOf Dict) (V x) f = V $ kappa (\x' -> go (f (V x'))) . lift x
 
-lam' :: ObjectOf KnownDict a -> ObjectOf KnownDict b -> (V k a -> V k b) -> V k (a Lam.~> b)
-lam' a b f = case (toKnownT (asObject a), toKnownT (asObject b)) of
-  (Dict, Dict) -> V $ zeta (\x -> go (f (V x)))
+lam' :: ObjectOf a -> ObjectOf b -> (V k a -> V k b) -> V k (a Lam.~> b)
+lam' (ObjectOf Dict) (ObjectOf Dict) f = V $ zeta (\x -> go (f (V x)))
 
-pass' :: ObjectOf KnownDict a -> ObjectOf KnownDict b -> V k (a Lam.~> b) -> V k a -> V k b
-pass' a b (V f) (V x) = case (toKnownT (asObject a), toKnownT (asObject b)) of
-  (Dict, Dict) -> V (pass x . f)
+pass' :: ObjectOf a -> ObjectOf b -> V k (a Lam.~> b) -> V k a -> V k b
+pass' (ObjectOf Dict) (ObjectOf Dict) (V f) (V x) = V (pass x . f)
