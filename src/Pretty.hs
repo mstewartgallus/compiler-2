@@ -112,28 +112,9 @@ instance PrettyProgram (Lam.Term a) where
 instance PrettyProgram (Ccc.Closed a b) where
   prettyProgram x = evalState (view (Ccc.fold x) 0) 0
 
-instance PrettyProgram (Cbpv.SSet a) where
-  prettyProgram = go 0
-
-instance PrettyProgram (Cbpv.SAlgebra a) where
-  prettyProgram = goAlg 0
-
 -- shit!
 instance PrettyProgram (Cbpv.Closed @Cbpv.Set a b) where
   prettyProgram x = evalState (view (Cbpv.fold x) 0) 0
-
-go :: Int -> Cbpv.SSet a -> Doc Style
-go p x = case x of
-  Cbpv.SUnit -> unitType
-  Cbpv.SU64 -> u64Type
-  x Cbpv.:-. y -> paren (p > appPrec) $ sep [goAlg (expPrec + 1) x, keyword $ pretty "⊸", goAlg (expPrec + 1) y]
-  x Cbpv.:*: y -> paren (p > andPrec) $ sep [go (andPrec + 1) x, keyword $ pretty "×", go (andPrec + 1) y]
-
-goAlg :: Int -> Cbpv.SAlgebra a -> Doc Style
-goAlg p x = case x of
-  Cbpv.SEmpty -> keyword $ pretty "i"
-  x Cbpv.:&: y -> paren (p > asymPrec) $ sep [go (asymPrec + 1) x, keyword $ pretty "⊗", goAlg (asymPrec + 1) y]
-  x Cbpv.:-> y -> paren (p > expPrec) $ sep [go (expPrec + 1) x, keyword $ pretty "→", goAlg (expPrec + 1) y]
 
 -- shit!
 
@@ -178,6 +159,22 @@ instance Ccc.Tagged ViewLamC where
   u64Tag = VLC u64Type
   tupleTag (VLC x) (VLC y) = VLC (tupleType x y)
   expTag (VLC x) (VLC y) = VLC (fnType x y)
+
+newtype ViewSort (a :: t) = VS (Int -> Doc Style)
+
+instance Cbpv.Tagged ViewSort ViewSort where
+  unitTag = VS $ \_ -> unitType
+  u64Tag = VS $ \_ -> u64Type
+  thunkTag (VS x) (VS y) = VS $ \p ->
+    paren (p > appPrec) $ sep [x (expPrec + 1), keyword $ pretty "⊸", y (expPrec + 1)]
+  tupleTag (VS x) (VS y) = VS $ \p ->
+    paren (p > andPrec) $ sep [x (andPrec + 1), keyword $ pretty "×", y (andPrec + 1)]
+
+  emptyTag = VS $ \_ -> keyword $ pretty "i"
+  asymTag (VS x) (VS y) = VS $ \p ->
+    paren (p > asymPrec) $ sep [x (asymPrec + 1), keyword $ pretty "⊗", y (asymPrec + 1)]
+  expTag (VS x) (VS y) = VS $ \p ->
+    paren (p > expPrec) $ sep [x (expPrec + 1), keyword $ pretty "→", y (expPrec + 1)]
 
 newtype View (a :: k) (b :: k) = V {view :: Int -> State Int (Doc Style)}
 
@@ -249,31 +246,31 @@ instance Cbpv.Cbpv View View where
   cccIntrinsic x = V $ \p -> pure $ paren (p > appPrec) $ sep [keyword $ pretty "ccc", pretty $ show x]
   cbpvIntrinsic x = V $ \p -> pure $ paren (p > appPrec) $ sep [keyword $ pretty "cbpv", pretty $ show x]
 
-thunk' :: Cbpv.SSet a -> (View Cbpv.Unit a -> View b c) -> View a (b Cbpv.~. c)
-thunk' t f =
+thunk' :: ViewSort a -> (View Cbpv.Unit a -> View b c) -> View a (b Cbpv.~. c)
+thunk' (VS t) f =
   V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
-    pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "thunk") v (prettyProgram t) body
+    pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "thunk") v (t 0) body
 
-kappaCbpv :: Cbpv.SSet a -> (View Cbpv.Unit a -> View b c) -> View (a Cbpv.* b) c
-kappaCbpv t f =
+kappaCbpv :: ViewSort a -> (View Cbpv.Unit a -> View b c) -> View (a Cbpv.* b) c
+kappaCbpv (VS t) f =
   V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
-    pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "κ") v (prettyProgram t) body
+    pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "κ") v (t 0) body
 
-pop' :: Cbpv.SSet a -> (View Cbpv.Unit a -> View b c) -> View (a Cbpv.& b) c
-pop' t f =
+pop' :: ViewSort a -> (View Cbpv.Unit a -> View b c) -> View (a Cbpv.& b) c
+pop' (VS t) f =
   V $ \p -> do
     v <- fresh
     body <- view (f (V $ \_ -> pure v)) (kappaPrec + 1)
-    pure $ paren (p > kappaPrec) $ bind (keyword $ pretty "pop") v (prettyProgram t) body
+    pure $ paren (p > kappaPrec) $ bind (keyword $ pretty "pop") v (t 0) body
 
-zetaCbpv :: Cbpv.SSet a -> (View Cbpv.Unit a -> View b c) -> View b (a Cbpv.~> c)
-zetaCbpv t f = V $ \p -> do
+zetaCbpv :: ViewSort a -> (View Cbpv.Unit a -> View b c) -> View b (a Cbpv.~> c)
+zetaCbpv (VS t) f = V $ \p -> do
   v <- fresh
   body <- view (f (V $ \_ -> pure v)) (zetaPrec + 1)
-  pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "ζ") v (prettyProgram t) body
+  pure $ paren (p > zetaPrec) $ bind (keyword $ pretty "ζ") v (t 0) body
 
 newtype ViewP (a :: t) (b :: t) = VP {viewP :: Int -> Doc Style}

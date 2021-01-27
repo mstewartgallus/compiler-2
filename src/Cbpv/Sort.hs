@@ -1,17 +1,16 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
 module Cbpv.Sort
-  (SSet (..),
-   SAlgebra (..),
+  (SSet,
+   SAlgebra,
     Set,
     U,
     Unit,
@@ -61,19 +60,7 @@ type U = 'Thunk Empty
 type F x = x & Empty
 
 data Set = Unit | Thunk Algebra Algebra | Product Set Set | U64
-
 data Algebra = Empty | Exp Set Algebra | Asym Set Algebra
-
-data SSet a where
-  SU64 :: SSet U64
-  SUnit :: SSet Unit
-  (:-.) :: SAlgebra a -> SAlgebra b -> SSet (a ~. b)
-  (:*:) :: SSet a -> SSet b -> SSet (a * b)
-
-data SAlgebra a where
-  SEmpty :: SAlgebra Empty
-  (:&:) :: SSet a -> SAlgebra b -> SAlgebra (a & b)
-  (:->) :: SSet a -> SAlgebra b -> SAlgebra (a ~> b)
 
 type family AsAlgebra a = r | r -> a where
   AsAlgebra Type.Unit = F Unit
@@ -108,14 +95,14 @@ class Tagged set alg | set -> alg, alg -> set where
   expTag :: set a -> alg b -> alg (a ~> b)
 
 instance Tagged SSet SAlgebra where
-  unitTag = SUnit
-  u64Tag = SU64
-  tupleTag = (:*:)
-  thunkTag = (:-.)
+  unitTag = SSet
+  u64Tag = SSet
+  tupleTag SSet SSet = SSet
+  thunkTag SAlgebra SAlgebra = SSet
 
-  emptyTag = SEmpty
-  asymTag = (:&:)
-  expTag = (:->)
+  emptyTag = SAlgebra
+  asymTag SSet SAlgebra = SAlgebra
+  expTag SSet SAlgebra = SAlgebra
 
 instance KnownSet 'Unit where
   inferSet = unitTag
@@ -137,19 +124,11 @@ instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Asym a b) where
 instance (KnownSet a, KnownAlgebra b) => KnownAlgebra ('Exp a b) where
   inferAlgebra = expTag inferSet inferAlgebra
 
+data SSet a = KnownSet a => SSet
+data SAlgebra a = KnownAlgebra a => SAlgebra
+
 toKnownSet :: SSet a -> Dict (KnownSet a)
-toKnownSet x = case x of
-  SU64 -> Dict
-  SUnit -> Dict
-  x :*: y -> case (toKnownSet x, toKnownSet y) of
-    (Dict, Dict) -> Dict
-  x :-. y -> case (toKnownAlgebra x, toKnownAlgebra y) of
-    (Dict, Dict) -> Dict
+toKnownSet SSet = Dict
 
 toKnownAlgebra :: SAlgebra a -> Dict (KnownAlgebra a)
-toKnownAlgebra x = case x of
-  SEmpty -> Dict
-  x :&: y -> case (toKnownSet x, toKnownAlgebra y) of
-    (Dict, Dict) -> Dict
-  x :-> y -> case (toKnownSet x, toKnownAlgebra y) of
-    (Dict, Dict) -> Dict
+toKnownAlgebra SAlgebra = Dict
