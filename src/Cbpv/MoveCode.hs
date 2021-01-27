@@ -3,7 +3,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -17,8 +16,8 @@ import Cbpv.Sort
 import Data.Kind
 import Prelude hiding ((.), id, fst, snd)
 
-moveCode :: Closed @Set a b -> Closed a b
-moveCode x = Closed (out (fold x))
+moveCode :: Term stack code => code a b -> Closed a b
+moveCode x = Closed (out (foldCode x))
 
 into :: Hom k a b -> Expr k a b
 into x = Pure x

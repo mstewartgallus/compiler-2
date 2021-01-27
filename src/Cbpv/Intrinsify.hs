@@ -3,7 +3,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -18,8 +17,8 @@ import Cbpv.Sort
 import Data.Kind
 import Prelude hiding ((.), id, fst, snd)
 
-intrinsify :: Closed @Set a b -> Closed a b
-intrinsify x = Closed (out (fold x))
+intrinsify :: Term stack code => code a b -> Closed a b
+intrinsify x = Closed (out (foldCode x))
 
 binop :: Cbpv stack code => Intrinsic (U64 * U64) U64 -> stack (AsAlgebra (Ccc.U64 Ccc.* Ccc.U64)) (AsAlgebra Ccc.U64)
 binop intrins =

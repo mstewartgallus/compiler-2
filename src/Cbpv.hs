@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Cbpv (Stack (..), Code (..), Cbpv (..), Intrinsic (..)) where
+module Cbpv (Term (..), Stack (..), Code (..), Cbpv (..), Intrinsic (..)) where
 
 import Cbpv.Sort
 import qualified Ccc as Ccc
@@ -58,6 +58,10 @@ class (Stack stack, Code code) => Cbpv stack code | stack -> code, code -> stack
 
   add :: code (U64 * U64) U64
   add = cbpvIntrinsic AddIntrinsic
+
+class Term stackTerm codeTerm | stackTerm -> codeTerm, codeTerm -> stackTerm where
+  foldCode :: Cbpv stack code => codeTerm a b -> code a b
+  foldStack :: Cbpv stack code => stackTerm a b -> stack a b
 
 data Intrinsic a b where
   AddIntrinsic :: Intrinsic (U64 * U64) U64

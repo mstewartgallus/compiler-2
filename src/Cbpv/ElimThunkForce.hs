@@ -16,8 +16,8 @@ import Cbpv.Sort
 import Data.Kind
 import Prelude hiding ((.), id, fst, snd)
 
-elimThunkForce :: Closed @Set a b -> Closed a b
-elimThunkForce x = Closed (out (fold x))
+elimThunkForce :: Term stack code => code a b -> Closed a b
+elimThunkForce x = Closed (out (foldCode x))
 
 into :: Hom k a b -> Expr k a b
 into x = Pure x

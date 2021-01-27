@@ -110,7 +110,7 @@ instance PrettyProgram (Ccc.Closed a b) where
 
 -- shit!
 instance PrettyProgram (Cbpv.Closed @Cbpv.Set a b) where
-  prettyProgram x = evalState (view (Cbpv.fold x) 0) 0
+  prettyProgram x = evalState (view (Cbpv.foldCode x) 0) 0
 
 -- shit!
 prettyLam :: Lam.Term t => t a -> Doc Style

@@ -27,8 +27,8 @@ import Data.Word
 import qualified Lam.Type as Lam
 import Prelude hiding (id, (.))
 
-interpret :: Hom.Closed a b -> Data a -> Data b
-interpret x = case Hom.fold x of
+interpret :: Term stack code => code a b -> Data a -> Data b
+interpret x = case foldCode x of
   C y -> y
 
 data family Prog (a :: t) (b :: t)

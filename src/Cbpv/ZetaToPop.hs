@@ -16,8 +16,8 @@ import Cbpv.Sort
 import Data.Kind
 import Prelude hiding ((.), id, fst, snd)
 
-zetaToPop :: Closed @Set a b -> Closed a b
-zetaToPop x = Closed (out (fold x))
+zetaToPop :: Term stack code => code a b -> Closed a b
+zetaToPop x = Closed (out (foldCode x))
 
 into :: Hom k a b -> Expr k a b
 into x = Pure x

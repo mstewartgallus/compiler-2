@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Cbpv.AsOpt (opt) where
 
@@ -16,16 +15,16 @@ import Control.Category
 import Cbpv.Sort
 import Prelude hiding ((.), id, round)
 
-opt :: Closed @Set a b -> Closed @Set a b
+opt :: Term stack code => code a b -> Closed a b
 opt = intrinsify >>>
       (\x -> iterate round x !! 100)
 
-round :: Closed @Set a b -> Closed @Set a b
+round :: Term stack code => code a b -> Closed a b
 round =
   -- fixme.. implement left/right again
   dopass
 
-dopass :: Closed @Set a b -> Closed @Set a b
+dopass :: Term stack code => code a b -> Closed a b
 dopass =
   tuples >>>
   moveCode >>>
