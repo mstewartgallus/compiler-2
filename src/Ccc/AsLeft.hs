@@ -2,7 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 -- | Reassociate  (f . g) . h to  f . (g . h)
-module Ccc.AsLeft (asLeft, AsLeft) where
+module Ccc.AsLeft (asLeft) where
 
 import Ccc
 import Dict
@@ -11,12 +11,8 @@ import Ccc.Type
 import qualified Lam.Type as Lam
 import Prelude hiding ((.), id)
 
-asLeft :: Term hom => hom a b -> AsLeft a b
-asLeft x = AsLeft (foldTerm x)
-
-newtype AsLeft a b = AsLeft (forall k. Ccc k => Path k a b)
-instance Term AsLeft where
-  foldTerm (AsLeft x) = out x
+asLeft :: Term hom => hom a b -> Closed a b
+asLeft x = Closed (out (foldTerm x))
 
 into :: (KnownT a, KnownT b) => k a b -> Path k a b
 into x = x :.: Id
