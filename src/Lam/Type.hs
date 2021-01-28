@@ -2,7 +2,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Lam.Type (KnownT, Tagged (..), inferT, ST (..), T, type (~>), type Unit, type U64) where
+module Lam.Type (KnownT, Tagged (..), inferT, T, type (~>), type Unit, type U64) where
 
 import Dict
 import Type.Reflection
@@ -35,20 +35,7 @@ class Tagged t where
   u64Tag :: t U64
   expTag :: t a -> t b -> t (a ~> b)
 
-data ST a = KnownT a => ST
-
-instance Tagged ST where
-  unitTag = ST
-  u64Tag = ST
-  expTag ST ST = ST
-
 instance Tagged TypeRep where
   unitTag = typeRep
   u64Tag = typeRep
   expTag a b = a `withTypeable` (b `withTypeable` typeRep)
-
-trep :: ST a -> TypeRep a
-trep ST = inferT
-
-instance TestEquality ST where
-    testEquality x y = testEquality (trep x) (trep y)

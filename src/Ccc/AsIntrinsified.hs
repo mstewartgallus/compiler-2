@@ -14,6 +14,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Lam.Type as Lam
 import Data.Type.Equality
+import Type.Reflection
 import Prelude hiding ((.), id)
 import Data.Typeable ((:~:) (..))
 
@@ -40,14 +41,14 @@ instance Ccc (Expr f) where
   constant = k Lam.inferT
   cccIntrinsic x = E (cccIntrinsic x)
 
-k :: Lam.KnownT a => Lam.ST a -> String -> String -> Expr f Unit (AsObject a)
+k :: Lam.KnownT a => TypeRep a -> String -> String -> Expr f Unit (AsObject a)
 k t pkg name = E $ case Map.lookup (pkg, name) intrinsics of
   Nothing -> constant pkg name
   Just (C h) -> case cast h Lam.inferT t of
     Nothing -> undefined
     Just x -> x
 
-cast :: Hom f Unit (AsObject a) -> Lam.ST a -> Lam.ST b -> Maybe (Hom f Unit (AsObject b))
+cast :: Hom f Unit (AsObject a) -> TypeRep a -> TypeRep b -> Maybe (Hom f Unit (AsObject b))
 cast x t t' = do
   Refl <- testEquality t t'
   pure x

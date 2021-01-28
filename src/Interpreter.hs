@@ -25,6 +25,7 @@ import Data.Type.Equality
 import Data.Typeable ((:~:) (..))
 import Data.Word
 import qualified Lam.Type as Lam
+import Type.Reflection
 import Prelude hiding (id, (.))
 
 interpret :: Term stack code => code a b -> Data a -> Data b
@@ -100,14 +101,14 @@ constant' pkg name = case maybeK Lam.inferT pkg name of
   Nothing -> undefined
   Just x -> x
 
-maybeK :: Lam.KnownT a => Lam.ST a -> String -> String -> Maybe (Data (U (AsAlgebra (Ccc.AsObject a))))
+maybeK :: Lam.KnownT a => TypeRep a -> String -> String -> Maybe (Data (U (AsAlgebra (Ccc.AsObject a))))
 maybeK t pkgName name = do
   pkg <- Map.lookup pkgName constants
   Constant k <- Map.lookup name pkg
   k' <- cast k Lam.inferT t
   pure k'
 
-cast :: Data (U (AsAlgebra (Ccc.AsObject a))) -> Lam.ST a -> Lam.ST b -> Maybe (Data (U (AsAlgebra (Ccc.AsObject b))))
+cast :: Data (U (AsAlgebra (Ccc.AsObject a))) -> TypeRep a -> TypeRep b -> Maybe (Data (U (AsAlgebra (Ccc.AsObject b))))
 cast x t t' = do
   Refl <- testEquality t t'
   pure x
