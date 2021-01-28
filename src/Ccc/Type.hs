@@ -1,12 +1,11 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE NoStarIsType #-}
 
 module Ccc.Type (T, Unit, type (~>), type (*), type U64, AsObject, ObjectOf (..), Tagged (..), KnownT (..)) where
-import qualified Lam.Type as Type
+import qualified Lam.Type as Lam
 import Dict
 
 type Unit = 'Unit
@@ -47,11 +46,11 @@ instance (KnownT a, KnownT b) => KnownT ('Exp a b) where
 newtype ObjectOf a = ObjectOf (Dict (KnownT (AsObject a)))
 
 type family AsObject a = r | r -> a where
-  AsObject (a Type.~> b) = AsObject a ~> AsObject b
-  AsObject Type.U64 = U64
-  AsObject Type.Unit = Unit
+  AsObject (a Lam.~> b) = AsObject a ~> AsObject b
+  AsObject Lam.U64 = U64
+  AsObject Lam.Unit = Unit
 
-instance Type.Tagged ObjectOf where
+instance Lam.Tagged ObjectOf where
   u64Tag = ObjectOf Dict
   unitTag = ObjectOf Dict
   expTag (ObjectOf Dict) (ObjectOf Dict) = ObjectOf Dict

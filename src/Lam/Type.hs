@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Lam.Type (KnownT, Tagged (..), inferT, T, type (~>), type Unit, type U64) where
