@@ -51,7 +51,7 @@ main = do
   putDoc $
     annotate header (pretty "Kappa/Zeta Decomposition:")
       <> hardline
-      <> reAnnotate toAnsi (prettyProgram compiled)
+      <> reAnnotate toAnsi (prettyCcc compiled)
       <> hardline
       <> hardline
 
@@ -60,7 +60,7 @@ main = do
   putDoc $
     annotate header (pretty "Optimized Kappa/Zeta Decomposition:")
       <> hardline
-      <> reAnnotate toAnsi (prettyProgram optimized)
+      <> reAnnotate toAnsi (prettyCcc optimized)
       <> hardline
       <> hardline
 
@@ -69,7 +69,7 @@ main = do
   putDoc $
     annotate header (pretty "Call By Push Value:")
       <> hardline
-      <> reAnnotate toAnsi (prettyProgram cbpv)
+      <> reAnnotate toAnsi (prettyCbpv cbpv)
       <> hardline
       <> hardline
 
@@ -78,7 +78,7 @@ main = do
   putDoc $
     annotate header (pretty "Optimized Call By Push Value:")
       <> hardline
-      <> reAnnotate toAnsi (prettyProgram optCbpv)
+      <> reAnnotate toAnsi (prettyCbpv optCbpv)
       <> hardline
       <> hardline
 

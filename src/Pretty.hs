@@ -7,18 +7,25 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Pretty (Style (..), prettyLam, PrettyProgram (..), keyword, variable) where
+module Pretty (Style (..), prettyLam, prettyCcc, prettyCbpv, keyword, variable) where
 
 import qualified Cbpv
-import qualified Cbpv.Hom as Cbpv
 import qualified Cbpv.Sort as Cbpv
 import qualified Ccc
-import qualified Ccc.Hom as Ccc
 import qualified Ccc.Type as Ccc
 import Control.Monad.State
 import Data.Text.Prettyprint.Doc
 import qualified Lam
 import qualified Lam.Type as Lam
+
+prettyLam :: Lam.Term t => t a -> Doc Style
+prettyLam x = evalState (viewLam (Lam.foldTerm x) 0) 0
+
+prettyCcc :: Ccc.Term hom => hom a b -> Doc Style
+prettyCcc x = evalState (view (Ccc.foldTerm x) 0) 0
+
+prettyCbpv :: Cbpv.Term stack code => code a b -> Doc Style
+prettyCbpv x = evalState (view (Cbpv.foldCode x) 0) 0
 
 data Style = None | Keyword | Variable
 
@@ -101,20 +108,6 @@ fresh = do
   n <- get
   put (n + 1)
   pure $ variable (pretty "v" <> pretty n)
-
-class PrettyProgram p where
-  prettyProgram :: p -> Doc Style
-
-instance PrettyProgram (Ccc.Closed a b) where
-  prettyProgram x = evalState (view (Ccc.foldTerm x) 0) 0
-
--- shit!
-instance PrettyProgram (Cbpv.Closed @Cbpv.Set a b) where
-  prettyProgram x = evalState (view (Cbpv.foldCode x) 0) 0
-
--- shit!
-prettyLam :: Lam.Term t => t a -> Doc Style
-prettyLam x = evalState (viewLam (Lam.foldTerm x) 0) 0
 
 newtype ViewLam (a :: Lam.T) = VL {viewLam :: Int -> State Int (Doc Style)}
 
