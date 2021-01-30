@@ -5,8 +5,8 @@
 module Ccc.AsRight (asRight) where
 
 import Ccc
-import Dict
 import Ccc.Hom
+import Dict
 import Ccc.Type
 import qualified Lam.Type as Lam
 import Prelude hiding ((.), id)

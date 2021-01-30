@@ -21,9 +21,9 @@ import Data.Typeable ((:~:) (..))
 intrinsify :: Term hom => hom a b -> Closed a b
 intrinsify x = Closed (go (foldTerm x))
 
-newtype Expr f (a :: T) (b :: T) = E { go :: Hom f a b }
+newtype Expr f (a :: T) (b :: T) = E { go :: f a b }
 
-instance Ccc (Expr f) where
+instance Ccc f => Ccc (Expr f) where
   id = E id
   E f . E g = E (f . g)
 
@@ -41,33 +41,33 @@ instance Ccc (Expr f) where
   constant = k Lam.inferT
   cccIntrinsic x = E (cccIntrinsic x)
 
-k :: Lam.KnownT a => TypeRep a -> String -> String -> Expr f Unit (AsObject a)
+k :: (Ccc f, Lam.KnownT a) => TypeRep a -> String -> String -> Expr f Unit (AsObject a)
 k t pkg name = E $ case Map.lookup (pkg, name) intrinsics of
   Nothing -> constant pkg name
   Just (C h) -> case cast h Lam.inferT t of
     Nothing -> undefined
     Just x -> x
 
-cast :: Hom f Unit (AsObject a) -> TypeRep a -> TypeRep b -> Maybe (Hom f Unit (AsObject b))
+cast :: Ccc f => f Unit (AsObject a) -> TypeRep a -> TypeRep b -> Maybe (f Unit (AsObject b))
 cast x t t' = do
   Refl <- testEquality t t'
   pure x
 
-data Constant = forall a. Lam.KnownT a => C (forall f. Hom f Unit (AsObject a))
+data Constant f = forall a. Lam.KnownT a => C (f Unit (AsObject a))
 
-intrinsics :: Map (String, String) Constant
+intrinsics :: Ccc f => Map (String, String) (Constant f)
 intrinsics = Map.fromList [
   (("core", "add"),  C addIntrinsic),
   (("core", "multiply"),  C multiplyIntrinsic)
                           ]
 
-addIntrinsic :: Hom f Unit (AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))
+addIntrinsic :: Ccc f => f Unit (AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))
 addIntrinsic =
   zeta $ \x ->
   zeta $ \y ->
   add . lift x . y
 
-multiplyIntrinsic :: Hom f Unit (AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))
+multiplyIntrinsic :: Ccc f => f Unit (AsObject (Lam.U64 Lam.~> Lam.U64 Lam.~> Lam.U64))
 multiplyIntrinsic =
   zeta $ \x ->
   zeta $ \y ->

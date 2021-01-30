@@ -1,7 +1,7 @@
 module Ccc.Optimize (optimize) where
 
-import Ccc.Hom
 import Ccc
+import Ccc.Hom
 import Control.Category
 import Ccc.AsIntrinsified
 import Ccc.RemoveDead

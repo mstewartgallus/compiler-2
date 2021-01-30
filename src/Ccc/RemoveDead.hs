@@ -1,5 +1,4 @@
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE PolyKinds #-}
 
 -- | Simplify code of the sort unit . x to unit
 module Ccc.RemoveDead (removeDead) where
@@ -12,19 +11,19 @@ import Prelude hiding ((.), id)
 removeDead :: Term hom => hom a b -> Closed a b
 removeDead x = Closed (out (foldTerm x))
 
-into :: Hom k a b -> Expr k a b
+into :: k a b -> Expr k a b
 into = Pure
 
-out :: Expr k a b -> Hom k a b
+out :: Expr k a b -> k a b
 out x = case x of
   Pure x -> x
   Unit -> unit
 
 data Expr k a b where
-  Unit :: KnownT a => Expr k a Unit
-  Pure :: Hom k a b -> Expr k a b
+  Unit :: (Ccc k, KnownT a) => Expr k a Unit
+  Pure :: k a b -> Expr k a b
 
-instance Ccc (Expr k) where
+instance Ccc k => Ccc (Expr k) where
   id = into id
   Unit . _ = Unit
   f . g = into (out f . out g)
