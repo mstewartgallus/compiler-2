@@ -1,9 +1,9 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
 
 module AsCcc (asCcc) where
 
 import Ccc
-import Ccc.Hom
 import Ccc.Type
 import Dict
 import qualified Lam as Lam
@@ -13,9 +13,14 @@ import Prelude hiding (id, (.))
 asCcc :: Lam.Term t => t a -> Closed Unit (AsObject a)
 asCcc x = Closed (go (Lam.foldTerm x))
 
-newtype V k a = V {go :: Hom k Unit (AsObject a)}
+newtype Closed a b = Closed (forall k. Ccc k => k a b)
 
-instance Lam.Lam (V k) where
+instance Term Closed where
+  foldTerm (Closed p) = p
+
+newtype V k a = V {go :: Ccc k => k Unit (AsObject a)}
+
+instance Ccc k => Lam.Lam (V k) where
   be = be' Lam.inferT Lam.inferT
   lam = lam' Lam.inferT Lam.inferT
   (<*>) = pass' Lam.inferT Lam.inferT

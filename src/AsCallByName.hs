@@ -8,7 +8,6 @@ import Cbpv
 import Cbpv.Hom
 import Cbpv.Sort
 import qualified Ccc
-import qualified Ccc.Hom as Ccc
 import qualified Ccc.Type as Ccc
 import Dict
 import qualified Lam.Type as Lam
