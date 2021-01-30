@@ -1,15 +1,19 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
 
 -- | Simplify code of the sort unit . x to unit
-module Ccc.RemoveDead (removeDead) where
+module Ccc.RemoveDead (removeDead, RemoveDead) where
 
 import Ccc
-import Ccc.Hom
 import Ccc.Type
 import Prelude hiding ((.), id)
 
-removeDead :: Term hom => hom a b -> Closed a b
-removeDead x = Closed (out (foldTerm x))
+removeDead :: Term hom => hom a b -> RemoveDead a b
+removeDead x = RemoveDead (foldTerm x)
+
+newtype RemoveDead a b = RemoveDead (forall k. Ccc k => Expr k a b)
+instance Term RemoveDead where
+  foldTerm (RemoveDead p) = out p
 
 into :: k a b -> Expr k a b
 into = Pure

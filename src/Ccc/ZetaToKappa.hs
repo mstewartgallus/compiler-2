@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -6,12 +7,15 @@
 module Ccc.ZetaToKappa (zetaToKappa) where
 
 import Ccc
-import Ccc.Hom
 import Ccc.Type
 import Prelude hiding ((.), id)
 
 zetaToKappa :: Term hom => hom a b -> Closed a b
 zetaToKappa x = Closed (out (foldTerm x))
+
+newtype Closed a b = Closed (forall k. Ccc k => Expr k a b)
+instance Term Closed where
+  foldTerm (Closed p) = out p
 
 data Expr f a b where
   E :: f a b -> Expr f a b

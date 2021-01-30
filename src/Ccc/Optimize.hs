@@ -1,7 +1,6 @@
 module Ccc.Optimize (optimize) where
 
 import Ccc
-import Ccc.Hom
 import Control.Category
 import Ccc.AsIntrinsified
 import Ccc.RemoveDead
@@ -11,12 +10,16 @@ import Ccc.AsLeft
 import Ccc.AsRight
 import Prelude hiding ((.), id, round)
 
-optimize :: Term hom => hom a b -> Closed a b
+optimize :: Term hom => hom a b -> RemoveDead a b
 optimize =
   intrinsify >>>
-  (\x -> iterate round x !! 100)
+  dorounds 100
 
-round :: Term hom => hom a b -> Closed a b
+dorounds :: Term hom => Int -> hom a b -> RemoveDead a b
+dorounds n x | n == 0 = round x
+             | otherwise = dorounds (n - 1) (round x)
+
+round :: Term hom => hom a b -> RemoveDead a b
 round =
   asRight >>>
   dopass >>>
@@ -24,7 +27,7 @@ round =
   asLeft >>>
   dopass
 
-dopass :: Term hom => hom a b -> Closed a b
+dopass :: Term hom => hom a b -> RemoveDead a b
 dopass =
   zetaToKappa >>>
   inline >>>

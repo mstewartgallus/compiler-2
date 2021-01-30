@@ -8,7 +8,6 @@
 module Ccc.AsIntrinsified (intrinsify) where
 
 import Ccc
-import Ccc.Hom
 import Ccc.Type
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -19,7 +18,11 @@ import Prelude hiding ((.), id)
 import Data.Typeable ((:~:) (..))
 
 intrinsify :: Term hom => hom a b -> Closed a b
-intrinsify x = Closed (go (foldTerm x))
+intrinsify x = Closed (foldTerm x)
+
+newtype Closed a b = Closed (forall k. Ccc k => Expr k a b)
+instance Term Closed where
+  foldTerm (Closed p) = go p
 
 newtype Expr f (a :: T) (b :: T) = E { go :: f a b }
 

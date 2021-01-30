@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -7,12 +8,15 @@
 module Ccc.Inline (inline) where
 
 import Ccc
-import Ccc.Hom
 import Ccc.Type
 import Prelude hiding ((.), id)
 
 inline :: Term hom => hom a b -> Closed a b
-inline x = Closed (out (foldTerm x))
+inline x = Closed (foldTerm x)
+
+newtype Closed a b = Closed (forall k. Ccc k => Expr k a b)
+instance Term Closed where
+  foldTerm (Closed p) = out p
 
 data Expr f a b where
   E :: f a b -> Expr f a b

@@ -5,14 +5,17 @@
 module Ccc.AsRight (asRight) where
 
 import Ccc
-import Ccc.Hom
 import Dict
 import Ccc.Type
 import qualified Lam.Type as Lam
 import Prelude hiding ((.), id)
 
 asRight :: Term hom => hom a b -> Closed a b
-asRight x = Closed (out (foldTerm x))
+asRight x = Closed (foldTerm x)
+
+newtype Closed a b = Closed (forall k. Ccc k => Path k a b)
+instance Term Closed where
+  foldTerm (Closed p) = out p
 
 into :: (KnownT a, KnownT b) => k a b -> Path k a b
 into x = Id :.: x
@@ -20,6 +23,7 @@ into x = Id :.: x
 out :: Ccc k => Path k a b -> k a b
 out x = case x of
   Id -> id
+  Id :.: f -> f
   f :.: g -> out f . g
 
 data Path k a b where
