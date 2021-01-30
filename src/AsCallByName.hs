@@ -44,11 +44,9 @@ unit' :: AlgebraOf a -> V k a Ccc.Unit
 unit' (AlgebraOf Dict) = V (thunk (\_ -> push unit))
 
 lift' :: AlgebraOf a -> AlgebraOf b -> V k Ccc.Unit a -> V k b (a Ccc.* b)
-lift' (AlgebraOf Dict) (AlgebraOf Dict) (V x) =
-  V
-    ( thunk $ \env ->
-        push ((x . thunk (\_ -> push unit)) &&& env)
-    )
+lift' (AlgebraOf Dict) (AlgebraOf Dict) (V x) = V $
+  thunk $ \env ->
+    push ((x . thunk (\_ -> push unit)) &&& env)
 
 pass' :: AlgebraOf a -> AlgebraOf b -> V k Ccc.Unit a -> V k (a Ccc.~> b) b
 pass' (AlgebraOf Dict) (AlgebraOf Dict) (V x) = V $ thunk (\env -> pass (x . thunk (\_ -> push unit)) <<< force env)

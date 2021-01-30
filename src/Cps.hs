@@ -7,11 +7,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Cps (Category (..), Stack (..), Code (..), Cps (..), Intrinsic (..)) where
+module Cps (Term (..), Stack (..), Code (..), Cps (..)) where
 
-import Cbpv (Intrinsic (..))
-import qualified Cbpv as Cbpv
-import qualified Cbpv.Sort as Cbpv
 import qualified Ccc as Ccc
 import qualified Ccc.Type as Ccc
 import Cps.Sort
@@ -21,38 +18,50 @@ import qualified Lam.Type as Lam
 import Prelude hiding (id, (.))
 
 -- |
--- A CPS-ification of call by push value.
-class Category hom where
-  id :: KnownSort a => hom a a
-  (.) :: (KnownSort a, KnownSort b, KnownSort c) => hom b c -> hom a b -> hom a c
+-- As opposed to the usual monadic interface call by push value is based
+-- around adjoint functors on two different categories.
+--
+-- There is a different formulation using oblique morphisms and an
+-- indexed category instead of using the asymmetric tensor but was
+-- difficult to work with.
+--
+-- Paul Blain Levy. "Call-by-Push-Value: A Subsuming Paradigm".
+class Stack (hom :: Algebra -> Algebra -> Type) where
+  skip :: KnownAlgebra a => hom a a
+  (<<<) :: (KnownAlgebra a, KnownAlgebra b, KnownAlgebra c) => hom b c -> hom a b -> hom a c
 
-class Category stack => Stack (stack :: Algebra -> Algebra -> Type)
+class Code code where
+  id :: KnownSet a => code a a
+  (.) :: (KnownSet a, KnownSet b, KnownSet c) => code b c -> code a b -> code a c
 
-class Category code => Code code where
-  unit :: KnownSort a => code a Unit
+  unit :: KnownSet a => code a Unit
 
-  (&&&) :: (KnownSort a, KnownSort b, KnownSort c) => code c a -> code c b -> code c (a * b)
-  fst :: (KnownSort a, KnownSort b) => code (a * b) a
-  snd :: (KnownSort a, KnownSort b) => code (a * b) b
+  (&&&) :: (KnownSet a, KnownSet b, KnownSet c) => code c a -> code c b -> code c (a * b)
+  fst :: (KnownSet a, KnownSet b) => code (a * b) a
+  snd :: (KnownSet a, KnownSet b) => code (a * b) b
 
 class (Stack stack, Code code) => Cps stack code | stack -> code, code -> stack where
-  thunk :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> code a (b ~. c)
-  force :: (KnownSort a, KnownSort b) => code Unit (b ~. a) -> stack b a
+  thunk :: (KnownSet a, KnownAlgebra b, KnownAlgebra c) => (code Unit a -> stack b c) -> code a (b ~. c)
+  force :: (KnownAlgebra a, KnownAlgebra b) => code Unit (b ~. a) -> stack b a
 
-  pop :: (KnownSort a, KnownSort b, KnownSort c) => (code Unit a -> stack b c) -> stack (a & b) c
-  push :: (KnownSort a, KnownSort b) => code Unit a -> stack b (a & b)
+  copop :: (KnownSet a, KnownAlgebra b, KnownAlgebra c) => (code a Void -> stack c b) -> stack c (a \\ b)
+  copush :: (KnownSet a, KnownAlgebra b) => code a Void -> stack (a \\ b) b
 
-  cozeta :: (KnownSort a, KnownSort b, KnownSort c) => (code a Void -> stack c b) -> stack (c |- a) b
-  copass :: (KnownSort a, KnownSort b) => code a Void -> stack b (b |- a)
+  cozeta :: (KnownSet a, KnownAlgebra b, KnownAlgebra c) => (code a Void -> stack c b) -> stack (a |- c) b
+  copass :: (KnownSet a, KnownAlgebra b) => code a Void -> stack b (a |- b)
 
   u64 :: Word64 -> code Unit U64
 
 -- constant :: Lam.KnownT a => String -> String -> code Unit (U (AsAlgebra (Ccc.AsObject a)))
 -- cccIntrinsic :: (Ccc.KnownT a, Ccc.KnownT b) => Ccc.Intrinsic a b -> stack (AsAlgebra a) (AsAlgebra b)
--- cbpvIntrinsic :: (KnownSort a, KnownSort b) => Intrinsic a b -> code a b
+-- cbpvIntrinsic :: (KnownSet a, KnownSet b) => Intrinsic a b -> code a b
 
 -- add :: code (U64 * U64) U64
 -- add = cbpvIntrinsic AddIntrinsic
+
+class Term stackTerm codeTerm | stackTerm -> codeTerm, codeTerm -> stackTerm where
+  foldCode :: Cps stack code => codeTerm a b -> code a b
+  foldStack :: Cps stack code => stackTerm a b -> stack a b
 
 -- data Intrinsic a b where
 --   AddIntrinsic :: Intrinsic (U64 * U64) U64
