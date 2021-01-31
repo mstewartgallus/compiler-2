@@ -12,7 +12,7 @@ import Prelude hiding ((.), id, round)
 
 optimize :: Term hom => hom a b -> RemoveDead a b
 optimize =
-  intrinsify >>>
+  -- intrinsify >>>
   dorounds 100
 
 dorounds :: Term hom => Int -> hom a b -> RemoveDead a b

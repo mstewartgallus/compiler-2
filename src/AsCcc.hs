@@ -28,8 +28,8 @@ instance Ccc k => Lam.Lam (V k) where
   u64 n = V (u64 n)
   constant pkg name = V (constant pkg name)
 
-be' :: ObjectOf a -> ObjectOf b -> V k a -> (V k a -> V k b) -> V k b
-be' (ObjectOf Dict) (ObjectOf Dict) (V x) f = V $ kappa (\x' -> go (f (V x'))) . lift x
+be' :: Foo Bar a -> ObjectOf b -> V k a -> (V k a -> V k b) -> V k b
+be' (Foo Bar) (ObjectOf Dict) (V x) f = V $ kappa (\x' -> go (f (V x'))) . lift x
 
 lam' :: ObjectOf a -> ObjectOf b -> (V k a -> V k b) -> V k (a Lam.~> b)
 lam' (ObjectOf Dict) (ObjectOf Dict) f = V $ zeta (\x -> go (f (V x)))

@@ -1,10 +1,11 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Ccc.Type (T, Unit, type (~>), type (*), type U64, AsObject, ObjectOf (..), Tagged (..), KnownT (..)) where
+module Ccc.Type (T, Unit, type (~>), type (*), type U64, AsObject, ObjectOf (..), Tagged (..), KnownT (..), Foo (..), Bar (..)) where
 import qualified Lam.Type as Lam
 import Dict
 
@@ -28,6 +29,9 @@ class Tagged t where
   tupleTag :: t a -> t b -> t (a * b)
   expTag :: t a -> t b -> t (a ~> b)
 
+class Tag t where
+  foldTag :: Tagged v => t a -> v a
+
 class KnownT a where
   inferT :: Tagged t => t a
 
@@ -43,7 +47,21 @@ instance (KnownT a, KnownT b) => KnownT ('Product a b) where
 instance (KnownT a, KnownT b) => KnownT ('Exp a b) where
   inferT = expTag inferT inferT
 
+newtype Foo t a = Foo (t (AsObject a))
+instance Tagged t => Lam.Tagged (Foo t) where
+  u64Tag = Foo u64Tag
+  unitTag = Foo unitTag
+  expTag (Foo a) (Foo b) = Foo (expTag a b)
+
+data Bar a = KnownT a => Bar
+
+instance Tagged Bar where
+  u64Tag = Bar
+  unitTag = Bar
+  expTag Bar Bar = Bar
+
 newtype ObjectOf a = ObjectOf (Dict (KnownT (AsObject a)))
+
 
 type family AsObject a = r | r -> a where
   AsObject (a Lam.~> b) = AsObject a ~> AsObject b

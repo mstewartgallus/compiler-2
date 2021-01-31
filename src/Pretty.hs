@@ -121,7 +121,7 @@ instance Lam.Lam ViewLam where
     pure $ paren (p > appPrec) $ sep [f', x']
 
   u64 n = VL $ \_ -> pure (pretty n)
-  constant pkg name = VL $ \_ -> pure $ pretty (pkg ++ "/" ++ name)
+  constant pkg name = VL $ \_ -> pure $ sep [keyword $ pretty "call", pretty (pkg ++ "/" ++ name)]
 
 newtype ViewLamT (a :: Lam.T) = VLT (Doc Style)
 
@@ -185,7 +185,7 @@ instance Ccc.Ccc View where
   zeta = zeta' Ccc.inferT
 
   u64 n = V $ \_ -> pure (pretty n)
-  constant pkg name = V $ \_ -> pure $ pretty (pkg ++ "/" ++ name)
+  constant pkg name = V $ \_ -> pure $ sep [keyword $ pretty "call", pretty (pkg ++ "/" ++ name)]
   cccIntrinsic x = V $ \_ -> pure $ pretty (show x)
 
 kappa' :: ViewLamC a -> (View Ccc.Unit a -> View b c) -> View (a Ccc.* b) c
